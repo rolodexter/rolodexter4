@@ -31,12 +31,12 @@ export default async function handler(
 
     const results = await searchDocuments(query);
     
-    // Format results
-    const formattedResults: SearchResult[] = results.map((doc: RawSearchResult) => ({
-      title: doc.title,
-      path: doc.path,
-      excerpt: doc.excerpt,
-      rank: parseFloat(doc.rank)
+    // Format results with proper type handling
+    const formattedResults: SearchResult[] = results.map((doc) => ({
+      title: doc.title || "",
+      path: doc.path || "",
+      excerpt: typeof doc.metadata?.excerpt === 'string' ? doc.metadata.excerpt : "",
+      rank: typeof doc.metadata?.rank === 'number' ? doc.metadata.rank : 0
     }));
 
     return res.status(200).json(formattedResults);
