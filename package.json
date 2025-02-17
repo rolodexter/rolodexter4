@@ -26,6 +26,7 @@
     "recharts": "^2.15.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.2.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^20.5.7",
     "@types/react": "^18.2.21",
