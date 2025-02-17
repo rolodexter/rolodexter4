@@ -3,9 +3,20 @@ import { readdir, readFile } from 'fs/promises';
 import { join, relative } from 'path';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Load environment variables from .env.local
-dotenv.config({ path: '.env.local' });
+// Get the directory path of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env.local in the project root
+dotenv.config({ path: join(dirname(__dirname), '.env.local') });
+
+// Log environment variables for debugging
+console.log('Environment variables loaded:');
+console.log('BLOB_STORE_NAME:', process.env.BLOB_STORE_NAME);
+console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
 
 const prisma = new PrismaClient();
 
