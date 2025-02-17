@@ -23,8 +23,8 @@ model Document {
   references   Reference[]   @relation("SourceReferences")
   referencedBy Reference[]   @relation("TargetReferences")
   interactions Interaction[]
-  tasks        Task[] // Add relation field for tasks
-  memories     Memory[] // Add relation field for memories
+  tasks        Task[]
+  memories     Memory[]
 
   @@index([type, created_at])
   @@index([path])

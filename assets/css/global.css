@@ -20,6 +20,35 @@ body {
   color: var(--primary-text);
 }
 
+/* Dashboard Layout */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  height: calc(100vh - 4rem);
+}
+
+.hud-panel {
+  background-color: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(248, 250, 252, 0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.hud-panel-secondary {
+  background-color: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(248, 250, 252, 0.05);
+  border-radius: 0.375rem;
+}
+
+/* Current Tasks specific styles */
+.current-tasks {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
 /* Ensures footer sticks to bottom */
 #__next {
   min-height: 100vh;

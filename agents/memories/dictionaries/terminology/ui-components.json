@@ -1,5 +1,39 @@
 {
   "components": {
+    "DashboardLayout": {
+      "description": "Main dashboard layout using a 2x2 grid system",
+      "quadrants": {
+        "Q1": {
+          "position": "top-left",
+          "name": "Current Tasks",
+          "component": "RecentTasks",
+          "description": "Displays active and recent tasks in the system"
+        },
+        "Q2": {
+          "position": "top-right",
+          "name": "Task Graph",
+          "component": "TaskGraph",
+          "description": "Visualization of task relationships and system status",
+          "alternateComponent": "KnowledgeGraph",
+          "notes": "May be used for either TaskGraph or KnowledgeGraph visualization"
+        },
+        "Q3": {
+          "position": "bottom-left",
+          "name": "Mission Log",
+          "component": "MissionLog",
+          "description": "Chronological log of system activities and events",
+          "status": "pending-rename",
+          "notes": "Scheduled for renaming in future update"
+        },
+        "Q4": {
+          "position": "bottom-right",
+          "name": "TBD",
+          "component": null,
+          "description": "Reserved for future functionality",
+          "status": "empty"
+        }
+      }
+    },
     "TaskGraph": {
       "previousName": "TaskVolumeChart",
       "description": "Real-time visualization component displaying task relationships, dependencies, and flow in a cyberpunk-inspired graph interface",

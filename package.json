@@ -2,16 +2,21 @@
   "name": "rolodexter4",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && tsx scripts/syncHtmlToBlob.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "manage-memories": "tsx scripts/manageMemories.ts",
+    "sync-tasks": "tsx scripts/syncTasksToBlob.ts",
+    "sync-html": "tsx scripts/syncHtmlToBlob.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",
+    "@vercel/blob": "^0.27.1",
     "@vercel/postgres": "^0.10.0",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
@@ -35,6 +40,8 @@
     "postcss": "^8.4.28",
     "prisma": "^6.3.1",
     "tailwindcss": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.2.2",
     "vitest": "^3.0.5"
   }

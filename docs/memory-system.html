@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory System Documentation</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            color: #1a1a1a;
+        }
+        h1, h2, h3 { color: #2563eb; }
+        code {
+            background: #f1f5f9;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+        }
+        pre {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .note {
+            background: #e0f2fe;
+            border-left: 4px solid #0ea5e9;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Memory System Documentation</h1>
+    
+    <p>The Rolodexter memory system is designed to maintain a structured, searchable history of system operations, decisions, and interactions. This documentation outlines the core concepts, structure, and usage of the memory system.</p>
+
+    <h2>Overview</h2>
+    <p>The memory system uses a hierarchical structure to organize and store information, with automatic indexing and cleanup mechanisms to ensure optimal performance and data accessibility.</p>
+
+    <h2>Directory Structure</h2>
+    <pre>
+agents/
+└── memories/
+    └── session-logs/
+        └── YYYY/
+            └── MM/
+                └── DD.html
+    </pre>
+
+    <h3>Key Components</h3>
+    <ul>
+        <li><strong>Session Logs</strong>: Daily chronological records of system activities</li>
+        <li><strong>Database Integration</strong>: PostgreSQL storage with full-text search capabilities</li>
+        <li><strong>Automatic Cleanup</strong>: Maintains a maximum of 10 memory files per category</li>
+    </ul>
+
+    <h2>Memory File Format</h2>
+    <p>Memory files are stored in HTML format with standardized metadata and content structure:</p>
+    <pre>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="date" content="YYYY-MM-DD"&gt;
+    &lt;title&gt;Session Log: YYYY-MM-DD&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="log-container"&gt;
+        &lt;div class="log-entry"&gt;
+            &lt;span class="timestamp"&gt;HH:MM:SS UTC&lt;/span&gt;
+            &lt;h3&gt;Entry Title&lt;/h3&gt;
+            &lt;div class="content"&gt;
+                Entry content...
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+
+    <h2>Database Schema</h2>
+    <p>Memories are indexed in the database using the following structure:</p>
+    <pre>
+Document {
+    id: String
+    title: String
+    content: String
+    path: String
+    type: "memory"
+    metadata: {
+        memoryType: "session"
+        date: "YYYY-MM-DD"
+        entries: Array&lt;{
+            timestamp: String
+            title: String
+            content: String
+        }&gt;
+    }
+    created_at: DateTime
+    updated_at: DateTime
+}</pre>
+
+    <h2>Search and Retrieval</h2>
+    <p>The system provides multiple ways to access memory data:</p>
+    <ul>
+        <li>Full-text search across all memory content</li>
+        <li>Date-based navigation through session logs</li>
+        <li>Metadata-based filtering</li>
+        <li>Reference-based traversal between related memories</li>
+    </ul>
+
+    <div class="note">
+        <strong>Note:</strong> The memory system automatically maintains data consistency between file storage and database records. No manual synchronization is required.
+    </div>
+
+    <h2>Integration</h2>
+    <p>To integrate with the memory system, use the provided database utilities:</p>
+    <pre>
+import { prisma } from '@/utils/db';
+
+// Query memories
+const memories = await prisma.document.findMany({
+    where: {
+        type: 'memory',
+        metadata: {
+            path: {
+                contains: '/session-logs/'
+            }
+        }
+    }
+});</pre>
+
+    <h2>Retention Policy</h2>
+    <p>The system implements the following retention rules:</p>
+    <ul>
+        <li>Maximum 10 memory files per category</li>
+        <li>Automatic cleanup of oldest files when limit is exceeded</li>
+        <li>Database records are removed when corresponding files are deleted</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Important:</strong> Always use the provided APIs and utilities to interact with the memory system. Direct file manipulation may lead to inconsistencies between file storage and database records.
+    </div>
+
+    <h2>Performance Considerations</h2>
+    <ul>
+        <li>Memory files are stored in HTML format for human readability</li>
+        <li>Database indexing ensures fast search and retrieval</li>
+        <li>Automatic cleanup prevents unbounded growth</li>
+        <li>File operations are atomic to prevent data corruption</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>The memory system implements several security measures:</p>
+    <ul>
+        <li>Access control through database permissions</li>
+        <li>Sanitization of HTML content</li>
+        <li>Validation of file paths and content</li>
+        <li>Audit logging of all modifications</li>
+    </ul>
+
+    <h2>Troubleshooting</h2>
+    <p>Common issues and their solutions:</p>
+    <ul>
+        <li><strong>Missing Files</strong>: Check database consistency using the provided utilities</li>
+        <li><strong>Search Issues</strong>: Verify database indexes are properly created</li>
+        <li><strong>Inconsistent Data</strong>: Run the memory management script to reconcile files and database records</li>
+    </ul>
+
+    <div class="note">
+        <strong>For more information:</strong> Refer to the API documentation or contact the development team for technical support.
+    </div>
+</body>
+</html> 

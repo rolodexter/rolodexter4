@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../utils/db';
+import { prisma } from '@/lib/db';
+import type { Task, Tag } from '@prisma/client';
 
 interface TaskResponse {
   id: string;
@@ -61,4 +62,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-}
+} 

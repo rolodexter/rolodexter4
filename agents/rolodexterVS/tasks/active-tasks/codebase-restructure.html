@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="task-type" content="active">
+    <meta name="priority" content="high">
+    <meta name="assignee" content="rolodexterGPT">
+    <title>Codebase Restructuring: Folder Organization and Database Integration</title>
+    <style>
+        body { font-family: system-ui; line-height: 1.6; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        pre { background: #f1f5f9; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+        .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; }
+        .note { background: #e0f2fe; border-left: 4px solid #0ea5e9; padding: 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <h1>Codebase Restructuring: Folder Organization and Database Integration</h1>
+
+    <div class="note">
+        <strong>Status:</strong> Active<br>
+        <strong>Priority:</strong> High<br>
+        <strong>Created:</strong> 2025-02-18<br>
+        <strong>Last Updated:</strong> 2025-02-18
+    </div>
+
+    <h2>Overview</h2>
+    <p>Reorganize the codebase to follow best practices while maintaining our unique integration between file-based memory/task system and Vercel Postgres database.</p>
+
+    <h2>New Directory Structure</h2>
+    <pre>
+rolodexter4/
+├── src/                    # Source code
+│   ├── pages/             # Next.js pages
+│   │   ├── api/          # API endpoints
+│   │   └── ...           # Page components
+│   ├── components/        # React components
+│   │   ├── common/       # Layout, Header, Footer
+│   │   ├── graphs/       # TaskGraph, KnowledgeGraph
+│   │   └── tasks/        # Task-related components
+│   ├── lib/              # Core business logic
+│   │   ├── db/          # Database utilities
+│   │   └── utils/       # Shared utilities
+│   └── styles/          # Global styles
+├── prisma/               # Database schema and migrations
+├── public/              # Static assets
+└── agents/              # Agent system files
+    └── memories/        # Memory system files
+        └── session-logs/
+            └── YYYY/MM/DD.html</pre>
+
+    <h2>Database Integration Points</h2>
+    <h3>1. File-Database Synchronization</h3>
+    <ul>
+        <li>All HTML files (memories, tasks) are tracked in Postgres</li>
+        <li>Database schema maintains file metadata and enables search</li>
+        <li>UI components fetch data through API endpoints</li>
+    </ul>
+
+    <pre>
+// Database Schema (Prisma)
+model Document {
+    id         String   @id @default(uuid())
+    title      String
+    content    String   @db.Text
+    path       String   @unique
+    type       String   // 'task', 'memory', 'documentation'
+    metadata   Json
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+}</pre>
+
+    <h3>2. Key Integration Files</h3>
+    <pre>
+src/
+└── lib/
+    └── db/
+        ├── client.ts     # Prisma/Vercel client setup
+        ├── documents.ts  # Document operations
+        └── search.ts     # Search functionality</pre>
+
+    <h2>Implementation Steps</h2>
+    <ol>
+        <li>Create new directory structure
+            <pre>mkdir -p src/{pages,components/{common,graphs,tasks},lib/{db,utils},styles}</pre>
+        </li>
+        <li>Move files to new locations
+            <ul>
+                <li>Move components/ → src/components/</li>
+                <li>Move pages/ → src/pages/</li>
+                <li>Move utils/ → src/lib/</li>
+            </ul>
+        </li>
+        <li>Update import paths in all files</li>
+        <li>Update tsconfig.json paths</li>
+        <li>Test all database operations</li>
+        <li>Verify UI functionality</li>
+    </ol>
+
+    <h2>Critical Components to Update</h2>
+    <h3>1. Home Page Quadrants</h3>
+    <ul>
+        <li>RecentTasks panel: Fetches from /api/tasks/recent</li>
+        <li>TaskGraph: Real-time updates via database</li>
+        <li>KnowledgeGraph: Memory and task relationships</li>
+    </ul>
+
+    <h3>2. Database Utilities</h3>
+    <pre>
+// src/lib/db/client.ts
+import { PrismaClient } from '@prisma/client';
+import { createClient } from '@vercel/postgres';
+
+export const prisma = new PrismaClient();
+export const sql = createClient({
+    connectionString: process.env.POSTGRES_URL
+});</pre>
+
+    <h3>3. Memory Management</h3>
+    <pre>
+// src/lib/db/documents.ts
+export async function indexDocument(path: string, content: string) {
+    return await prisma.document.upsert({
+        where: { path },
+        update: { content, updated_at: new Date() },
+        create: { path, content, type: 'memory' }
+    });
+}</pre>
+
+    <h2>Testing Requirements</h2>
+    <ul>
+        <li>Verify all database operations after file moves</li>
+        <li>Test memory file indexing and search</li>
+        <li>Confirm UI components render correctly</li>
+        <li>Check all API endpoints</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Important:</strong>
+        <ul>
+            <li>Maintain existing file paths for memories and tasks</li>
+            <li>Ensure database synchronization continues working</li>
+            <li>Update all import paths carefully</li>
+            <li>Test thoroughly before deploying</li>
+        </ul>
+    </div>
+
+    <h2>Verification Checklist</h2>
+    <ul>
+        <li>[ ] All components render correctly</li>
+        <li>[ ] Memory files are properly indexed</li>
+        <li>[ ] Search functionality works</li>
+        <li>[ ] Task management system operational</li>
+        <li>[ ] Database queries optimized</li>
+        <li>[ ] Import paths updated</li>
+        <li>[ ] Documentation updated</li>
+    </ul>
+
+    <h2>Team Communication</h2>
+    <p>All team members should:</p>
+    <ul>
+        <li>Review the new structure documentation</li>
+        <li>Update local development environments</li>
+        <li>Report any issues in the task tracking system</li>
+        <li>Use the new import paths in new code</li>
+    </ul>
+
+    <div class="note">
+        <strong>Next Steps:</strong>
+        <ol>
+            <li>Team review of restructuring plan</li>
+            <li>Create backup of current structure</li>
+            <li>Implement changes in staged approach</li>
+            <li>Update all documentation</li>
+        </ol>
+    </div>
+</body>
+</html> 

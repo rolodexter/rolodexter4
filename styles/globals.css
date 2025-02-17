@@ -105,22 +105,40 @@ body {
   @apply relative overflow-hidden;
   background: var(--panel-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 
-    0 0 20px rgba(0, 0, 0, 0.5),
-    inset 0 0 30px rgba(0, 0, 0, 0.3);
+    0 0 15px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.2);
   clip-path: polygon(
-    0 10px,
-    10px 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    10px 100%,
-    0 calc(100% - 10px)
+    0 8px,
+    8px 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    0 calc(100% - 8px)
   );
   transition: all 0.3s ease;
   z-index: 10;
+}
+
+/* Panel headers */
+.hud-panel h2, 
+.hud-panel h3 {
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+/* Panel content */
+.hud-panel-content {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 
 .hud-panel::before {
@@ -162,10 +180,12 @@ body {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
+/* Status values */
 .stat-value {
-  @apply font-mono text-2xl font-bold;
+  @apply font-mono text-lg;
   color: var(--text-primary);
-  text-shadow: var(--text-shadow-subtle);
+  text-shadow: none;
+  opacity: 0.9;
 }
 
 .cyber-grid {
@@ -321,19 +341,21 @@ body {
 }
 
 .custom-tooltip {
-  background: rgba(0, 0, 0, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
   backdrop-filter: blur(8px) !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
-  padding: 0.75rem !important;
-  border-radius: 4px !important;
-  max-width: 300px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 3px !important;
+  max-width: 250px !important;
   z-index: 1000 !important;
 }
 
 .custom-tooltip .text-data {
   color: var(--text-primary);
-  text-shadow: var(--text-shadow-subtle);
+  font-size: 0.75rem;
+  opacity: 0.9;
+  text-shadow: none;
 }
 
 /* Responsive Utilities */
@@ -639,17 +661,18 @@ body {
 .recharts-legend-item-text {
   color: #e2e8f0 !important;
   font-family: var(--font-tactical) !important;
-  font-size: 12px !important;
+  font-size: 0.6875rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.1em !important;
-  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 400 !important;
+  opacity: 0.8 !important;
 }
 
 .recharts-legend-wrapper {
-  background: rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(255, 58, 58, 0.2) !important;
-  border-radius: 4px !important;
-  padding: 8px !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 3px !important;
+  padding: 4px 6px !important;
   backdrop-filter: blur(4px) !important;
 }
 
@@ -822,68 +845,77 @@ body {
 /* Typography enhancements */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-tactical);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 400; /* Reduced from 600 */
+  letter-spacing: 0.03em; /* Reduced from 0.05em */
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(255, 58, 58, 0.3);
+  text-shadow: none; /* Removed text shadow for minimalism */
 }
 
 h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  background: linear-gradient(to right, #ff3a3a, #ff5555);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 15px rgba(255, 58, 58, 0.5);
+  font-size: 1.75rem; /* Reduced from 2.5rem */
+  font-weight: 500; /* Reduced from 700 */
+  letter-spacing: 0.05em; /* Reduced from 0.1em */
+  background: none; /* Removed gradient */
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  color: var(--text-primary);
+  text-shadow: none; /* Removed text shadow */
+  opacity: 0.9;
 }
 
 h2 {
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 1.25rem; /* Reduced from 2rem */
+  font-weight: 400; /* Reduced from 600 */
+  letter-spacing: 0.04em; /* Reduced from 0.08em */
+  opacity: 0.85;
 }
 
 h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 1rem; /* Reduced from 1.5rem */
+  font-weight: 400; /* Reduced from 600 */
+  letter-spacing: 0.03em; /* Reduced from 0.06em */
+  opacity: 0.8;
 }
 
 /* Enhanced text classes */
 .text-tactical {
   font-family: var(--font-tactical);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  text-shadow: var(--text-shadow-subtle);
+  text-shadow: none;
+  font-weight: 400;
 }
 
 .text-display {
-  font-family: var(--font-tactical);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  text-shadow: var(--text-shadow-strong);
-}
-
-.text-status {
-  font-family: var(--font-tactical);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: var(--text-shadow-strong);
-}
-
-.text-hud {
   font-family: var(--font-tactical);
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-primary);
-  text-shadow: var(--text-shadow-subtle);
+  text-shadow: none;
+  opacity: 0.9;
 }
 
+.text-status {
+  font-family: var(--font-tactical);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: none;
+  opacity: 0.85;
+}
+
+.text-hud {
+  font-family: var(--font-tactical);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: none;
+  opacity: 0.8;
+}
+
+/* Enhanced text classes */
 .text-data {
   font-family: var(--font-tactical);
   font-weight: 600;
@@ -898,6 +930,10 @@ h3 {
 
 /* Chart typography */
 .chart-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
   font-family: var(--font-tactical);
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -954,6 +990,10 @@ h3 {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
 }
 
 /* Chart labels and values */
@@ -972,11 +1012,11 @@ h3 {
 
 .recharts-cartesian-axis-tick-value {
   font-family: var(--font-tactical) !important;
-  font-size: 11px !important;
-  letter-spacing: 0.05em !important;
-  font-weight: 500 !important;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 400 !important;
   fill: var(--text-secondary) !important;
-  text-shadow: var(--text-shadow-subtle) !important;
+  opacity: 0.7 !important;
 }
 
 /* Background effects toggle */
@@ -1237,4 +1277,12 @@ h3 {
 
 .nav-link:hover .nav-description {
   @apply opacity-100 -bottom-12;
+}
+
+/* Performance values */
+.performance-value {
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
 }
