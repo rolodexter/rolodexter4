@@ -9,8 +9,23 @@ const sql = createClient({
   connectionString: process.env.POSTGRES_URL
 });
 
-// Types for our database models
-export interface DocumentType {
+// Basic interfaces for our data types
+interface Tag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+interface Reference {
+  id: string;
+  source_id: string;
+  target_id: string;
+  type: string;
+  confidence: number;
+  metadata: any;
+}
+
+interface Document {
   id: string;
   title: string;
   content: string;
@@ -19,8 +34,8 @@ export interface DocumentType {
   metadata: any;
   created_at: Date;
   updated_at: Date;
-  tags?: Array<{ id: string; name: string; color?: string }>;
-  references?: Array<{ id: string; target_id: string; type: string; confidence: number }>;
+  tags?: Tag[];
+  references?: Reference[];
 }
 
 // Initialize the database with required tables
@@ -58,9 +73,9 @@ export async function initializeDatabase() {
 }
 
 // Search documents with full-text search
-export async function searchDocuments(query: string) {
+export async function searchDocuments(query: string): Promise<Document[]> {
   try {
-    return await prisma.document.findMany({
+    return await (prisma as any).document.findMany({
       where: {
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
@@ -86,29 +101,6 @@ export async function searchDocuments(query: string) {
   }
 }
 
-// Vector similarity search for memories
-export async function searchSimilarMemories(embedding: Float64Array, threshold: number = 0.8) {
-  try {
-    await sql.connect();
-    // Convert Float64Array to string representation for SQL
-    const embeddingStr = `[${Array.from(embedding).join(',')}]`;
-    const result = await sql.sql`
-      SELECT id, type, content, metadata,
-             1 - (embedding <=> ${embeddingStr}::vector) as similarity
-      FROM "Memory"
-      WHERE 1 - (embedding <=> ${embeddingStr}::vector) > ${threshold}
-      ORDER BY similarity DESC
-      LIMIT 10;
-    `;
-    return result.rows;
-  } catch (error) {
-    console.error('Similarity search failed:', error);
-    throw error;
-  } finally {
-    await sql.end();
-  }
-}
-
 // Create or update a document
 export async function upsertDocument(doc: {
   title: string;
@@ -116,9 +108,9 @@ export async function upsertDocument(doc: {
   path: string;
   type: string;
   metadata?: any;
-}) {
+}): Promise<Document> {
   try {
-    return await prisma.document.upsert({
+    return await (prisma as any).document.upsert({
       where: { path: doc.path },
       update: {
         title: doc.title,

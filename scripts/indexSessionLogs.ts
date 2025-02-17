@@ -2,7 +2,6 @@ import { prisma } from '../utils/db';
 import { parse } from 'node-html-parser';
 import { readFileSync, readdirSync } from 'fs';
 import { join, relative } from 'path';
-import { MemoryType } from '@prisma/client';
 
 async function indexSessionLogs() {
   const baseDir = join(process.cwd(), 'agents', 'memories', 'session-logs');
@@ -30,7 +29,7 @@ async function indexSessionLogs() {
         });
 
         // Create or update the document
-        const document = await prisma.document.upsert({
+        const document = await (prisma as any).document.upsert({
           where: { path: relativePath },
           update: {
             title: `Session Log: ${year}-${month}-${log.replace('.html', '')}`,
@@ -60,7 +59,7 @@ async function indexSessionLogs() {
 
         // Create memory entries for each log entry
         for (const entry of entries) {
-          await prisma.memory.create({
+          await (prisma as any).memory.create({
             data: {
               type: 'OBSERVATION',
               content: entry.text,
