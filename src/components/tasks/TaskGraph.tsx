@@ -18,6 +18,17 @@ interface Task {
   dependencies: string[];
 }
 
+interface SimNode extends d3.SimulationNodeDatum {
+  id: string;
+  title: string;
+  status: string;
+}
+
+interface SimLink extends d3.SimulationLinkDatum<SimNode> {
+  source: SimNode;
+  target: SimNode;
+}
+
 export const TaskGraph = () => {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -30,20 +41,21 @@ export const TaskGraph = () => {
     const height = 400;
 
     // Sample data - replace with actual task data
-    const nodes = [
+    const nodes: SimNode[] = [
       { id: "1", title: "Task 1", status: "active" },
       { id: "2", title: "Task 2", status: "pending" },
       { id: "3", title: "Task 3", status: "completed" }
     ];
 
-    const links = [
-      { source: "1", target: "2" },
-      { source: "2", target: "3" }
+    // Create links after nodes are defined
+    const links: SimLink[] = [
+      { source: nodes[0], target: nodes[1] },
+      { source: nodes[1], target: nodes[2] }
     ];
 
     // Create force simulation
-    const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id((d: any) => d.id))
+    const simulation = d3.forceSimulation<SimNode>(nodes)
+      .force("link", d3.forceLink<SimNode, SimLink>(links).id(d => d.id))
       .force("charge", d3.forceManyBody().strength(-100))
       .force("center", d3.forceCenter(width / 2, height / 2));
 
@@ -61,7 +73,7 @@ export const TaskGraph = () => {
       .data(nodes)
       .join("circle")
       .attr("r", 5)
-      .style("fill", (d: any) => {
+      .style("fill", (d) => {
         switch (d.status) {
           case "active": return "#4CAF50";
           case "pending": return "#FFC107";
@@ -72,22 +84,25 @@ export const TaskGraph = () => {
 
     // Add titles
     node.append("title")
-      .text((d: any) => d.title);
+      .text(d => d.title);
 
     // Update positions
     simulation.on("tick", () => {
       link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
+        .attr("x1", d => d.source.x || 0)
+        .attr("y1", d => d.source.y || 0)
+        .attr("x2", d => d.target.x || 0)
+        .attr("y2", d => d.target.y || 0);
 
       node
-        .attr("cx", (d: any) => d.x)
-        .attr("cy", (d: any) => d.y);
+        .attr("cx", d => d.x || 0)
+        .attr("cy", d => d.y || 0);
     });
 
-    return () => simulation.stop();
+    // Cleanup function
+    return () => {
+      simulation.stop();
+    };
   }, []);
 
   return (

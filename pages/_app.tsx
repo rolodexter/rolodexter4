@@ -1,27 +1,25 @@
 import type { AppProps } from 'next/app'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ThemeProvider } from 'next-themes'
-import BackgroundAnimation from '../components/BackgroundAnimation'
+import { BackgroundAnimation } from '@components/common/BackgroundAnimation'
 import '@/styles/globals.css'
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const [debugMode, setDebugMode] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // Enable debug mode with Ctrl+Shift+D
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        setDebugMode(!debugMode)
-      }
-    })
+  // useEffect only runs on the client, so now we can safely show the UI
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return null
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <div className={`app-container ${debugMode ? 'debug-mode' : ''}`} suppressHydrationWarning>
-        <BackgroundAnimation />
-        <Component {...pageProps} />
-      </div>
+    <ThemeProvider attribute="class">
+      <BackgroundAnimation />
+      <Component {...pageProps} />
     </ThemeProvider>
   )
 }
