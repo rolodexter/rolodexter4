@@ -1,0 +1,90 @@
+/**
+ * Global Styles
+ * 
+ * Base styles and utilities for the entire application.
+ * Related Tasks:
+ * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #4CAF50;
+  --secondary-color: #2196F3;
+  --accent-color: #FFC107;
+  --background-color: #0a0d14;
+  --text-color: #ffffff;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* HUD Panel Styles */
+.hud-panel {
+  @apply bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg;
+}
+
+.hud-panel-secondary {
+  @apply bg-black/10 backdrop-blur-sm border border-white/5 rounded;
+}
+
+/* Text Styles */
+.text-display {
+  @apply font-mono tracking-wider;
+}
+
+.text-hud {
+  @apply text-white/90;
+}
+
+.text-data {
+  @apply text-blue-400;
+}
+
+/* Animation Classes */
+.scanner-line {
+  @apply fixed top-0 left-0 w-full h-0.5 bg-blue-500/50;
+  animation: scan 3s linear infinite;
+  box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.data-stream {
+  @apply fixed w-px bg-blue-500/20;
+  animation: stream 3s linear infinite;
+}
+
+@keyframes stream {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Cyber Grid Background */
+.cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+} 
