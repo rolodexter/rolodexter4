@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../utils/db';
+import type { Task, Tag } from '@prisma/client';
 
 interface TaskResponse {
   id: string;
@@ -34,6 +35,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             name: true,
             color: true
           }
+        },
+        document: {
+          select: {
+            title: true,
+            path: true
+          }
         }
       },
       orderBy: {
@@ -44,8 +51,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const formattedTasks: TaskResponse[] = recentTasks.map(task => ({
       id: task.id,
-      title: task.title,
-      file_path: task.filePath,
+      title: task.title || task.document?.title || 'Untitled Task',
+      file_path: task.filePath || task.document?.path || '',
       createdAt: task.created_at,
       updatedAt: task.updated_at,
       status: task.status.toLowerCase(),

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '@db';
+import { prisma } from '../../../utils/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -25,9 +25,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Filter by status for tasks
     if (status && type === 'task') {
-      where.metadata = {
-        path: ['status'],
-        equals: status
+      where.tasks = {
+        some: {
+          status: status
+        }
       };
     }
 
@@ -61,6 +62,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           select: {
             name: true,
             color: true
+          }
+        },
+        tasks: {
+          select: {
+            status: true,
+            priority: true
           }
         }
       },

@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-import Header from '../../projects/rolodexter4/ui/components/Header';
-import Footer from '../../projects/rolodexter4/ui/components/Footer';
+import Header from './Header';
+import Footer from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,9 +13,9 @@ interface LayoutProps {
  */
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-900">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-black dark:text-white">
       <Header />
-      <main className="flex-grow">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
       <Footer />

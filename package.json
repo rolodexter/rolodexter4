@@ -10,6 +10,7 @@
     "build:local": "npx prisma generate && npx tsx scripts/syncHtmlToBlob.ts && next build",
     "db:push": "npx prisma db push",
     "db:migrate": "npx prisma migrate deploy",
+    "db:seed": "npx tsx scripts/seedInitialData.ts",
     "check:postgres": "npx tsx scripts/checkPostgres.ts",
     "verify-db": "npx tsx scripts/verifyVercelPostgres.ts",
     "test-local-db": "npx tsx scripts/testLocalDb.ts",

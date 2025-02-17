@@ -1,16 +1,39 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { sql } from '../../utils/db';
+import { prisma } from '../../utils/db';
+import type { Document } from '@prisma/client';
 
-interface Document {
+interface GraphDocument {
   id: string;
   title: string;
   path: string;
   content: string;
-  created_at: string;
-  updated_at: string;
+  type: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+interface GraphReference {
+  source: string;
+  target: string;
+  type: string;
+  weight: number;
+}
+
+interface GraphResponse {
+  nodes: Array<{
+    id: string;
+    title: string;
+    path: string;
+    type: string;
+    created_at: Date;
+  }>;
+  links: GraphReference[];
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<GraphResponse | { message: string; error?: string }>
+) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -18,87 +41,80 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     console.log('Fetching documents from database...');
     
-    // Fetch all documents
-    await sql.connect();
-    const result = await sql.sql`
-      SELECT 
-        id,
-        title,
-        path,
-        content,
-        created_at,
-        updated_at
-      FROM documents
-      WHERE path LIKE '%/tasks/%' OR path LIKE '%/memories/%'
-      ORDER BY created_at DESC;
-    `;
+    // Fetch all documents using Prisma
+    const documents = await prisma.document.findMany({
+      select: {
+        id: true,
+        title: true,
+        path: true,
+        content: true,
+        type: true,
+        created_at: true,
+        updated_at: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
 
-    console.log(`Found ${result.rows.length} documents`);
-    const documents = result.rows as Document[];
+    console.log(`Found ${documents.length} documents`);
 
     // Generate references between documents based on content and paths
-    const references: Record<string, Array<{ source: string; target: string; confidence: number }>> = {
-      title_mention: [],
-      path_reference: [],
-      task_reference: [],
-      memory_reference: []
-    };
+    const references: GraphReference[] = [];
 
     // Process documents to find references
-    documents.forEach((doc) => {
-      documents.forEach((otherDoc) => {
+    documents.forEach((doc: GraphDocument) => {
+      documents.forEach((otherDoc: GraphDocument) => {
         if (doc.id === otherDoc.id) return;
 
-        // Check for title mentions in content
+        let weight = 0;
+
+        // Check for title mentions in content (weight: 0.4)
         if (doc.content?.toLowerCase().includes(otherDoc.title.toLowerCase())) {
-          references.title_mention.push({
-            source: doc.id,
-            target: otherDoc.id,
-            confidence: 0.8
-          });
+          weight += 0.4;
         }
 
-        // Check for path references
+        // Check for path references (weight: 0.3)
         if (doc.content?.includes(otherDoc.path)) {
-          references.path_reference.push({
-            source: doc.id,
-            target: otherDoc.id,
-            confidence: 1.0
-          });
+          weight += 0.3;
         }
 
-        // Check for task references
-        if (doc.path.includes('/tasks/') && otherDoc.path.includes('/tasks/') &&
-            doc.content?.toLowerCase().includes(otherDoc.title.toLowerCase())) {
-          references.task_reference.push({
-            source: doc.id,
-            target: otherDoc.id,
-            confidence: 0.9
-          });
+        // Check for same directory/category (weight: 0.2)
+        const docDirs = doc.path.split('/');
+        const otherDirs = otherDoc.path.split('/');
+        if (docDirs[0] === otherDirs[0] && docDirs[1] === otherDirs[1]) {
+          weight += 0.2;
         }
 
-        // Check for memory references
-        if (doc.path.includes('/memories/') && 
-            doc.content?.toLowerCase().includes(otherDoc.title.toLowerCase())) {
-          references.memory_reference.push({
+        // Check for direct links or references (weight: 0.5)
+        if (doc.content?.includes(`href="${otherDoc.path}"`) || 
+            (doc.content?.includes('Related Tasks:') && doc.content?.includes(otherDoc.path))) {
+          weight += 0.5;
+        }
+
+        // Only add reference if there's a meaningful connection
+        if (weight > 0) {
+          references.push({
             source: doc.id,
             target: otherDoc.id,
-            confidence: 0.7
+            type: 'reference',
+            weight
           });
         }
       });
     });
 
-    console.log('References generated:', {
-      title_mentions: references.title_mention.length,
-      path_references: references.path_reference.length,
-      task_references: references.task_reference.length,
-      memory_references: references.memory_reference.length
-    });
+    console.log('References generated:', references.length);
 
-    const response = {
-      documents,
-      references
+    const response: GraphResponse = {
+      nodes: documents.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        path: doc.path,
+        type: doc.type,
+        created_at: doc.created_at
+      })),
+      links: references
     };
 
     res.status(200).json(response);
@@ -108,7 +124,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Error fetching graph data', 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-  } finally {
-    await sql.end();
   }
 }

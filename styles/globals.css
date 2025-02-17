@@ -1,4 +1,3 @@
-/* Import IBM Plex Mono font */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -6,6 +5,25 @@
 @tailwind utilities;
 
 :root {
+  --primary-bg: #FFFFFF;
+  --secondary-bg: #F5F5F5;
+  --panel-bg: rgba(245, 245, 245, 0.7);
+  --panel-bg-hover: rgba(235, 235, 235, 0.3);
+  --text-primary: #000000;
+  --text-secondary: #404040;
+  --border-color: #E0E0E0;
+  --highlight-color: #000000;
+  --accent-color: #808080;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 248, 248, 248;
+  --hud-border: 1px solid var(--border-color);
+  --hud-bg: rgba(245, 245, 245, 0.7);
+  --data-stream-color: rgba(0, 0, 0, 0.15);
+  --font-tactical: 'IBM Plex Mono', monospace;
+}
+
+[data-theme='dark'] {
   --primary-bg: #000000;
   --secondary-bg: #0A0A0A;
   --panel-bg: rgba(10, 10, 10, 0.7);
@@ -18,51 +36,68 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 8, 8, 8;
-  --hud-border: 1px solid var(--border-color);
-  --hud-bg: rgba(10, 10, 10, 0.7);
-  --data-stream-color: rgba(255, 255, 255, 0.15);
-  --font-tactical: 'IBM Plex Mono', monospace;
-  --text-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --text-shadow-strong: 0 1px 3px rgba(0, 0, 0, 0.75);
-  --backdrop-blur: blur(8px);
-  --backdrop-blur-strong: blur(12px);
 }
 
-[data-theme='dark'] {
-  --primary-bg: #101010;
-  --primary-text: #E0E0E0;
-  --border-color: #303030;
-}
-
+/* Base styles */
 html {
   scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-tactical);
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--background-start-rgb)),
-    rgb(var(--background-end-rgb))
-  );
+  background: var(--primary-bg);
   min-height: 100vh;
-  color: rgb(var(--foreground-rgb));
+  color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
   letter-spacing: 0.02em;
 }
 
-/* Dark mode styles */
-.dark {
-  color-scheme: dark;
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-tactical);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
-/* Smooth transitions */
+/* Component styles */
+.glass {
+  background: var(--panel-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+}
+
+/* Remove decorative elements for minimalism */
+.scanner-line,
+.scanner-overlay,
+.grid-overlay,
+.data-stream,
+.cyber-grid::before,
+.hud-panel::before,
+.header-panel::before,
+.floating-platform,
+.light-beam {
+  display: none;
+}
+
+/* Simplified progress bar */
+.progress-bar {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.progress-bar-fill {
+  background: var(--text-primary);
+  opacity: 0.8;
+}
+
+/* Minimal transitions */
 * {
   @apply transition-colors duration-200;
 }
 
-/* Custom scrollbar */
+/* Essential styles only */
 ::-webkit-scrollbar {
   width: 6px;
   height: 8px;
@@ -83,24 +118,10 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Loading states */
 .loading {
   @apply animate-pulse bg-gray-700/50;
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='light'] .glass {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-/* Game UI specific styles */
 .hud-panel {
   @apply relative overflow-hidden;
   background: var(--panel-bg);
@@ -123,7 +144,6 @@ body {
   z-index: 10;
 }
 
-/* Panel headers */
 .hud-panel h2, 
 .hud-panel h3 {
   font-size: 0.875rem;
@@ -133,26 +153,11 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* Panel content */
 .hud-panel-content {
   font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--text-secondary);
   opacity: 0.9;
-}
-
-.hud-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.hud-panel:hover::before {
-  opacity: 0.3;
 }
 
 .hud-panel-secondary {
@@ -180,7 +185,6 @@ body {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-/* Status values */
 .stat-value {
   @apply font-mono text-lg;
   color: var(--text-primary);
@@ -199,18 +203,6 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
   background-position: center center;
-}
-
-.cyber-grid::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at center,
-    transparent 0%,
-    rgba(16, 16, 16, 0.8) 100%
-  );
-  pointer-events: none;
 }
 
 .scanner-line {
@@ -254,7 +246,6 @@ body {
   opacity: 0.4;
 }
 
-/* Animations */
 @keyframes scan {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
@@ -297,7 +288,6 @@ body {
   }
 }
 
-/* Performance Chart Cyberpunk Styles */
 .scanner-overlay {
   position: absolute;
   top: 0;
@@ -358,7 +348,6 @@ body {
   text-shadow: none;
 }
 
-/* Responsive Utilities */
 @media (max-width: 640px) {
   .hud-panel {
     @apply p-4;
@@ -379,7 +368,6 @@ body {
   }
 }
 
-/* Main container styles */
 .main-container {
   @apply relative min-h-screen w-full overflow-hidden;
   max-width: 1920px;
@@ -401,7 +389,6 @@ body {
   }
 }
 
-/* Data Stream Animations */
 .data-stream {
   position: absolute;
   width: 2px;
@@ -449,14 +436,12 @@ body {
   }
 }
 
-/* Dashboard Layout */
 .dashboard-grid {
   @apply w-full max-w-7xl mx-auto;
   height: calc(100vh - 6rem);
   padding: 1rem;
 }
 
-/* Dashboard Container */
 .dashboard-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -469,7 +454,6 @@ body {
   padding: 1rem;
 }
 
-/* Grid Areas */
 .task-graph-container {
   grid-area: 1 / 2 / 2 / 3;
   min-height: 0;
@@ -504,13 +488,11 @@ body {
   flex-direction: column;
 }
 
-/* Remove unused panel styles */
 .system-metrics,
 .mission-log {
   display: none;
 }
 
-/* Knowledge Graph Container */
 .knowledge-graph-container {
   position: relative !important;
   height: 100% !important;
@@ -525,7 +507,6 @@ body {
   z-index: 1;
 }
 
-/* Corner accents for containers */
 .task-graph-container::before,
 .knowledge-graph-container::before {
   content: '';
@@ -550,7 +531,6 @@ body {
   right: 10px;
 }
 
-/* Performance Chart Container */
 .performance-chart {
   position: relative !important;
   height: 100% !important;
@@ -574,14 +554,12 @@ body {
   z-index: 2;
 }
 
-/* Reset the display:none on these components */
 .system-metrics,
 .mission-log,
 .tactical-controls {
   display: block;
 }
 
-/* Explicitly define grid areas */
 .system-metrics {
   grid-area: 1 / 1 / 2 / 2;
 }
@@ -598,14 +576,12 @@ body {
   grid-area: 2 / 2 / 3 / 3;
 }
 
-/* Remove other panel styles */
 .system-metrics,
 .mission-log,
 .tactical-controls {
   display: none;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .dashboard-container {
     height: calc(100vh - 4rem);
@@ -617,7 +593,6 @@ body {
   }
 }
 
-/* Chart Debug Styles */
 .chart-debug {
   display: flex !important;
   visibility: visible !important;
@@ -629,7 +604,6 @@ body {
   z-index: 100 !important;
 }
 
-/* Chart specific styles */
 .recharts-wrapper {
   background: transparent !important;
   position: relative !important;
@@ -684,7 +658,6 @@ body {
   box-shadow: 0 0 15px rgba(255, 58, 58, 0.2) !important;
 }
 
-/* Chart Container Animation */
 @keyframes chartPulse {
   0%, 100% {
     box-shadow: 
@@ -714,7 +687,6 @@ body {
   border-color: #404040;
 }
 
-/* Enhanced Grid Styling */
 .dashboard-container > div {
   position: relative;
   transition: all 0.3s ease;
@@ -734,27 +706,9 @@ body {
   opacity: 1;
 }
 
-/* Enhanced Header Styles */
 .header-panel {
   position: relative;
   overflow: visible !important;
-}
-
-.header-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 58, 58, 0.8),
-    transparent
-  );
-  animation: scanline 3s linear infinite;
 }
 
 .status-indicator {
@@ -788,22 +742,6 @@ body {
   overflow: hidden;
 }
 
-.header-stat::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 58, 58, 0.5),
-    transparent
-  );
-  animation: scanline 2s linear infinite;
-}
-
 @keyframes pulse {
   0%, 100% {
     transform: scale(1);
@@ -815,7 +753,6 @@ body {
   }
 }
 
-/* Enhanced Title Effects */
 .header-panel h1 {
   position: relative;
   text-shadow: 
@@ -824,25 +761,6 @@ body {
     0 0 30px rgba(255, 58, 58, 0.1);
 }
 
-.header-panel h1::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 58, 58, 0.5),
-    transparent
-  );
-  transform: translateY(-50%);
-  animation: scanline 3s linear infinite;
-  opacity: 0.5;
-}
-
-/* Typography enhancements */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-tactical);
   font-weight: 400; /* Reduced from 600 */
@@ -877,7 +795,6 @@ h3 {
   opacity: 0.8;
 }
 
-/* Enhanced text classes */
 .text-tactical {
   font-family: var(--font-tactical);
   letter-spacing: 0.03em;
@@ -915,7 +832,6 @@ h3 {
   opacity: 0.8;
 }
 
-/* Enhanced text classes */
 .text-data {
   font-family: var(--font-tactical);
   font-weight: 600;
@@ -928,7 +844,6 @@ h3 {
     2px 2px 4px rgba(0, 0, 0, 0.75);
 }
 
-/* Chart typography */
 .chart-label {
   font-size: 0.75rem;
   font-weight: 400;
@@ -950,7 +865,6 @@ h3 {
   text-shadow: var(--text-shadow-strong);
 }
 
-/* Status text variations */
 .status-critical {
   color: #FFFFFF;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -984,7 +898,6 @@ h3 {
   letter-spacing: 0.05em;
 }
 
-/* Status text enhancements */
 .status-text {
   font-family: var(--font-tactical);
   font-weight: 600;
@@ -996,7 +909,6 @@ h3 {
   opacity: 0.8;
 }
 
-/* Chart labels and values */
 .chart-label {
   font-family: var(--font-tactical);
   font-weight: 500;
@@ -1019,7 +931,6 @@ h3 {
   opacity: 0.7 !important;
 }
 
-/* Background effects toggle */
 .effects-toggle {
   position: fixed;
   bottom: 1rem;
@@ -1038,14 +949,12 @@ h3 {
   border-color: #404040;
 }
 
-/* Disable background effects */
 .effects-disabled .scanner-overlay,
 .effects-disabled .grid-overlay,
 .effects-disabled .data-stream {
   display: none !important;
 }
 
-/* Tron Grid Styles */
 .tron-grid {
   position: fixed;
   inset: 0;
@@ -1123,7 +1032,6 @@ h3 {
   }
 }
 
-/* Task Graph Styles */
 .task-graph {
   position: relative !important;
   height: 100% !important;
@@ -1172,7 +1080,6 @@ h3 {
   }
 }
 
-/* Update performance-chart class to task-graph-container */
 .task-graph-container {
   grid-area: 1 / 2 / 2 / 3;
   min-height: 0;
@@ -1193,23 +1100,19 @@ h3 {
   min-height: 0; /* Important for flexbox to work properly */
 }
 
-/* Chart container styles */
 .recharts-wrapper {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* Ensure chart content is visible */
 .recharts-surface {
   overflow: visible;
 }
 
-/* Enhance tooltip visibility */
 .recharts-tooltip-wrapper {
   z-index: 1000;
 }
 
-/* Quadrant-specific styles */
 .system-metrics,
 .task-graph-container,
 .mission-log,
@@ -1241,7 +1144,6 @@ h3 {
   }
 }
 
-/* Navigation link styles */
 .nav-link {
   @apply relative py-2;
 }
@@ -1270,7 +1172,6 @@ h3 {
   opacity: 0.5;
 }
 
-/* Enhance navigation link descriptions */
 .nav-description {
   @apply absolute left-1/2 -bottom-8 transform -translate-x-1/2 w-max text-center opacity-0 transition-all duration-200 bg-black/90 px-3 py-1 rounded-md border border-white/10 backdrop-blur-md;
 }
@@ -1279,7 +1180,6 @@ h3 {
   @apply opacity-100 -bottom-12;
 }
 
-/* Performance values */
 .performance-value {
   font-size: 0.875rem;
   font-weight: 400;

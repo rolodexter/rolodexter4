@@ -10,13 +10,12 @@
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
-import { createClient } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 
 // Validate required environment variables
 const requiredEnvVars = [
-  'POSTGRES_PRISMA_URL',
-  'POSTGRES_URL',
-  'POSTGRES_URL_NON_POOLING'
+  'DATABASE_URL',
+  'DATABASE_URL_UNPOOLED'
 ] as const;
 
 for (const envVar of requiredEnvVars) {
@@ -31,9 +30,6 @@ function ensureValidConnectionUrl(url: string): string {
   if (!urlObj.searchParams.has('sslmode')) {
     urlObj.searchParams.append('sslmode', 'require');
   }
-  if (!urlObj.searchParams.has('connection_limit')) {
-    urlObj.searchParams.append('connection_limit', '1');
-  }
   return urlObj.toString();
 }
 
@@ -46,48 +42,27 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Ensure proper URL configuration
-const prismaUrl = ensureValidConnectionUrl(process.env.POSTGRES_PRISMA_URL!);
-const vercelUrl = ensureValidConnectionUrl(process.env.POSTGRES_URL!);
+const prismaUrl = ensureValidConnectionUrl(process.env.DATABASE_URL!);
 
-const prismaClientOptions: Prisma.PrismaClientOptions = {
+// Initialize Prisma client with environment-specific settings
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   datasources: {
     db: {
       url: prismaUrl
     }
   },
   log: isDevelopment ? ['query', 'error', 'warn'] : ['error', 'warn']
-};
-
-async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<boolean> {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      await client.$connect();
-      console.log(`Successfully connected to Vercel Postgres in ${process.env.NODE_ENV} environment`);
-      return true;
-    } catch (error) {
-      if (i === maxRetries - 1) {
-        console.error('Failed to connect to Vercel Postgres after', maxRetries, 'attempts:', error);
-        throw error;
-      }
-      const delay = Math.min(1000 * Math.pow(2, i), 10000); // Cap at 10 seconds
-      console.warn(`Connection attempt ${i + 1} failed, retrying in ${delay/1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  return false;
-}
-
-// Initialize Prisma client with environment-specific settings
-export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
+});
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Initialize Vercel Postgres client
-export const sql = createClient({
-  connectionString: vercelUrl,
-  ssl: true
+// Initialize Vercel Postgres pool
+export const sql = createPool({
+  connectionString: prismaUrl,
+  ssl: true,
+  max: 10
 });
 
 // Test database connection
@@ -98,25 +73,19 @@ export async function testDatabaseConnection() {
     console.log('✓ Prisma connection successful');
 
     // Test Vercel Postgres connection
-    await sql.query('SELECT 1');
+    const pool = sql;
+    await pool.query('SELECT 1');
     console.log('✓ Vercel Postgres connection successful');
 
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Database connection test failed:', error);
     return false;
   }
 }
 
 // Initialize connection with environment logging
-connectWithRetry(prisma)
-  .then(() => {
-    console.log(`Database initialized in ${process.env.NODE_ENV} environment`);
-  })
-  .catch(error => {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-  });
+console.log(`Database initialized in ${process.env.NODE_ENV} environment`);
 
 // Basic interfaces for our data types
 export interface Tag {

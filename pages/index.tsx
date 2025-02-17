@@ -95,35 +95,6 @@ const Home: NextPage = () => {
           <div className="task-graph-container">
             <TaskGraph />
           </div>
-
-          {/* Mission Log Quadrant */}
-          <div className="mission-log hud-panel">
-            <div className="p-6">
-              <h2 className="text-display text-xl mb-4">MISSION LOG</h2>
-              <div className="space-y-4 overflow-y-auto max-h-[calc(100%-3rem)]">
-                {recentActivities.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    className="hud-panel-secondary p-3"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-hud text-sm">{activity.time}</span>
-                      <span className="text-data text-sm">{activity.xp}</span>
-                    </div>
-                    <p className="text-hud mt-1">{activity.message}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Knowledge Graph Quadrant */}
-          <div className="knowledge-graph-container">
-            <KnowledgeGraph />
-          </div>
         </div>
       </div>
     </div>
