@@ -1,8 +1,13 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import webpack from 'webpack';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export const runtime = 'edge';
 
 /** @type {import('next').NextConfig} */
-const path = require('path')
-
 const nextConfig = {
   reactStrictMode: true,
   // Enhanced webpack configuration
@@ -63,4 +68,4 @@ const nextConfig = {
   }
 }
 
-module.exports = nextConfig
+export default nextConfig;

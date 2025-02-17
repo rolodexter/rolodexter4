@@ -143,11 +143,12 @@ async function syncHtmlToBlob() {
           const fileType = await determineFileType(relativePath);
           const metadata = await extractMetadata(content, relativePath);
           
-          // Sync to Blob storage
+          // Sync to Blob storage with filename as the pathname
           await put(relativePath, content, {
             access: 'public',
             addRandomSuffix: false,
-            store: process.env.BLOB_STORE_NAME
+            contentType: 'text/html',
+            token: process.env.BLOB_READ_WRITE_TOKEN
           });
           
           // Sync to PostgreSQL

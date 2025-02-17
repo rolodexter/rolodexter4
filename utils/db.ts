@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ErrorFormat } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 
 const globalForPrisma = globalThis as unknown as {
@@ -11,8 +11,8 @@ const prismaClientOptions = {
       url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
     }
   },
-  log: ['error', 'warn'],
-  errorFormat: 'minimal',
+  log: ['error', 'warn'] as const,
+  errorFormat: 'minimal' as ErrorFormat
 };
 
 async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<boolean> {

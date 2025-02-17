@@ -1,6 +1,10 @@
 import { put } from '@vercel/blob';
 import { readdir, readFile } from 'fs/promises';
 import { join, relative } from 'path';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 const TASK_FOLDERS = [
   'agents/rolodexterVS/tasks/active-tasks',
@@ -24,8 +28,8 @@ async function getFilesRecursively(dir: string): Promise<string[]> {
 }
 
 async function syncTasksToBlob() {
-  if (!process.env.BLOB_STORE_NAME) {
-    throw new Error('BLOB_STORE_NAME environment variable is not set');
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set');
   }
 
   try {
@@ -45,7 +49,8 @@ async function syncTasksToBlob() {
           await put(relativePath, content, {
             access: 'public',
             addRandomSuffix: false,
-            store: process.env.BLOB_STORE_NAME
+            contentType: 'text/html',
+            token: process.env.BLOB_READ_WRITE_TOKEN
           });
           
           console.log(`Synced: ${relativePath}`);
@@ -62,8 +67,9 @@ async function syncTasksToBlob() {
 }
 
 // Run if this is the main module
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  syncTasksToBlob().catch(console.error);
-}
+syncTasksToBlob().catch(error => {
+  console.error('Failed to sync tasks:', error);
+  process.exit(1);
+});
 
 export { syncTasksToBlob };
