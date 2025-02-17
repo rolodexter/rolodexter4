@@ -12,6 +12,31 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'POSTGRES_PRISMA_URL',
+  'POSTGRES_URL',
+  'POSTGRES_URL_NON_POOLING'
+] as const;
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+// Ensure URL has required parameters
+function ensureValidConnectionUrl(url: string): string {
+  const urlObj = new URL(url);
+  if (!urlObj.searchParams.has('sslmode')) {
+    urlObj.searchParams.append('sslmode', 'require');
+  }
+  if (!urlObj.searchParams.has('connection_limit')) {
+    urlObj.searchParams.append('connection_limit', '1');
+  }
+  return urlObj.toString();
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -20,10 +45,14 @@ const globalForPrisma = globalThis as unknown as {
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Ensure proper URL configuration
+const prismaUrl = ensureValidConnectionUrl(process.env.POSTGRES_PRISMA_URL!);
+const vercelUrl = ensureValidConnectionUrl(process.env.POSTGRES_URL!);
+
 const prismaClientOptions: Prisma.PrismaClientOptions = {
   datasources: {
     db: {
-      url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
+      url: prismaUrl
     }
   },
   log: isDevelopment ? ['query', 'error', 'warn'] : ['error', 'warn']
@@ -33,11 +62,11 @@ async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<b
   for (let i = 0; i < maxRetries; i++) {
     try {
       await client.$connect();
-      console.log(`Successfully connected to database in ${process.env.NODE_ENV} environment`);
+      console.log(`Successfully connected to Vercel Postgres in ${process.env.NODE_ENV} environment`);
       return true;
     } catch (error) {
       if (i === maxRetries - 1) {
-        console.error('Failed to connect to database after', maxRetries, 'attempts:', error);
+        console.error('Failed to connect to Vercel Postgres after', maxRetries, 'attempts:', error);
         throw error;
       }
       const delay = Math.min(1000 * Math.pow(2, i), 10000); // Cap at 10 seconds
@@ -55,6 +84,30 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
+// Initialize Vercel Postgres client
+export const sql = createClient({
+  connectionString: vercelUrl,
+  ssl: true
+});
+
+// Test database connection
+export async function testDatabaseConnection() {
+  try {
+    // Test Prisma connection
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✓ Prisma connection successful');
+
+    // Test Vercel Postgres connection
+    await sql.query('SELECT 1');
+    console.log('✓ Vercel Postgres connection successful');
+
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return false;
+  }
+}
+
 // Initialize connection with environment logging
 connectWithRetry(prisma)
   .then(() => {
@@ -64,17 +117,6 @@ connectWithRetry(prisma)
     console.error('Failed to initialize database:', error);
     process.exit(1);
   });
-
-// Vercel Postgres client for raw SQL operations
-export const sql = createClient({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: process.env.POSTGRES_SSL === 'true'
-});
-
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
-  await sql.end();
-});
 
 // Basic interfaces for our data types
 export interface Tag {
@@ -212,23 +254,6 @@ export async function testConnection() {
     return false;
   } finally {
     await sql.end();
-  }
-}
-
-export async function testDatabaseConnection() {
-  try {
-    // Test Prisma connection
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('Prisma connection successful');
-
-    // Test Vercel Postgres connection
-    await sql.query('SELECT 1');
-    console.log('Vercel Postgres connection successful');
-
-    return true;
-  } catch (error) {
-    console.error('Database connection test failed:', error);
-    return false;
   }
 }
 

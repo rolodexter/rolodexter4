@@ -11,6 +11,8 @@
     "db:push": "npx prisma db push",
     "db:migrate": "npx prisma migrate deploy",
     "check:postgres": "npx tsx scripts/checkPostgres.ts",
+    "verify-db": "npx tsx scripts/verifyVercelPostgres.ts",
+    "test-local-db": "npx tsx scripts/testLocalDb.ts",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
