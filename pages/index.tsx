@@ -222,75 +222,79 @@ const Home: NextPage = () => {
     <div className="min-h-screen bg-[#0a0d14] text-white cyber-grid relative">
       <DataStreams />
       <div className="scanner-line" />
-      <div className="main-container">
-        <div className="max-w-7xl mx-auto">
-          {/* HUD Header */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="hud-panel p-8 mb-12 relative"
-          >
-            <div className="absolute top-2 right-2 flex items-center space-x-2 text-red-500">
-              <span className="text-sm font-mono">SYSTEM STATUS:</span>
-              <span className="font-mono animate-pulse">{systemStatus}</span>
-            </div>
-            <h1 className="text-5xl font-bold mb-4 font-mono text-center">
-              <span className="text-red-500">ROLODEXTER</span>
-              <span className="text-blue-500">4</span>
-            </h1>
-            <p className="text-xl text-center font-mono text-gray-400">
-              TACTICAL AI COLLABORATION INTERFACE
-            </p>
-          </motion.div>
+      <div className="main-container p-4">
+        {/* HUD Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hud-panel p-8 mb-8 relative"
+        >
+          <div className="absolute top-2 right-2 flex items-center space-x-2 text-red-500">
+            <span className="text-sm font-mono">SYSTEM STATUS:</span>
+            <span className="font-mono animate-pulse">{systemStatus}</span>
+          </div>
+          <h1 className="text-5xl font-bold mb-4 font-mono text-center">
+            <span className="text-red-500">ROLODEXTER</span>
+            <span className="text-blue-500">4</span>
+          </h1>
+          <p className="text-xl text-center font-mono text-gray-400">
+            TACTICAL AI COLLABORATION INTERFACE
+          </p>
+        </motion.div>
 
-          {/* Stats Grid */}
-          <div className="dashboard-grid mb-12">
-            {statConfigs.map((stat, index) => (
-              <motion.div 
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                className="hud-panel p-6"
-              >
-                <div className="flex items-center justify-between">
-                  <stat.icon className={`${stat.colorClass} text-2xl`} />
-                  <h3 className={`${stat.colorClass} text-sm uppercase font-mono`}>{stat.title}</h3>
-                </div>
-                <p className="stat-value mt-2">{stat.value}</p>
-                <div className="progress-bar mt-4">
-                  <div 
-                    className="progress-bar-fill" 
-                    style={{ width: typeof stat.value === 'string' ? stat.value : `${(stat.value / 200) * 100}%` }}
-                  />
-                </div>
-              </motion.div>
-            ))}
+        {/* Quadrant Grid */}
+        <div className="grid grid-cols-2 gap-6 h-[calc(100vh-12rem)]">
+          {/* Top Left Quadrant - Stats */}
+          <div className="hud-panel p-4 overflow-hidden">
+            <h2 className="text-xl font-mono text-red-500 mb-4">SYSTEM METRICS</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {statConfigs.map((stat, index) => (
+                <motion.div 
+                  key={stat.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                  className="hud-panel-secondary p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <stat.icon className={`${stat.colorClass} text-2xl`} />
+                    <h3 className={`${stat.colorClass} text-sm uppercase font-mono`}>{stat.title}</h3>
+                  </div>
+                  <p className="stat-value mt-2">{stat.value}</p>
+                  <div className="progress-bar mt-2">
+                    <div 
+                      className="progress-bar-fill" 
+                      style={{ width: typeof stat.value === 'string' ? stat.value : `${(stat.value / 200) * 100}%` }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
-          {/* Performance Chart */}
-          <div className="mb-12">
+          {/* Top Right Quadrant - Performance Chart */}
+          <div className="hud-panel p-4">
             <PerformanceChart />
           </div>
 
-          {/* Activity Feed */}
-          <div className="hud-panel p-6 mb-8">
+          {/* Bottom Left Quadrant - Mission Log */}
+          <div className="hud-panel p-4 overflow-hidden">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-mono text-red-500">MISSION LOG</h2>
+              <h2 className="text-xl font-mono text-red-500">MISSION LOG</h2>
               <div className="h-1 flex-1 mx-4 bg-red-500/20">
                 <div className="h-full w-3/4 bg-red-500 animate-pulse" />
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 overflow-y-auto max-h-[calc(100%-3rem)]">
               {recentActivities.map((activity, index) => (
                 <motion.div
                   key={activity.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="flex items-center justify-between p-4 bg-gray-800/50 hud-border"
+                  className="flex items-center justify-between p-3 bg-gray-800/50 hud-border"
                 >
                   <div className="flex items-center space-x-4">
                     <div className={`w-2 h-2 rounded-full ${
@@ -298,7 +302,7 @@ const Home: NextPage = () => {
                       activity.type === 'achievement' ? 'bg-yellow-500' :
                       'bg-blue-500'
                     } shadow-glow`} />
-                    <p className="text-gray-200 font-mono">{activity.message}</p>
+                    <p className="text-gray-200 font-mono text-sm">{activity.message}</p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <span className="text-green-400 font-mono text-sm">{activity.xp}</span>
@@ -309,21 +313,24 @@ const Home: NextPage = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="dashboard-grid">
-            {actionButtons.map((action, index) => (
-              <motion.button
-                key={action.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`hud-panel p-4 font-mono ${action.colorClass}`}
-              >
-                {action.name}
-              </motion.button>
-            ))}
+          {/* Bottom Right Quadrant - Quick Actions */}
+          <div className="hud-panel p-4">
+            <h2 className="text-xl font-mono text-red-500 mb-4">TACTICAL CONTROLS</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {actionButtons.map((action, index) => (
+                <motion.button
+                  key={action.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
+                  whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`hud-panel-secondary p-4 font-mono text-sm ${action.colorClass}`}
+                >
+                  {action.name}
+                </motion.button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
