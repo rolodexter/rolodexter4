@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="task">
+    <meta name="graph-tags" content="ui, prototype, homepage, mock-data">
+    <meta name="graph-connections" content="urgent-ui-fixes.html, ui-centering-fix.html">
+    <title>Homepage UI Prototype Implementation</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: var(--accent-green); }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        .discussion-thread {
+            background: rgba(74, 222, 128, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        pre {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <h1>🎨 Homepage UI Prototype Implementation</h1>
+        
+        <section class="section">
+            <h2>📝 Task Overview</h2>
+            <p>Create a visually stunning homepage prototype using mock data and simulated functionality to perfect the UI layout and user experience before integrating live data.</p>
+        </section>
+
+        <section class="section">
+            <h2>🎯 Implementation Components</h2>
+            <ul>
+                <li><strong>Hero Section:</strong>
+                    <ul>
+                        <li>AI-powered animation (SVG/Lottie)</li>
+                        <li>Smooth title & subtitle transitions</li>
+                        <li>Animated hover effects on buttons</li>
+                    </ul>
+                </li>
+                <li><strong>Live Metrics Section:</strong>
+                    <ul>
+                        <li>Randomized metrics with periodic updates</li>
+                        <li>GSAP/Framer Motion number animations</li>
+                        <li>Dynamic counter effects</li>
+                    </ul>
+                </li>
+                <li><strong>Performance Chart:</strong>
+                    <ul>
+                        <li>Real-time line chart using Recharts</li>
+                        <li>60-100% performance range</li>
+                        <li>10-second rolling window</li>
+                        <li>1-second update frequency</li>
+                        <li>Game-style tooltips and styling</li>
+                    </ul>
+                </li>
+                <li><strong>Recent Activity Feed:</strong>
+                    <ul>
+                        <li>Simulated event stream</li>
+                        <li>CSS-animated updates</li>
+                        <li>Time-based sorting</li>
+                    </ul>
+                </li>
+                <li><strong>Call-to-Action Section:</strong>
+                    <ul>
+                        <li>Interactive button animations</li>
+                        <li>Hover state effects</li>
+                        <li>Visual feedback on interaction</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🛠️ Mock Data Implementation</h2>
+            <h3>Option 1: JSON File-Based Mock Data</h3>
+            <pre><code>// public/mock-data.json
+{
+  "active_agents": 42,
+  "todays_operations": 156,
+  "collaboration_score": "94%",
+  "recent_activity": [
+    { "time": "2 min ago", "event": "Dependency audit completed" },
+    { "time": "5 min ago", "event": "Level 42 reached!" }
+  ]
+}</code></pre>
+
+            <h3>Option 2: Randomized Fake Data Generation</h3>
+            <pre><code>// homepage.tsx
+const [activeAgents, setActiveAgents] = useState(42);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setActiveAgents((prev) => prev + Math.floor(Math.random() * 5 - 2));
+  }, 5000);
+  return () => clearInterval(interval);
+}, []);</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>🎨 Animation & Interaction Specifications</h2>
+            <ul>
+                <li><strong>Hero Section:</strong>
+                    <ul>
+                        <li>Subtle background animation (waves/particles/neural AI effect)</li>
+                        <li>Dynamic text effects (fade-in/typewriter/sliding)</li>
+                        <li>Smooth hover transitions on CTAs</li>
+                    </ul>
+                </li>
+                <li><strong>Live Stats Counter:</strong>
+                    <ul>
+                        <li>Smooth number transitions using GSAP</li>
+                        <li>Animated glow/pulsating effect on key stats</li>
+                        <li>Highlight changes with subtle animations</li>
+                    </ul>
+                </li>
+                <li><strong>Activity Feed:</strong>
+                    <ul>
+                        <li>Auto-scroll with smooth entry animations</li>
+                        <li>"New update" glow effect</li>
+                        <li>Time-based sorting with transition effects</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🎮 Demo Mode Implementation</h2>
+            <h3>Demo Mode Configuration</h3>
+            <pre><code>interface DemoConfig {
+  loopMode: 'once' | 'continuous';
+  cycleDuration: number; // milliseconds
+  allowPause: boolean;
+}</code></pre>
+
+            <h3>Demo Mode Toggle Component</h3>
+            <pre><code>const DemoModeToggle: React.FC = () => {
+  const [isDemo, setIsDemo] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  
+  useEffect(() => {
+    if (isDemo) {
+      startScriptedInteractions({
+        loopMode: 'continuous',
+        cycleDuration: 15000, // 15 seconds
+        allowPause: true
+      });
+    }
+    return () => stopScriptedInteractions();
+  }, [isDemo]);
+  
+  return (
+    <div className="demo-controls">
+      <div className="demo-toggle">
+        <Switch checked={isDemo} onChange={setIsDemo} />
+        <span>Demo Mode {isDemo ? 'Active' : 'Inactive'}</span>
+      </div>
+      {isDemo && (
+        <button 
+          className="pause-button"
+          onClick={() => setIsPaused(!isPaused)}
+        >
+          {isPaused ? 'Resume' : 'Pause'} Demo
+        </button>
+      )}
+    </div>
+  );
+};</code></pre>
+
+            <h3>Demo Flow Timeline (15-second cycle)</h3>
+            <pre><code>interface DemoEvent {
+  time: number;
+  action: string;
+  data: Record<string, any>;
+}
+
+const demoTimeline: DemoEvent[] = [
+  {
+    time: 0,
+    action: 'hero-animation',
+    data: { effect: 'text-reveal' }
+  },
+  {
+    time: 3000,
+    action: 'metrics-update',
+    data: { active_agents: 45, collaboration_score: '96%' }
+  },
+  {
+    time: 6000,
+    action: 'activity-feed',
+    data: { event: 'New milestone achieved!', time: 'Just now' }
+  },
+  {
+    time: 9000,
+    action: 'cta-highlight',
+    data: { button: 'get-started', effect: 'pulse' }
+  },
+  {
+    time: 12000,
+    action: 'background-effect',
+    data: { animation: 'particle-wave' }
+  }
+];</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>🔄 Demo Mode Flow</h2>
+            <ul>
+                <li><strong>Initialization:</strong>
+                    <ul>
+                        <li>Toggle enables Demo Mode</li>
+                        <li>Optional pause/resume control</li>
+                        <li>Configurable loop settings</li>
+                    </ul>
+                </li>
+                <li><strong>Interaction Sequence (15s):</strong>
+                    <ul>
+                        <li>0s: Hero section text reveal animation</li>
+                        <li>3s: Live metrics dynamic updates</li>
+                        <li>6s: Activity feed new events</li>
+                        <li>9s: CTA button hover animations</li>
+                        <li>12s: Background animation effects</li>
+                        <li>15s: Cycle completes (auto-restart if continuous)</li>
+                    </ul>
+                </li>
+                <li><strong>Performance Considerations:</strong>
+                    <ul>
+                        <li>Smooth animation transitions</li>
+                        <li>Optimized render cycles</li>
+                        <li>Memory management for continuous mode</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🛠️ Performance Chart Implementation</h2>
+            <pre><code>// Performance Chart Component
+const PerformanceChart = () => {
+  const [data, setData] = useState<{ time: string; value: number }[]>([]);
+
+  useEffect(() => {
+    // Initialize with some data
+    const initialData = Array.from({ length: 10 }, (_, i) => ({
+      time: `${i}s`,
+      value: Math.floor(Math.random() * 40) + 60
+    }));
+    setData(initialData);
+
+    // Update every second
+    const interval = setInterval(() => {
+      setData(prevData => {
+        const newData = [...prevData.slice(1), {
+          time: `${prevData.length}s`,
+          value: Math.floor(Math.random() * 40) + 60
+        }];
+        return newData;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="hud-panel p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-red-500 text-sm uppercase font-mono">
+          System Performance
+        </h3>
+        <span className="text-gray-400 font-mono text-sm">
+          Real-time Metrics
+        </span>
+      </div>
+      <div className="h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <XAxis 
+              dataKey="time" 
+              stroke="#4B5563"
+              tick={{ fill: '#4B5563', fontSize: 12 }}
+            />
+            <YAxis 
+              stroke="#4B5563"
+              tick={{ fill: '#4B5563', fontSize: 12 }}
+              domain={[0, 100]}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                background: '#1F2937',
+                border: '1px solid #FF3A3A',
+                borderRadius: '4px'
+              }}
+              labelStyle={{ color: '#9CA3AF' }}
+              itemStyle={{ color: '#FF3A3A' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke="#FF3A3A"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};</code></pre>
+        </section>
+
+        <section class="discussion-thread">
+            <h3>🗨️ Discussion</h3>
+            <ul>
+                <li><strong>rolodexterGPT:</strong> "We should use mock data and simulate functionality to perfect the UI layout and user experience first before integrating live data. I've outlined a comprehensive plan for implementing the homepage prototype with simulated features and animations."</li>
+                <li><strong>rolodexterGPT:</strong> "Since we're mocking the UI, we need a structured approach for fake data updates. I've provided two options: JSON file-based mock data and randomized fake data generation. Each has its advantages for different testing scenarios."</li>
+                <li><strong>rolodexterGPT:</strong> "Great work on structuring the prototype with clear implementation steps! Let's add a Demo Mode feature to showcase scripted interactions and ensure our animations and UI behaviors are engaging and polished."</li>
+                <li><strong>rolodexterGPT:</strong> "The Demo Mode needs a smooth, natural-feeling interaction flow. I've proposed a 15-second cycle that demonstrates all key UI elements, with options for continuous looping and manual pause control."</li>
+                <li><strong>rolodexterVS:</strong> "Added real-time performance chart using Recharts. The chart shows system performance metrics in a 10-second rolling window with 1-second updates, styled to match our game UI theme."</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>📋 Related Tasks</h2>
+            <ul>
+                <li><a href="homepage-design-log.html">Homepage Design Iteration Log</a></li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>📅 Implementation Timeline</h2>
+            <ul>
+                <li><strong>Phase 1 (Day 1):</strong>
+                    <ul>
+                        <li>Set up base layout structure</li>
+                        <li>Implement mock data generation</li>
+                        <li>Create basic component shells</li>
+                    </ul>
+                </li>
+                <li><strong>Phase 2 (Day 2):</strong>
+                    <ul>
+                        <li>Add animations and transitions</li>
+                        <li>Implement simulated WebSocket updates</li>
+                        <li>Polish component styling</li>
+                    </ul>
+                </li>
+                <li><strong>Phase 3 (Day 3):</strong>
+                    <ul>
+                        <li>Refine animations and interactions</li>
+                        <li>Add responsive design adjustments</li>
+                        <li>Conduct visual testing</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>✅ Implementation Checklist</h2>
+            <ul>
+                <li>Set up clean page layout with grid/flexbox</li>
+                <li>Add mock UI components</li>
+                <li>Integrate animations and transitions</li>
+                <li>Implement Demo Mode with scripted interactions</li>
+                <li>Add pause/resume functionality</li>
+                <li>Configure continuous loop mode</li>
+                <li>Optimize performance for animations</li>
+                <li>Add before/after comparison screenshots</li>
+                <li>Test responsive behavior</li>
+                <li>Document iterations in design log</li>
+                <li>Gather feedback and refine</li>
+            </ul>
+        </section>
+
+        <footer class="task-footer">
+            <p>Last Updated by: <strong>rolodexterVS</strong></p>
+            <p>Timestamp: <strong>2025-02-18 04:15:33 UTC</strong></p>
+            <p>Status: <strong>Active - High Priority</strong></p>
+        </footer>
+    </div>
+</body>
+</html> 

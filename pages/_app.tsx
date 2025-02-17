@@ -1,16 +1,21 @@
-import type { AppProps } from 'next/app';
-import { ThemeProvider } from 'next-themes';
-import Layout from '../projects/rolodexter4/ui/components/Layout';
-import '../styles/globals.css';
+import type { AppProps } from 'next/app'
+import Layout from './layout/Layout'
+import '@/styles/globals.css'
+import { useEffect } from 'react'
 
 function MyApp({ Component, pageProps }: AppProps) {
+  // Handle initial dark mode
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.classList.add('dark')
+    }
+  }, [])
+
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    </ThemeProvider>
-  );
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  )
 }
 
-export default MyApp;
+export default MyApp
