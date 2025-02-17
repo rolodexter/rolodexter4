@@ -9,6 +9,17 @@ const DIRECTORIES_TO_SCAN = [
   'agents/rolodexterVS/tasks'
 ];
 
+function determineDocumentType(filePath: string): string {
+  if (filePath.includes('/tasks/')) {
+    return 'task';
+  } else if (filePath.includes('/memories/')) {
+    return 'memory';
+  } else if (filePath.includes('/docs/')) {
+    return 'documentation';
+  }
+  return 'documentation'; // default type
+}
+
 async function findHtmlFiles(dir: string): Promise<string[]> {
   const files: string[] = [];
   
@@ -76,7 +87,8 @@ async function main() {
     for (const file of allFiles) {
       try {
         const { title, content, path } = await extractContent(file);
-        await upsertDocument({ title, content, path });
+        const type = determineDocumentType(path);
+        await upsertDocument({ title, content, path, type });
         console.log(`Indexed: ${path}`);
       } catch (error) {
         console.error(`Failed to process ${file}:`, error);
