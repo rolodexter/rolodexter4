@@ -493,6 +493,10 @@ body {
   grid-area: 1 / 2 / 2 / 3;
   min-height: 0;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
 .mission-log {
@@ -505,27 +509,48 @@ body {
   min-height: 0;
 }
 
+/* Chart Debug Styles */
+.chart-debug {
+  display: flex !important;
+  visibility: visible !important;
+  min-height: 300px !important;
+  max-height: 100% !important;
+  background-color: rgba(0, 255, 0, 0.1);
+  border: 3px solid red;
+  position: relative;
+  z-index: 100;
+}
+
 /* Chart specific styles */
 .recharts-wrapper {
   background: transparent !important;
   position: relative !important;
   width: 100% !important;
   height: 100% !important;
+  min-height: 0 !important;
+  flex: 1;
+  visibility: visible !important;
+  z-index: 30 !important;
 }
 
 .recharts-surface {
   overflow: visible;
+  visibility: visible !important;
 }
 
 .recharts-default-tooltip {
-  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-color: rgba(15, 23, 42, 0.95) !important;
   border: 1px solid rgba(255, 58, 58, 0.3) !important;
   border-radius: 4px;
-  z-index: 100;
+  padding: 8px !important;
+  z-index: 1000;
+  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2);
+  visibility: visible !important;
 }
 
 .recharts-tooltip-wrapper {
   z-index: 1000 !important;
+  pointer-events: auto !important;
 }
 
 .recharts-cartesian-grid-horizontal line,
