@@ -1,0 +1,23 @@
+{
+  "components": {
+    "TaskGraph": {
+      "previousName": "TaskVolumeChart",
+      "description": "Real-time visualization component displaying task relationships, dependencies, and flow in a cyberpunk-inspired graph interface",
+      "purpose": "Provides visual insight into task connections and system operations",
+      "futureCapabilities": [
+        "Live task dependency tracking",
+        "Real-time operation flow visualization",
+        "Interactive node exploration",
+        "Path analysis between related tasks"
+      ],
+      "visualStyle": {
+        "theme": "cyberpunk",
+        "colors": {
+          "nodes": "#ff3a3a",
+          "edges": "rgba(255, 58, 58, 0.3)",
+          "highlights": "#0d9afd"
+        }
+      }
+    }
+  }
+}

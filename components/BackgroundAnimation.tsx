@@ -86,7 +86,7 @@ const BackgroundAnimation = () => {
               opacity: 0
             }}
             animate={{
-              opacity: [0, 0.3, 0],
+              opacity: [0, 0.05, 0],
               height: ['0%', '100%', '0%']
             }}
             transition={{
@@ -111,7 +111,7 @@ const BackgroundAnimation = () => {
             }}
             animate={{
               y: [0, -20, 0],
-              opacity: [0.3, 0.5, 0.3]
+              opacity: [0.1, 0.15, 0.1]
             }}
             transition={{
               duration: 3 + (platform.id % 2),

@@ -1,5 +1,6 @@
 import type { AppProps } from 'next/app'
 import { useState } from 'react'
+import { ThemeProvider } from 'next-themes'
 import BackgroundAnimation from '../components/BackgroundAnimation'
 import '@/styles/globals.css'
 
@@ -16,10 +17,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <div className={`app-container ${debugMode ? 'debug-mode' : ''}`}>
-      <BackgroundAnimation />
-      <Component {...pageProps} />
-    </div>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <div className={`app-container ${debugMode ? 'debug-mode' : ''}`}>
+        <BackgroundAnimation />
+        <Component {...pageProps} />
+      </div>
+    </ThemeProvider>
   )
 }
 

@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "TaskGraphNode": {
+      "type": "interface",
+      "description": "Represents a node in the task relationship graph",
+      "properties": {
+        "id": "Unique identifier for the task",
+        "type": "Type of task (standard, urgent, milestone)",
+        "status": "Current task status (pending, active, completed)",
+        "connections": "Number of connections to other tasks",
+        "dependencies": "Count of dependent tasks"
+      }
+    },
+    "TaskGraphConnection": {
+      "type": "interface",
+      "description": "Represents a connection between task nodes",
+      "properties": {
+        "source": "ID of the source task node",
+        "target": "ID of the target task node",
+        "type": "Type of connection (dependency, reference, sequence)",
+        "strength": "Connection weight or importance (0-100)"
+      }
+    },
+    "TaskGraphMetrics": {
+      "type": "interface",
+      "description": "Real-time metrics for task graph analysis",
+      "properties": {
+        "totalNodes": "Total number of task nodes",
+        "activeConnections": "Number of active connections",
+        "completionRate": "Task completion percentage",
+        "healthScore": "Overall graph health score"
+      }
+    }
+  }
+}

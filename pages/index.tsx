@@ -3,7 +3,7 @@ import type { NextPage } from 'next';
 import { motion } from 'framer-motion';
 import { FiCpu, FiActivity, FiUsers, FiTarget } from 'react-icons/fi';
 import Header from '../components/Header';
-import TaskVolumeChart from '../components/TaskVolumeChart';
+import TaskGraph from '../components/TaskGraph';
 
 const DataStreams = () => {
   const [streams, setStreams] = useState<{ left: string; height: string; delay: string }[]>([]);
@@ -97,9 +97,9 @@ const Home: NextPage = () => {
             </div>
           </div>
 
-          {/* Performance Chart Quadrant */}
+          {/* Task Graph Quadrant */}
           <div className="performance-chart hud-panel">
-            <TaskVolumeChart />
+            <TaskGraph />
           </div>
 
           {/* Mission Log Quadrant */}

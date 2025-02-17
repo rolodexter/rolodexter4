@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiCpu, FiActivity, FiUsers, FiShield, FiSearch, FiSettings, FiMenu, FiBell, FiMaximize, FiCode } from 'react-icons/fi'
+import { FiCpu, FiActivity, FiUsers, FiShield, FiSearch, FiSettings, FiMenu, FiBell, FiMaximize, FiCode, FiSun, FiMoon, FiMonitor } from 'react-icons/fi'
+import { useTheme } from 'next-themes'
 import TimeDisplay from './TimeDisplay'
 
 interface SystemMetric {
@@ -16,6 +17,8 @@ const Header = () => {
   const [systemStatus, setSystemStatus] = useState('OPTIMAL')
   const [isExpanded, setIsExpanded] = useState(false)
   const [showQuickMenu, setShowQuickMenu] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [showThemeMenu, setShowThemeMenu] = useState(false)
   const [metrics, setMetrics] = useState<SystemMetric[]>([
     { icon: <FiUsers className="w-4 h-4" />, label: 'ACTIVE AGENTS', value: 42, status: 'nominal' },
     { icon: <FiActivity className="w-4 h-4" />, label: 'OPERATIONS', value: 156, status: 'nominal' },
@@ -60,6 +63,12 @@ const Header = () => {
     { href: '/tasks', label: 'TASKS' },
     { href: '/agents', label: 'AGENTS' },
     { href: '/operations', label: 'OPERATIONS' }
+  ]
+
+  const themeOptions = [
+    { icon: FiSun, label: 'LIGHT MODE', value: 'light' },
+    { icon: FiMoon, label: 'DARK MODE', value: 'dark' },
+    { icon: FiMonitor, label: 'SYSTEM', value: 'system' }
   ]
 
   return (
@@ -226,6 +235,27 @@ const Header = () => {
               />
             </motion.button>
 
+            {/* Theme Toggle Button */}
+            <motion.button
+              className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors relative group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowThemeMenu(!showThemeMenu)}
+            >
+              {theme === 'light' ? (
+                <FiSun className="w-5 h-5 text-red-400" />
+              ) : theme === 'dark' ? (
+                <FiMoon className="w-5 h-5 text-red-400" />
+              ) : (
+                <FiMonitor className="w-5 h-5 text-red-400" />
+              )}
+              <motion.div 
+                className="absolute inset-0 border border-red-500/30 rounded-lg"
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </motion.button>
+
             <motion.button
               className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors relative group"
               whileHover={{ scale: 1.05 }}
@@ -264,6 +294,44 @@ const Header = () => {
               <div className="text-hud text-sm">Recent Tasks</div>
               <div className="text-hud text-sm">Active Agents</div>
               <div className="text-hud text-sm">Quick Actions</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Theme Selection Menu */}
+      <AnimatePresence>
+        {showThemeMenu && (
+          <motion.div
+            className="absolute top-full right-0 w-64 bg-gray-900/95 border border-red-500/30 backdrop-blur-md rounded-lg p-4 z-50"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <h3 className="text-hud text-sm mb-3">INTERFACE MODE</h3>
+            <div className="space-y-2">
+              {themeOptions.map((option) => (
+                <motion.button
+                  key={option.value}
+                  className={`w-full flex items-center space-x-3 p-2 rounded-lg transition-colors ${
+                    theme === option.value ? 'bg-red-500/20 text-red-400' : 'hover:bg-gray-800/50'
+                  }`}
+                  onClick={() => {
+                    setTheme(option.value)
+                    setShowThemeMenu(false)
+                  }}
+                  whileHover={{ x: 5 }}
+                >
+                  <option.icon className="w-4 h-4" />
+                  <span className="text-sm">{option.label}</span>
+                  {theme === option.value && (
+                    <motion.div
+                      className="ml-auto w-1.5 h-1.5 rounded-full bg-red-500"
+                      layoutId="activeTheme"
+                    />
+                  )}
+                </motion.button>
+              ))}
             </div>
           </motion.div>
         )}
