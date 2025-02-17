@@ -8,30 +8,32 @@
 :root {
   --primary-bg: transparent;
   --secondary-bg: transparent;
-  --panel-bg: transparent;
+  --panel-bg: rgba(0, 0, 0, 0.7);
   --panel-bg-hover: rgba(24, 24, 24, 0.3);
   --text-primary: #FFFFFF;
-  --text-secondary: #A0A0A0;
-  --border-color: #303030;
-  --highlight-color: #FFFFFF;
-  --accent-color: #404040;
+  --text-secondary: #808080;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --highlight-color: rgba(255, 255, 255, 0.2);
+  --accent-color: rgba(255, 255, 255, 0.1);
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 8, 8, 8;
   --hud-border: 1px solid var(--border-color);
-  --hud-bg: transparent;
-  --data-stream-color: rgba(255, 255, 255, 0.15);
+  --hud-bg: rgba(0, 0, 0, 0.7);
+  --data-stream-color: rgba(255, 255, 255, 0.05);
   --font-tactical: 'IBM Plex Mono', monospace;
   --text-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
   --text-shadow-strong: 0 1px 3px rgba(0, 0, 0, 0.75);
   --backdrop-blur: blur(8px);
   --backdrop-blur-strong: blur(12px);
+  --glow-subtle: 0 0 15px rgba(255, 255, 255, 0.05);
+  --glow-strong: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 [data-theme='dark'] {
-  --primary-bg: #101010;
-  --primary-text: #E0E0E0;
-  --border-color: #303030;
+  --primary-bg: #000000;
+  --primary-text: #FFFFFF;
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 html {
@@ -102,10 +104,10 @@ body {
 
 /* Game UI specific styles */
 .hud-panel {
-  @apply relative border border-gray-800;
-  background: rgba(0, 0, 0, 0.7) !important;
+  @apply relative overflow-hidden;
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 
     0 0 20px rgba(0, 0, 0, 0.5),
     inset 0 0 30px rgba(0, 0, 0, 0.3);
@@ -439,11 +441,15 @@ body {
 
 /* Dashboard Container */
 .dashboard-container {
-  display: flex;
-  height: calc(100vh - 6rem);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1rem;
+  height: calc(100vh - 12rem);
   width: 100%;
+  max-width: 1920px;
   margin: 0 auto;
-  padding: 0.5rem;
+  padding: 1rem;
 }
 
 /* Performance Chart Container */
@@ -468,6 +474,30 @@ body {
   height: 100% !important;
   min-height: 300px !important;
   z-index: 2;
+}
+
+/* Reset the display:none on these components */
+.system-metrics,
+.mission-log,
+.tactical-controls {
+  display: block;
+}
+
+/* Explicitly define grid areas */
+.system-metrics {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.task-graph-container {
+  grid-area: 1 / 2 / 2 / 3;
+}
+
+.mission-log {
+  grid-area: 2 / 1 / 3 / 2;
+}
+
+.tactical-controls {
+  grid-area: 2 / 2 / 3 / 3;
 }
 
 /* Remove other panel styles */
@@ -523,11 +553,11 @@ body {
 
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(255, 58, 58, 0.1) !important;
+  stroke: rgba(255, 255, 255, 0.05) !important;
 }
 
 .recharts-cartesian-axis-line {
-  stroke: rgba(255, 58, 58, 0.3) !important;
+  stroke: rgba(255, 255, 255, 0.1) !important;
 }
 
 .recharts-legend-item-text {
@@ -541,31 +571,31 @@ body {
 
 .recharts-legend-wrapper {
   background: rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(255, 58, 58, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px !important;
   padding: 8px !important;
   backdrop-filter: blur(4px) !important;
 }
 
 .recharts-default-tooltip {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(255, 58, 58, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px !important;
   padding: 8px !important;
-  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Chart Container Animation */
 @keyframes chartPulse {
   0%, 100% {
     box-shadow: 
-      0 0 15px rgba(255, 58, 58, 0.1),
-      inset 0 0 15px rgba(255, 58, 58, 0.1);
+      0 0 15px rgba(255, 255, 255, 0.05),
+      inset 0 0 15px rgba(255, 255, 255, 0.05);
   }
   50% {
     box-shadow: 
-      0 0 20px rgba(255, 58, 58, 0.2),
-      inset 0 0 20px rgba(255, 58, 58, 0.2);
+      0 0 20px rgba(255, 255, 255, 0.08),
+      inset 0 0 20px rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -595,7 +625,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(255, 58, 58, 0.1) 50%, transparent 100%);
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -622,7 +652,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 58, 58, 0.8),
+    rgba(255, 255, 255, 0.2),
     transparent
   );
   animation: scanline 3s linear infinite;
@@ -941,15 +971,15 @@ h3 {
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.1),
     transparent
   );
   filter: blur(1px);
   box-shadow: 
-    0 0 15px rgba(255, 255, 255, 0.15),
-    0 0 30px rgba(255, 255, 255, 0.1);
+    0 0 15px rgba(255, 255, 255, 0.05),
+    0 0 30px rgba(255, 255, 255, 0.03);
   z-index: -1;
 }
 
@@ -957,11 +987,11 @@ h3 {
   position: absolute;
   width: 150px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   filter: blur(1px);
   box-shadow: 
-    0 0 15px rgba(255, 255, 255, 0.1),
-    0 0 30px rgba(255, 255, 255, 0.05);
+    0 0 15px rgba(255, 255, 255, 0.05),
+    0 0 30px rgba(255, 255, 255, 0.02);
   transform: perspective(1000px) rotateX(60deg);
   z-index: -1;
 }
@@ -993,36 +1023,39 @@ h3 {
 }
 
 .task-node {
-  fill: #ff3a3a;
-  filter: url(#glow);
+  fill: #FFFFFF;
+  fill-opacity: 0.2;
+  stroke: #FFFFFF;
+  stroke-opacity: 0.3;
   transition: all 0.3s ease;
 }
 
 .task-node:hover {
-  fill: #ff5555;
-  transform: scale(1.2);
+  fill-opacity: 0.4;
+  stroke-opacity: 0.5;
+  transform: scale(1.1);
 }
 
 .task-connection {
-  stroke: rgba(255, 58, 58, 0.3);
-  stroke-width: 2;
-  filter: url(#glow);
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
 }
 
 .task-connection.active {
-  stroke: #ff3a3a;
-  stroke-width: 3;
+  stroke: #FFFFFF;
+  stroke-opacity: 0.2;
+  stroke-width: 2;
   animation: connectionPulse 2s ease-in-out infinite;
 }
 
 @keyframes connectionPulse {
   0%, 100% {
-    stroke-opacity: 0.3;
-    stroke-width: 2;
+    stroke-opacity: 0.1;
+    stroke-width: 1;
   }
   50% {
-    stroke-opacity: 0.8;
-    stroke-width: 3;
+    stroke-opacity: 0.2;
+    stroke-width: 2;
   }
 }
 
@@ -1033,4 +1066,93 @@ h3 {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.task-graph-container {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-graph-container .recharts-responsive-container {
+  flex: 1;
+  min-height: 0; /* Important for flexbox to work properly */
+}
+
+/* Chart container styles */
+.recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure chart content is visible */
+.recharts-surface {
+  overflow: visible;
+}
+
+/* Enhance tooltip visibility */
+.recharts-tooltip-wrapper {
+  z-index: 1000;
+}
+
+/* Quadrant-specific styles */
+.system-metrics,
+.task-graph-container,
+.mission-log,
+.tactical-controls {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.system-metrics .stat-card,
+.tactical-controls button {
+  transition: all 0.3s ease;
+}
+
+.system-metrics .stat-card:hover,
+.tactical-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 58, 58, 0.2);
+}
+
+.mission-log {
+  .hud-panel-secondary {
+    transition: all 0.3s ease;
+  }
+
+  .hud-panel-secondary:hover {
+    transform: translateX(4px);
+    border-color: rgba(255, 58, 58, 0.4);
+  }
+}
+
+/* Corner accents for each quadrant */
+.system-metrics::before,
+.task-graph-container::before,
+.mission-log::before,
+.tactical-controls::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  top: 10px;
+  left: 10px;
+}
+
+.system-metrics::after,
+.task-graph-container::after,
+.mission-log::after,
+.tactical-controls::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  bottom: 10px;
+  right: 10px;
 }

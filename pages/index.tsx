@@ -82,56 +82,74 @@ const Home: NextPage = () => {
         
         <div className="dashboard-container">
           {/* System Metrics Quadrant */}
-          <div className="system-metrics hud-panel p-6">
-            <h2 className="text-display text-xl mb-4">SYSTEM METRICS</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {statConfigs.map((stat, index) => (
-                <div key={index} className="stat-card hud-panel-secondary p-4">
-                  <div className="flex items-center justify-between">
-                    <stat.icon className={`text-2xl ${stat.colorClass}`} />
-                    <span className="stat-value">{stat.value}</span>
-                  </div>
-                  <p className="text-hud mt-2">{stat.title}</p>
-                </div>
-              ))}
+          <div className="system-metrics hud-panel">
+            <div className="p-6">
+              <h2 className="text-display text-xl mb-4">SYSTEM METRICS</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {statConfigs.map((stat, index) => (
+                  <motion.div
+                    key={index}
+                    className="stat-card hud-panel-secondary p-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <stat.icon className={`text-2xl ${stat.colorClass}`} />
+                      <span className="stat-value">{stat.value}</span>
+                    </div>
+                    <p className="text-hud mt-2">{stat.title}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Task Graph Quadrant */}
-          <div className="performance-chart hud-panel">
+          <div className="task-graph-container hud-panel">
             <TaskGraph />
           </div>
 
           {/* Mission Log Quadrant */}
-          <div className="mission-log hud-panel p-6">
-            <h2 className="text-display text-xl mb-4">MISSION LOG</h2>
-            <div className="space-y-4 overflow-y-auto max-h-[calc(100%-3rem)]">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="hud-panel-secondary p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-hud text-sm">{activity.time}</span>
-                    <span className="text-data text-sm">{activity.xp}</span>
-                  </div>
-                  <p className="text-hud mt-1">{activity.message}</p>
-                </div>
-              ))}
+          <div className="mission-log hud-panel">
+            <div className="p-6">
+              <h2 className="text-display text-xl mb-4">MISSION LOG</h2>
+              <div className="space-y-4 overflow-y-auto max-h-[calc(100%-3rem)]">
+                {recentActivities.map((activity, index) => (
+                  <motion.div
+                    key={activity.id}
+                    className="hud-panel-secondary p-3"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-hud text-sm">{activity.time}</span>
+                      <span className="text-data text-sm">{activity.xp}</span>
+                    </div>
+                    <p className="text-hud mt-1">{activity.message}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Tactical Controls Quadrant */}
-          <div className="tactical-controls hud-panel p-6">
-            <h2 className="text-display text-xl mb-4">TACTICAL CONTROLS</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {actionButtons.map((action, index) => (
-                <motion.button
-                  key={index}
-                  className={`hud-panel-secondary p-3 text-sm text-tactical ${action.colorClass} hover:bg-gray-800/50 transition-all duration-300`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {action.name}
-                </motion.button>
-              ))}
+          <div className="tactical-controls hud-panel">
+            <div className="p-6">
+              <h2 className="text-display text-xl mb-4">TACTICAL CONTROLS</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {actionButtons.map((action, index) => (
+                  <motion.button
+                    key={index}
+                    className={`hud-panel-secondary p-3 text-sm text-tactical ${action.colorClass}`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {action.name}
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <div className={`app-container ${debugMode ? 'debug-mode' : ''}`}>
+      <div className={`app-container ${debugMode ? 'debug-mode' : ''}`} suppressHydrationWarning>
         <BackgroundAnimation />
         <Component {...pageProps} />
       </div>

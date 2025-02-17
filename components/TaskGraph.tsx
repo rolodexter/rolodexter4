@@ -141,8 +141,7 @@ const TaskGraph = () => {
   return (
     <div 
       ref={containerRef}
-      className="hud-panel relative w-full h-full flex flex-col"
-      style={{ minHeight: '400px', height: '400px' }}
+      className="w-full h-full flex flex-col"
     >
       <GraphErrorBoundary>
         <div className="absolute top-0 left-0 w-full h-full">
