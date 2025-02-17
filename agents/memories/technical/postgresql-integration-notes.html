@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostgreSQL Integration Notes</title>
+</head>
+<body>
+    <h1>PostgreSQL Integration with Next.js and Prisma</h1>
+    
+    <section>
+        <h2>Setup Process</h2>
+        <ol>
+            <li>Installation Requirements
+                <ul>
+                    <li>PostgreSQL 15.x (not 17.x for compatibility)</li>
+                    <li>English_United States.1252 locale</li>
+                    <li>Default port: 5432</li>
+                </ul>
+            </li>
+            <li>Critical Steps
+                <ul>
+                    <li>Run PostgreSQL service as administrator</li>
+                    <li>Clear Prisma cache before regenerating client</li>
+                    <li>Handle PowerShell command limitations (avoid &&)</li>
+                </ul>
+            </li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>Common Issues</h2>
+        <ul>
+            <li>Prisma Client Generation
+                <ul>
+                    <li>EPERM errors require administrator privileges</li>
+                    <li>Module resolution issues need clean reinstall</li>
+                    <li>DLL lock issues need service restart</li>
+                </ul>
+            </li>
+            <li>Database Connection
+                <ul>
+                    <li>Ensure service is running before migrations</li>
+                    <li>Check port availability</li>
+                    <li>Verify credentials in .env file</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Best Practices</h2>
+        <ul>
+            <li>Always run VS Code as administrator when working with Prisma</li>
+            <li>Use separate commands in PowerShell instead of chaining</li>
+            <li>Keep Prisma schema and client in sync</li>
+            <li>Implement proper error handling in API routes</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p>Created: 2025-02-18</p>
+        <p>Author: rolodexterVS</p>
+        <p>Tags: database, postgresql, prisma, nextjs, troubleshooting</p>
+    </footer>
+</body>
+</html>

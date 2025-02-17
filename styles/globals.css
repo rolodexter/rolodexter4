@@ -6,34 +6,32 @@
 @tailwind utilities;
 
 :root {
-  --primary-bg: transparent;
-  --secondary-bg: transparent;
-  --panel-bg: rgba(0, 0, 0, 0.7);
+  --primary-bg: #000000;
+  --secondary-bg: #0A0A0A;
+  --panel-bg: rgba(10, 10, 10, 0.7);
   --panel-bg-hover: rgba(24, 24, 24, 0.3);
   --text-primary: #FFFFFF;
-  --text-secondary: #808080;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --highlight-color: rgba(255, 255, 255, 0.2);
-  --accent-color: rgba(255, 255, 255, 0.1);
+  --text-secondary: #A0A0A0;
+  --border-color: #303030;
+  --highlight-color: #FFFFFF;
+  --accent-color: #404040;
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 8, 8, 8;
   --hud-border: 1px solid var(--border-color);
-  --hud-bg: rgba(0, 0, 0, 0.7);
-  --data-stream-color: rgba(255, 255, 255, 0.05);
+  --hud-bg: rgba(10, 10, 10, 0.7);
+  --data-stream-color: rgba(255, 255, 255, 0.15);
   --font-tactical: 'IBM Plex Mono', monospace;
   --text-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
   --text-shadow-strong: 0 1px 3px rgba(0, 0, 0, 0.75);
   --backdrop-blur: blur(8px);
   --backdrop-blur-strong: blur(12px);
-  --glow-subtle: 0 0 15px rgba(255, 255, 255, 0.05);
-  --glow-strong: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 [data-theme='dark'] {
-  --primary-bg: #000000;
-  --primary-text: #FFFFFF;
-  --border-color: rgba(255, 255, 255, 0.1);
+  --primary-bg: #101010;
+  --primary-text: #E0E0E0;
+  --border-color: #303030;
 }
 
 html {
@@ -105,7 +103,7 @@ body {
 /* Game UI specific styles */
 .hud-panel {
   @apply relative overflow-hidden;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--panel-bg);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 
@@ -140,7 +138,7 @@ body {
 }
 
 .hud-panel-secondary {
-  background: transparent !important;
+  background: rgba(10, 10, 10, 0.4) !important;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   transition: all 0.3s ease;
@@ -149,8 +147,8 @@ body {
 
 .hud-panel-secondary:hover {
   border-color: var(--highlight-color);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-  background: rgba(24, 24, 24, 0.2) !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 24, 0.4) !important;
 }
 
 .hud-border {
@@ -167,10 +165,7 @@ body {
 .stat-value {
   @apply font-mono text-2xl font-bold;
   color: var(--text-primary);
-  font-size: 1.5rem;
-  font-family: var(--font-tactical);
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  text-shadow: var(--text-shadow-subtle);
 }
 
 .cyber-grid {
@@ -291,7 +286,7 @@ body {
   bottom: 0;
   background: linear-gradient(
     transparent 0%,
-    rgba(255, 58, 58, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 50%,
     transparent 100%
   );
   animation: scan 4s linear infinite;
@@ -306,8 +301,8 @@ body {
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(255, 58, 58, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 58, 58, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 20px 20px;
   animation: gridPulse 4s ease-in-out infinite;
   pointer-events: none;
@@ -326,8 +321,8 @@ body {
 }
 
 .custom-tooltip {
-  background: rgba(16, 16, 16, 0.95) !important;
-  border: 1px solid var(--border-color) !important;
+  background: rgba(0, 0, 0, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(8px) !important;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
   padding: 0.75rem !important;
@@ -443,13 +438,94 @@ body {
 .dashboard-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: repeat(1, 1fr);
   gap: 1rem;
   height: calc(100vh - 12rem);
   width: 100%;
   max-width: 1920px;
   margin: 0 auto;
   padding: 1rem;
+}
+
+/* Grid Areas */
+.task-graph-container {
+  grid-area: 1 / 2 / 2 / 3;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  overflow: visible !important;
+  z-index: 1;
+}
+
+.task-graph {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  position: relative;
+}
+
+.task-graph svg {
+  width: 100%;
+  height: 100%;
+}
+
+.knowledge-graph-container {
+  grid-area: 1 / 2 / 2 / 3;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove unused panel styles */
+.system-metrics,
+.mission-log {
+  display: none;
+}
+
+/* Knowledge Graph Container */
+.knowledge-graph-container {
+  position: relative !important;
+  height: 100% !important;
+  min-height: 400px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  overflow: visible !important;
+  z-index: 1;
+}
+
+/* Corner accents for containers */
+.task-graph-container::before,
+.knowledge-graph-container::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  top: 10px;
+  left: 10px;
+}
+
+.task-graph-container::after,
+.knowledge-graph-container::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  bottom: 10px;
+  right: 10px;
 }
 
 /* Performance Chart Container */
@@ -553,11 +629,11 @@ body {
 
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(255, 255, 255, 0.05) !important;
+  stroke: rgba(255, 58, 58, 0.1) !important;
 }
 
 .recharts-cartesian-axis-line {
-  stroke: rgba(255, 255, 255, 0.1) !important;
+  stroke: rgba(255, 58, 58, 0.3) !important;
 }
 
 .recharts-legend-item-text {
@@ -571,31 +647,31 @@ body {
 
 .recharts-legend-wrapper {
   background: rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 58, 58, 0.2) !important;
   border-radius: 4px !important;
   padding: 8px !important;
   backdrop-filter: blur(4px) !important;
 }
 
 .recharts-default-tooltip {
-  background-color: rgba(0, 0, 0, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 58, 58, 0.3) !important;
   border-radius: 4px !important;
   padding: 8px !important;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2) !important;
 }
 
 /* Chart Container Animation */
 @keyframes chartPulse {
   0%, 100% {
     box-shadow: 
-      0 0 15px rgba(255, 255, 255, 0.05),
-      inset 0 0 15px rgba(255, 255, 255, 0.05);
+      0 0 15px rgba(255, 58, 58, 0.1),
+      inset 0 0 15px rgba(255, 58, 58, 0.1);
   }
   50% {
     box-shadow: 
-      0 0 20px rgba(255, 255, 255, 0.08),
-      inset 0 0 20px rgba(255, 255, 255, 0.08);
+      0 0 20px rgba(255, 58, 58, 0.2),
+      inset 0 0 20px rgba(255, 58, 58, 0.2);
   }
 }
 
@@ -625,7 +701,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 58, 58, 0.1) 50%, transparent 100%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -652,7 +728,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
+    rgba(255, 58, 58, 0.8),
     transparent
   );
   animation: scanline 3s linear infinite;
@@ -971,15 +1047,15 @@ h3 {
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.15),
-    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.2),
     transparent
   );
   filter: blur(1px);
   box-shadow: 
-    0 0 15px rgba(255, 255, 255, 0.05),
-    0 0 30px rgba(255, 255, 255, 0.03);
+    0 0 15px rgba(255, 255, 255, 0.15),
+    0 0 30px rgba(255, 255, 255, 0.1);
   z-index: -1;
 }
 
@@ -987,11 +1063,11 @@ h3 {
   position: absolute;
   width: 150px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.2);
   filter: blur(1px);
   box-shadow: 
-    0 0 15px rgba(255, 255, 255, 0.05),
-    0 0 30px rgba(255, 255, 255, 0.02);
+    0 0 15px rgba(255, 255, 255, 0.1),
+    0 0 30px rgba(255, 255, 255, 0.05);
   transform: perspective(1000px) rotateX(60deg);
   z-index: -1;
 }
@@ -1024,38 +1100,35 @@ h3 {
 
 .task-node {
   fill: #FFFFFF;
-  fill-opacity: 0.2;
-  stroke: #FFFFFF;
-  stroke-opacity: 0.3;
+  filter: url(#glow);
   transition: all 0.3s ease;
 }
 
 .task-node:hover {
-  fill-opacity: 0.4;
-  stroke-opacity: 0.5;
-  transform: scale(1.1);
+  fill: #ff5555;
+  transform: scale(1.2);
 }
 
 .task-connection {
-  stroke: rgba(255, 255, 255, 0.1);
-  stroke-width: 1;
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 2;
+  filter: url(#glow);
 }
 
 .task-connection.active {
   stroke: #FFFFFF;
-  stroke-opacity: 0.2;
-  stroke-width: 2;
+  stroke-width: 3;
   animation: connectionPulse 2s ease-in-out infinite;
 }
 
 @keyframes connectionPulse {
   0%, 100% {
-    stroke-opacity: 0.1;
-    stroke-width: 1;
+    stroke-opacity: 0.3;
+    stroke-width: 2;
   }
   50% {
-    stroke-opacity: 0.2;
-    stroke-width: 2;
+    stroke-opacity: 0.8;
+    stroke-width: 3;
   }
 }
 
@@ -1128,31 +1201,40 @@ h3 {
   }
 }
 
-/* Corner accents for each quadrant */
-.system-metrics::before,
-.task-graph-container::before,
-.mission-log::before,
-.tactical-controls::before {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  top: 10px;
-  left: 10px;
+/* Navigation link styles */
+.nav-link {
+  @apply relative py-2;
 }
 
-.system-metrics::after,
-.task-graph-container::after,
-.mission-log::after,
-.tactical-controls::after {
+.nav-link::after {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  bottom: 10px;
-  right: 10px;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #FFFFFF;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link.active {
+  @apply text-white;
+}
+
+.nav-link.active::after {
+  width: 100%;
+  opacity: 0.5;
+}
+
+/* Enhance navigation link descriptions */
+.nav-description {
+  @apply absolute left-1/2 -bottom-8 transform -translate-x-1/2 w-max text-center opacity-0 transition-all duration-200 bg-black/90 px-3 py-1 rounded-md border border-white/10 backdrop-blur-md;
+}
+
+.nav-link:hover .nav-description {
+  @apply opacity-100 -bottom-12;
 }

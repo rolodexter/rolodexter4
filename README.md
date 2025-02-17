@@ -9,7 +9,7 @@ rolodexter4 is a modern web application built with Next.js, TypeScript, and Tail
 ### February 2025
 
 - **Theme Update**: Transitioned to minimalist black and white design scheme
-  - [View Theme Documentation](docs/theme/THEME.md)
+  - [View Theme Documentation](docs/theme/theme.html)
   - All UI components updated to follow new design guidelines
   - Removed colored accents in favor of opacity-based highlights
 

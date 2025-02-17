@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Pattern: Task Display Standards</title>
+</head>
+<body>
+    <h1>UI Pattern: Task Display Standards</h1>
+    
+    <section>
+        <h2>Task List Display</h2>
+        <ul>
+            <li>Table Layout
+                <ul>
+                    <li>Three columns: Task Name | Status | Last Modified</li>
+                    <li>Monospace font for timestamps</li>
+                    <li>Truncated titles with hover expansion</li>
+                    <li>Clickable rows linking to task details</li>
+                </ul>
+            </li>
+            <li>Visual Hierarchy
+                <ul>
+                    <li>Muted grayscale for task titles (zinc-300/80)</li>
+                    <li>Color-coded status indicators:
+                        <ul>
+                            <li>Active: green-500</li>
+                            <li>Pending: yellow-500</li>
+                            <li>Resolved: blue-500</li>
+                            <li>Archived: gray-500</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Animation Patterns</h2>
+        <ul>
+            <li>Entry Animations
+                <ul>
+                    <li>Fade in with slight upward movement</li>
+                    <li>Staggered delay based on index</li>
+                    <li>Duration: 0.4s per item</li>
+                </ul>
+            </li>
+            <li>Interaction Feedback
+                <ul>
+                    <li>Hover: subtle background highlight (white/5)</li>
+                    <li>Smooth transitions on all state changes</li>
+                    <li>No animation on status updates to maintain readability</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Responsive Behavior</h2>
+        <ul>
+            <li>Table Columns
+                <ul>
+                    <li>Task name: flexible width with max-width constraint</li>
+                    <li>Status: fixed width (24 units)</li>
+                    <li>Timestamp: fixed width (40 units)</li>
+                </ul>
+            </li>
+            <li>Mobile Considerations
+                <ul>
+                    <li>Maintain table layout but with vertical scrolling</li>
+                    <li>Ensure touch targets are sufficiently large</li>
+                    <li>Consider collapsible timestamp on smallest screens</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Auto-Refresh Pattern</h2>
+        <ul>
+            <li>30-second refresh interval</li>
+            <li>Silent background updates</li>
+            <li>Smooth transition for changed content</li>
+            <li>Error handling with console logging</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p>Created: 2025-02-18</p>
+        <p>Author: rolodexterVS</p>
+        <p>Tags: ui, design-patterns, task-display, animation, responsive</p>
+    </footer>
+</body>
+</html>

@@ -9,7 +9,6 @@ interface Platform {
 
 const BackgroundAnimation = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isEnabled, setIsEnabled] = useState(true);
   const [perspective, setPerspective] = useState({ rotateX: 60, translateZ: -100 });
   const [platforms, setPlatforms] = useState<Platform[]>([]);
 
@@ -34,8 +33,6 @@ const BackgroundAnimation = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [handleMouseMove]);
-
-  if (!isEnabled) return null;
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-black">
@@ -121,16 +118,6 @@ const BackgroundAnimation = () => {
           />
         ))}
       </div>
-
-      {/* Debug Toggle */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          className="fixed bottom-4 left-4 px-4 py-2 bg-gray-900/80 text-white text-sm rounded-md backdrop-blur-sm border border-gray-500/30 z-50"
-          onClick={() => setIsEnabled(!isEnabled)}
-        >
-          Toggle Background
-        </button>
-      )}
     </div>
   );
 };

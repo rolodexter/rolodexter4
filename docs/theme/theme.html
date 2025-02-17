@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black and White Theme Implementation - rolodexter4</title>
+    <style>
+        :root {
+            --text-primary: #FFFFFF;
+            --text-secondary: #808080;
+            --background: #000000;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --code-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin: 0.5rem 0;
+            color: var(--text-secondary);
+        }
+
+        .section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .note {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-left: 3px solid var(--text-secondary);
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Black and White Theme Implementation</h1>
+
+        <section class="section">
+            <h2>Overview</h2>
+            <p>As of February 2025, rolodexter4 has transitioned to a minimalist black and white color scheme. This document outlines the key aspects of the new theme and serves as a guide for maintaining consistency across the application.</p>
+        </section>
+
+        <section class="section">
+            <h2>Core Color Variables</h2>
+            <pre><code>/* Primary Colors */
+--text-primary: #FFFFFF;          /* Pure white for primary text */
+--text-secondary: #808080;        /* Mid-gray for secondary text */
+--background-start-rgb: 0, 0, 0;  /* Pure black background start */
+--background-end-rgb: 8, 8, 8;    /* Slightly lighter black background end */
+
+/* UI Elements */
+--border-color: rgba(255, 255, 255, 0.1);        /* White with 10% opacity for borders */
+--highlight-color: rgba(255, 255, 255, 0.2);      /* White with 20% opacity for highlights */
+--accent-color: rgba(255, 255, 255, 0.1);         /* White with 10% opacity for accents */
+--panel-bg: rgba(0, 0, 0, 0.7);                   /* Black with 70% opacity for panels */</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>Design Principles</h2>
+            <ol>
+                <li><strong>Minimalism:</strong> Use white elements with varying opacity levels instead of different colors</li>
+                <li><strong>Contrast:</strong> Maintain readability with careful opacity management</li>
+                <li><strong>Subtlety:</strong> Employ subtle animations and transitions that don't rely on color</li>
+                <li><strong>Consistency:</strong> Use standardized opacity levels across similar elements</li>
+            </ol>
+        </section>
+
+        <section class="section">
+            <h2>Opacity Guidelines</h2>
+            <table>
+                <tr>
+                    <th>Element</th>
+                    <th>Opacity Level</th>
+                </tr>
+                <tr>
+                    <td>Primary Text</td>
+                    <td>100% white</td>
+                </tr>
+                <tr>
+                    <td>Secondary Text</td>
+                    <td>50% white</td>
+                </tr>
+                <tr>
+                    <td>Disabled Text</td>
+                    <td>30% white</td>
+                </tr>
+                <tr>
+                    <td>Borders</td>
+                    <td>10% white</td>
+                </tr>
+                <tr>
+                    <td>Highlights</td>
+                    <td>20% white</td>
+                </tr>
+                <tr>
+                    <td>Backgrounds</td>
+                    <td>70-90% black</td>
+                </tr>
+                <tr>
+                    <td>Hover States</td>
+                    <td>+10-20% opacity</td>
+                </tr>
+            </table>
+        </section>
+
+        <section class="section">
+            <h2>Component Examples</h2>
+            
+            <h3>Task Graph</h3>
+            <pre><code>.task-node {
+    fill: #FFFFFF;
+    fill-opacity: 0.2;
+    stroke: #FFFFFF;
+    stroke-opacity: 0.3;
+}
+
+.task-connection {
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 1;
+}</code></pre>
+
+            <h3>Charts</h3>
+            <pre><code>.recharts-cartesian-grid-horizontal line {
+    stroke: rgba(255, 255, 255, 0.05) !important;
+}
+
+.recharts-legend-wrapper {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>Implementation Guide</h2>
+            <div class="note">
+                <p>When updating existing components:</p>
+                <ol>
+                    <li>Replace any color values with appropriate white/black + opacity</li>
+                    <li>Update hover states to use opacity changes instead of color changes</li>
+                    <li>Ensure text remains readable with proper contrast</li>
+                    <li>Use variables from :root for consistency</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Testing Requirements</h2>
+            <ul>
+                <li>Verify contrast ratios meet accessibility standards</li>
+                <li>Test hover states and animations</li>
+                <li>Ensure readability across different screen sizes</li>
+                <li>Check component states (active, hover, disabled)</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Support</h2>
+            <p>For questions about theme implementation or to report inconsistencies, please contact the Visual Engineering team.</p>
+        </section>
+    </div>
+</body>
+</html> 

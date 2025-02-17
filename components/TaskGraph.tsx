@@ -209,7 +209,7 @@ const TaskGraph = () => {
               />
               
               {/* Main graph line */}
-              <Line 
+              <Line
                 type="monotone" 
                 dataKey="connections"
                 stroke="#FF3A3A"

@@ -6,32 +6,173 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model Agent {
-  id        String   @id @default(cuid())
-  name      String
-  type      String
-  level     Int      @default(1)
-  xp        Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  path        String   @unique
+  type        String   // 'task', 'memory', 'documentation'
+  metadata    Json     @default("{}")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  tags        Tag[]
+  references  Reference[]    @relation("SourceReferences")
+  referencedBy Reference[]   @relation("TargetReferences")
+  interactions Interaction[]
+
+  @@index([type, created_at])
+  @@index([path])
+  @@index([created_at, updated_at])
 }
 
-model Operation {
-  id          String   @id @default(cuid())
-  type        String
-  status      String
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  completedAt DateTime?
+model Task {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  status       TaskStatus
+  priority     Priority @default(MEDIUM)
+  assignee     String?
+  due_date     DateTime?
+  completed_at DateTime?
+  metadata     Json     @default("{}")
+  parent_id    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  document     Document? @relation(fields: [document_id], references: [id])
+  document_id  String?
+  subtasks     Task[]   @relation("TaskHierarchy")
+  parent_task  Task?    @relation("TaskHierarchy", fields: [parent_id], references: [id])
+  tags         Tag[]
+
+  @@index([status, due_date])
+  @@index([assignee])
 }
 
-model Activity {
-  id        String   @id @default(cuid())
-  type      String
-  message   String
-  timestamp DateTime @default(now())
+model Memory {
+  id          String   @id @default(uuid())
+  type        MemoryType
+  content     String   @db.Text
+  metadata    Json     @default("{}")
+  embedding   Float[]  // For vector similarity search
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  document    Document? @relation(fields: [document_id], references: [id])
+  document_id String?
+  tags        Tag[]
+
+  @@index([type, created_at])
+}
+
+model Reference {
+  id          String   @id @default(uuid())
+  source      Document @relation("SourceReferences", fields: [source_id], references: [id])
+  source_id   String
+  target      Document @relation("TargetReferences", fields: [target_id], references: [id])
+  target_id   String
+  type        ReferenceType
+  confidence  Float
+  metadata    Json     @default("{}")
+  created_at  DateTime @default(now())
+
+  @@unique([source_id, target_id, type])
+  @@index([source_id])
+  @@index([target_id])
+}
+
+model Tag {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  color       String?
+  documents   Document[]
+  tasks       Task[]
+  memories    Memory[]
+  created_at  DateTime  @default(now())
+}
+
+model Integration {
+  id            String    @id @default(uuid())
+  type          IntegrationType
+  name          String
+  config        Json      @default("{}")
+  credentials   Json      @default("{}")
+  status        IntegrationStatus @default(INACTIVE)
+  last_sync     DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  interactions  Interaction[]
+
+  @@unique([type, name])
+}
+
+model Interaction {
+  id            String    @id @default(uuid())
+  type          InteractionType
+  content       String    @db.Text
+  metadata      Json      @default("{}")
+  integration   Integration? @relation(fields: [integration_id], references: [id])
+  integration_id String?
+  document      Document? @relation(fields: [document_id], references: [id])
+  document_id   String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@index([type, created_at])
+  @@index([integration_id])
+}
+
+enum TaskStatus {
+  ACTIVE
+  PENDING
+  RESOLVED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MemoryType {
+  CONVERSATION
+  DECISION
+  OBSERVATION
+  LEARNING
+  FEEDBACK
+}
+
+enum ReferenceType {
+  TITLE_MENTION
+  PATH_REFERENCE
+  TASK_REFERENCE
+  MEMORY_REFERENCE
+  SEMANTIC_SIMILARITY
+}
+
+enum IntegrationType {
+  TELEGRAM
+  DISCORD
+  TWITTER
+  GITHUB
+  CUSTOM_API
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  MAINTENANCE
+}
+
+enum InteractionType {
+  MESSAGE
+  COMMAND
+  EVENT
+  NOTIFICATION
+  API_CALL
 }

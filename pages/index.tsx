@@ -4,6 +4,10 @@ import { motion } from 'framer-motion';
 import { FiCpu, FiActivity, FiUsers, FiTarget } from 'react-icons/fi';
 import Header from '../components/Header';
 import TaskGraph from '../components/TaskGraph';
+import TaskVolumeChart from '../components/TaskVolumeChart';
+import KnowledgeGraph from '../components/KnowledgeGraph';
+import BackgroundAnimation from '../components/BackgroundAnimation';
+import RecentTasks from '../components/RecentTasks';
 
 const DataStreams = () => {
   const [streams, setStreams] = useState<{ left: string; height: string; delay: string }[]>([]);
@@ -79,34 +83,16 @@ const Home: NextPage = () => {
       <div className="scanner-line" />
       <div className="main-container">
         <Header />
+        <BackgroundAnimation />
         
         <div className="dashboard-container">
-          {/* System Metrics Quadrant */}
-          <div className="system-metrics hud-panel">
-            <div className="p-6">
-              <h2 className="text-display text-xl mb-4">SYSTEM METRICS</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {statConfigs.map((stat, index) => (
-                  <motion.div
-                    key={index}
-                    className="stat-card hud-panel-secondary p-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <stat.icon className={`text-2xl ${stat.colorClass}`} />
-                      <span className="stat-value">{stat.value}</span>
-                    </div>
-                    <p className="text-hud mt-2">{stat.title}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
+          {/* Current Tasks Quadrant */}
+          <div className="current-tasks hud-panel">
+            <RecentTasks />
           </div>
 
           {/* Task Graph Quadrant */}
-          <div className="task-graph-container hud-panel">
+          <div className="task-graph-container">
             <TaskGraph />
           </div>
 
@@ -134,23 +120,9 @@ const Home: NextPage = () => {
             </div>
           </div>
 
-          {/* Tactical Controls Quadrant */}
-          <div className="tactical-controls hud-panel">
-            <div className="p-6">
-              <h2 className="text-display text-xl mb-4">TACTICAL CONTROLS</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {actionButtons.map((action, index) => (
-                  <motion.button
-                    key={index}
-                    className={`hud-panel-secondary p-3 text-sm text-tactical ${action.colorClass}`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {action.name}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
+          {/* Knowledge Graph Quadrant */}
+          <div className="knowledge-graph-container">
+            <KnowledgeGraph />
           </div>
         </div>
       </div>
