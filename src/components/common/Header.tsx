@@ -1,33 +1,33 @@
-import { motion } from 'framer-motion'
+/**
+ * Header Component
+ * 
+ * Main navigation header for the application.
+ * Used across all pages for consistent navigation.
+ * 
+ * Related Tasks:
+ * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
+ */
+
+import { useState } from 'react';
+import Link from 'next/link';
 
 const Header = () => {
   return (
-    <motion.header 
-      className="hud-panel relative mb-6 overflow-visible h-32"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className="flex items-center justify-start h-full px-10">
-        {/* Logo */}
-        <motion.div 
-          className="flex items-center scale-150 origin-left"
-          whileHover={{ scale: 1.6, x: 15 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        >
-          <div className="text-display text-8xl font-black text-white tracking-widest drop-shadow-[0_0_25px_rgba(255,255,255,0.9)] hover:text-primary-400 transition-all duration-300 hover:drop-shadow-[0_0_35px_rgba(255,255,255,1)]">
-            R4
+    <header className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
+      <nav className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-xl font-bold text-white">
+            ROLODEXTER<span className="text-blue-500">4</span>
+          </Link>
+          <div className="flex items-center space-x-6">
+            <Link href="/tasks" className="text-gray-300 hover:text-white">Tasks</Link>
+            <Link href="/documents" className="text-gray-300 hover:text-white">Documents</Link>
+            <Link href="/agents" className="text-gray-300 hover:text-white">Agents</Link>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </nav>
+    </header>
+  );
+};
 
-      {/* Corner Decorations */}
-      <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-white/20 rounded-tl-lg"></div>
-      <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-white/20 rounded-tr-lg"></div>
-      <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-white/20 rounded-bl-lg"></div>
-      <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-white/20 rounded-br-lg"></div>
-    </motion.header>
-  )
-}
-
-export default Header 
+export { Header }; 

@@ -1,3 +1,13 @@
+/**
+ * DocumentList Component
+ * 
+ * A reusable component for displaying lists of documents with filtering and real-time updates.
+ * Used across various pages to show tasks, memories, and documentation.
+ * 
+ * Related Tasks:
+ * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
+ */
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
@@ -185,4 +195,5 @@ const getTypeColor = (type: string) => {
   }
 };
 
-export default DocumentList;
+export { DocumentList };
+export type { DocumentListProps, Document, Tag }; 

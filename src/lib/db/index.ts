@@ -1,3 +1,18 @@
+/**
+ * Database Module
+ * 
+ * This module provides centralized database access for the application.
+ * It exports the Prisma client instance and utility functions for database operations.
+ * 
+ * Related Tasks:
+ * - Vercel Blob Integration: agents/rolodexterVS/tasks/active-tasks/vercel-blob-integration.html
+ * - Database Migration: agents/rolodexterVS/tasks/active-tasks/database-migration.html
+ * 
+ * Usage:
+ * import { prisma } from '@db';  // Direct import of Prisma client
+ * import { searchDocuments } from '@db';  // Import specific utilities
+ */
+
 import { PrismaClient } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 

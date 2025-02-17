@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { searchDocuments } from '@/utils/db';
-import type { Document } from '@/utils/db';
+import { searchDocuments } from '@db';
+import type { Document } from '@db';
 
 interface SearchResult {
   title: string;

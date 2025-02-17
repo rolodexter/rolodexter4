@@ -1,3 +1,13 @@
+/**
+ * KnowledgeGraph Component
+ * 
+ * Visualizes the relationships between different pieces of knowledge in the system.
+ * Used in the dashboard to show how different concepts and documents are connected.
+ * 
+ * Related Tasks:
+ * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
+ */
+
 import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import * as d3 from 'd3';
@@ -36,7 +46,7 @@ interface KnowledgeGraphData {
   links: KnowledgeLink[];
 }
 
-const KnowledgeGraph: React.FC = () => {
+export const KnowledgeGraph = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<KnowledgeGraphData>({
     nodes: [],
@@ -361,4 +371,4 @@ const KnowledgeGraph: React.FC = () => {
   );
 };
 
-export default KnowledgeGraph; 
+export type { KnowledgeNode, KnowledgeLink }; 

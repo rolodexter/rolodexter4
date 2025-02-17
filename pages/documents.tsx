@@ -1,4 +1,4 @@
-import { DocumentList } from '@/components/DocumentList';
+import { DocumentList } from '@components/documents/DocumentList';
 
 export default function DocumentsPage() {
   return (

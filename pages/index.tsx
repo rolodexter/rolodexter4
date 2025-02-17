@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import { motion } from 'framer-motion';
 import { FiCpu, FiActivity, FiUsers, FiTarget } from 'react-icons/fi';
-import Header from '../components/Header';
-import TaskGraph from '../components/TaskGraph';
-import TaskVolumeChart from '../components/TaskVolumeChart';
-import KnowledgeGraph from '../components/KnowledgeGraph';
-import BackgroundAnimation from '../components/BackgroundAnimation';
-import RecentTasks from '../components/RecentTasks';
+import { Header } from '@components/common/Header';
+import { TaskGraph } from '@components/tasks/TaskGraph';
+import { TaskVolumeChart } from '@components/tasks/TaskVolumeChart';
+import { KnowledgeGraph } from '@components/graphs/KnowledgeGraph';
+import { BackgroundAnimation } from '@components/common/BackgroundAnimation';
+import { RecentTasks } from '@components/tasks/RecentTasks';
 
 const DataStreams = () => {
   const [streams, setStreams] = useState<{ left: string; height: string; delay: string }[]>([]);

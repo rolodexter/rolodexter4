@@ -19,11 +19,20 @@
       "@components/*": ["./src/components/*"],
       "@lib/*": ["./src/lib/*"],
       "@utils/*": ["./src/lib/utils/*"],
+      "@db": ["./src/lib/db"],
       "@db/*": ["./src/lib/db/*"],
-      "@styles/*": ["./src/styles/*"]
+      "@styles/*": ["./src/styles/*"],
+      "pages/*": ["./pages/*"],
+      "api/*": ["./pages/api/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx"
+  ],
   "exclude": [
     "node_modules",
     "projects/rolodexter4/ui/tasks/templates/**/*.test.ts",
