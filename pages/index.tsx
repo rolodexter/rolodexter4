@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import { motion } from 'framer-motion';
 import { FiCpu, FiActivity, FiUsers, FiTarget } from 'react-icons/fi';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area } from 'recharts';
+import TimeDisplay from '../components/TimeDisplay';
+import TaskVolumeChart from '../components/TaskVolumeChart';
 
 const DataStreams = () => {
   const [streams, setStreams] = useState<{ left: string; height: string; delay: string }[]>([]);
@@ -36,152 +37,6 @@ const DataStreams = () => {
         />
       ))}
     </>
-  );
-};
-
-// Performance Chart Component
-const PerformanceChart = () => {
-  const [data, setData] = useState<{ time: string; value: number; critical: boolean }[]>([]);
-  const [perfStatus, setPerfStatus] = useState('NOMINAL');
-
-  useEffect(() => {
-    // Initialize with more dramatic data
-    const initialData = Array.from({ length: 10 }, (_, i) => ({
-      time: `${i}s`,
-      value: Math.floor(Math.random() * 40) + 60,
-      critical: false
-    }));
-    setData(initialData);
-
-    // Update with more dramatic changes
-    const interval = setInterval(() => {
-      setData(prevData => {
-        const newValue = Math.floor(Math.random() * 40) + 60;
-        const isCritical = newValue < 70;
-        const newData = [...prevData.slice(1), {
-          time: `${prevData.length}s`,
-          value: newValue,
-          critical: isCritical
-        }];
-        
-        // Update performance status
-        const avgValue = newData.reduce((acc, curr) => acc + curr.value, 0) / newData.length;
-        setPerfStatus(avgValue < 70 ? 'CRITICAL' : avgValue < 80 ? 'SUBOPTIMAL' : 'NOMINAL');
-        
-        return newData;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const customTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const value = payload[0].value;
-      const status = value < 70 ? 'CRITICAL' : value < 80 ? 'WARNING' : 'OPTIMAL';
-      const statusColor = value < 70 ? '#ff0000' : value < 80 ? '#ffaa00' : '#00ff00';
-      
-      return (
-        <div className="custom-tooltip bg-black/90 border border-[#ff3a3a] p-3 rounded-lg backdrop-blur-sm">
-          <p className="font-mono text-sm">TIME: <span className="text-blue-400">{label}</span></p>
-          <p className="font-mono text-sm">PERF: <span className="text-red-400">{value.toFixed(2)}%</span></p>
-          <p className="font-mono text-sm">STATUS: <span style={{ color: statusColor }}>{status}</span></p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div className="hud-panel p-6 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full">
-        <div className="scanner-overlay"></div>
-      </div>
-      
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-red-500 text-sm uppercase font-mono relative z-10">System Performance</h3>
-        <motion.span 
-          className={`text-sm font-mono ${
-            perfStatus === 'CRITICAL' ? 'text-red-500' :
-            perfStatus === 'SUBOPTIMAL' ? 'text-yellow-500' :
-            'text-green-500'
-          }`}
-          animate={{ opacity: [1, 0.5, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          STATUS: {perfStatus}
-        </motion.span>
-      </div>
-
-      <div className="h-[200px] w-full relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <defs>
-              <linearGradient id="perfGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ff3a3a" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#ff3a3a" stopOpacity={0}/>
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            
-            <XAxis 
-              dataKey="time" 
-              stroke="#4B5563"
-              tick={{ fill: '#4B5563', fontSize: 12 }}
-              axisLine={{ stroke: '#FF3A3A', strokeWidth: 1 }}
-            />
-            <YAxis 
-              stroke="#4B5563"
-              tick={{ fill: '#4B5563', fontSize: 12 }}
-              domain={[0, 100]}
-              axisLine={{ stroke: '#FF3A3A', strokeWidth: 1 }}
-            />
-            <Tooltip content={customTooltip} />
-            
-            {/* Area under the line */}
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="none"
-              fill="url(#perfGradient)"
-              fillOpacity={0.2}
-            />
-            
-            {/* Main performance line */}
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#FF3A3A"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={true}
-              filter="url(#glow)"
-            />
-            
-            {/* Critical points */}
-            <Line
-              type="monotone"
-              dataKey={data.map(d => d.critical ? d.value : null)}
-              stroke="#FF0000"
-              strokeWidth={4}
-              dot={{ r: 6, fill: '#FF0000', filter: 'url(#glow)' }}
-              isAnimationActive={true}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-
-        {/* Grid overlay effect */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          <div className="grid-overlay"></div>
-        </div>
-      </div>
-    </div>
   );
 };
 
@@ -223,112 +78,139 @@ const Home: NextPage = () => {
       <DataStreams />
       <div className="scanner-line" />
       <div className="main-container p-4">
-        {/* HUD Header */}
+        {/* Enhanced HUD Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="hud-panel p-8 mb-8 relative"
+          className="hud-panel header-panel p-8 mb-8 relative"
         >
-          <div className="absolute top-2 right-2 flex items-center space-x-2 text-red-500">
-            <span className="text-sm font-mono">SYSTEM STATUS:</span>
-            <span className="font-mono animate-pulse">{systemStatus}</span>
+          {/* Top Status Bar */}
+          <div className="absolute top-0 left-0 w-full h-8 border-b border-red-500/30 flex items-center justify-between px-4">
+            <div className="flex items-center space-x-4">
+              <div className="status-indicator"></div>
+              <span className="text-xs font-mono text-red-500/70">SYS.4.2.1</span>
+            </div>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-mono text-red-500/70">UPTIME:</span>
+                <TimeDisplay />
+              </div>
+              <div className="flex items-center space-x-2 text-red-500">
+                <span className="text-xs font-mono">SYSTEM STATUS:</span>
+                <motion.span 
+                  className="text-xs font-mono"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  {systemStatus}
+                </motion.span>
+              </div>
+            </div>
           </div>
-          <h1 className="text-5xl font-bold mb-4 font-mono text-center">
-            <span className="text-red-500">ROLODEXTER</span>
-            <span className="text-blue-500">4</span>
-          </h1>
-          <p className="text-xl text-center font-mono text-gray-400">
-            TACTICAL AI COLLABORATION INTERFACE
-          </p>
+
+          {/* Main Title with Enhanced Effects */}
+          <div className="relative mt-4">
+            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+            <h1 className="text-6xl font-bold mb-2 font-mono text-center relative">
+              <span className="text-red-500 relative">
+                ROLODEXTER
+                <motion.span
+                  className="absolute -top-1 left-0 w-full h-full text-blue-500 opacity-50"
+                  animate={{ opacity: [0.5, 0.3, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  ROLODEXTER
+                </motion.span>
+              </span>
+              <span className="text-blue-500 ml-2">4</span>
+            </h1>
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+          </div>
+
+          {/* Enhanced Subtitle */}
+          <div className="relative">
+            <p className="text-xl text-center font-mono text-gray-400 mt-4">
+              <motion.span
+                animate={{ opacity: [1, 0.7, 1] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                TACTICAL AI COLLABORATION INTERFACE
+              </motion.span>
+            </p>
+            <div className="flex justify-center space-x-4 mt-4">
+              <div className="header-stat">
+                <span className="text-xs text-red-500/70">AGENTS</span>
+                <span className="text-sm text-red-500">{activeAgents}</span>
+              </div>
+              <div className="header-stat">
+                <span className="text-xs text-red-500/70">OPS</span>
+                <span className="text-sm text-red-500">{todaysOperations}</span>
+              </div>
+              <div className="header-stat">
+                <span className="text-xs text-red-500/70">PERF</span>
+                <span className="text-sm text-red-500">98.2%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Decorative Corner Elements */}
+          <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-red-500/50"></div>
+          <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-red-500/50"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-red-500/50"></div>
+          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-red-500/50"></div>
         </motion.div>
 
-        {/* Quadrant Grid */}
-        <div className="grid grid-cols-2 gap-6 h-[calc(100vh-12rem)]">
-          {/* Top Left Quadrant - Stats */}
-          <div className="hud-panel p-4 overflow-hidden">
+        {/* Dashboard Quadrant Grid */}
+        <div className="dashboard-container">
+          {/* System Metrics Quadrant */}
+          <div className="system-metrics hud-panel p-6">
             <h2 className="text-xl font-mono text-red-500 mb-4">SYSTEM METRICS</h2>
             <div className="grid grid-cols-2 gap-4">
               {statConfigs.map((stat, index) => (
-                <motion.div 
-                  key={stat.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                  className="hud-panel-secondary p-4"
-                >
+                <div key={index} className="stat-card hud-panel-secondary p-4">
                   <div className="flex items-center justify-between">
-                    <stat.icon className={`${stat.colorClass} text-2xl`} />
-                    <h3 className={`${stat.colorClass} text-sm uppercase font-mono`}>{stat.title}</h3>
+                    <stat.icon className={`text-2xl ${stat.colorClass}`} />
+                    <span className="stat-value">{stat.value}</span>
                   </div>
-                  <p className="stat-value mt-2">{stat.value}</p>
-                  <div className="progress-bar mt-2">
-                    <div 
-                      className="progress-bar-fill" 
-                      style={{ width: typeof stat.value === 'string' ? stat.value : `${(stat.value / 200) * 100}%` }}
-                    />
-                  </div>
-                </motion.div>
+                  <p className="text-sm text-gray-400 mt-2">{stat.title}</p>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Top Right Quadrant - Performance Chart */}
-          <div className="hud-panel p-4">
-            <PerformanceChart />
+          {/* Performance Chart Quadrant */}
+          <div className="performance-chart relative">
+            <TaskVolumeChart />
           </div>
 
-          {/* Bottom Left Quadrant - Mission Log */}
-          <div className="hud-panel p-4 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-mono text-red-500">MISSION LOG</h2>
-              <div className="h-1 flex-1 mx-4 bg-red-500/20">
-                <div className="h-full w-3/4 bg-red-500 animate-pulse" />
-              </div>
-            </div>
-            <div className="space-y-3 overflow-y-auto max-h-[calc(100%-3rem)]">
-              {recentActivities.map((activity, index) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="flex items-center justify-between p-3 bg-gray-800/50 hud-border"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.type === 'task' ? 'bg-green-500' :
-                      activity.type === 'achievement' ? 'bg-yellow-500' :
-                      'bg-blue-500'
-                    } shadow-glow`} />
-                    <p className="text-gray-200 font-mono text-sm">{activity.message}</p>
+          {/* Mission Log Quadrant */}
+          <div className="mission-log hud-panel p-6">
+            <h2 className="text-xl font-mono text-red-500 mb-4">MISSION LOG</h2>
+            <div className="space-y-4 overflow-y-auto max-h-[calc(100%-3rem)]">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="hud-panel-secondary p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">{activity.time}</span>
+                    <span className="text-green-500 text-sm">{activity.xp}</span>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <span className="text-green-400 font-mono text-sm">{activity.xp}</span>
-                    <span className="text-gray-400 font-mono text-sm">{activity.time}</span>
-                  </div>
-                </motion.div>
+                  <p className="text-sm mt-1">{activity.message}</p>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Bottom Right Quadrant - Quick Actions */}
-          <div className="hud-panel p-4">
+          {/* Tactical Controls Quadrant */}
+          <div className="tactical-controls hud-panel p-6">
             <h2 className="text-xl font-mono text-red-500 mb-4">TACTICAL CONTROLS</h2>
             <div className="grid grid-cols-2 gap-4">
               {actionButtons.map((action, index) => (
-                <motion.button
-                  key={action.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`hud-panel-secondary p-4 font-mono text-sm ${action.colorClass}`}
+                <button
+                  key={index}
+                  className={`hud-panel-secondary p-3 text-sm font-mono ${action.colorClass} hover:bg-gray-800/50 transition-all duration-300`}
                 >
                   {action.name}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
