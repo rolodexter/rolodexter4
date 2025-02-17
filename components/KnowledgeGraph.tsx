@@ -17,6 +17,20 @@ interface KnowledgeLink {
   confidence: number;
 }
 
+interface ReferenceData {
+  source: string;
+  target: string;
+  type: string;
+  confidence: number;
+}
+
+interface GraphApiResponse {
+  documents: any[];
+  references: {
+    [key: string]: ReferenceData[];
+  };
+}
+
 interface KnowledgeGraphData {
   nodes: KnowledgeNode[];
   links: KnowledgeLink[];
@@ -41,7 +55,7 @@ const KnowledgeGraph: React.FC = () => {
           throw new Error('Failed to fetch graph data');
         }
         
-        const rawData = await response.json();
+        const rawData = await response.json() as GraphApiResponse;
         
         // Transform documents into graph structure
         const nodes: KnowledgeNode[] = [];
@@ -76,8 +90,8 @@ const KnowledgeGraph: React.FC = () => {
         });
 
         // Process references into links
-        Object.entries(rawData.references).forEach(([type, refs]: [string, any[]]) => {
-          refs.forEach((ref: any) => {
+        Object.entries(rawData.references).forEach(([type, refs]) => {
+          refs.forEach((ref: ReferenceData) => {
             links.push({
               source: ref.source,
               target: ref.target,
