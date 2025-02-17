@@ -11,20 +11,20 @@ datasource db {
 }
 
 model Document {
-  id          String   @id @default(uuid())
-  title       String
-  content     String   @db.Text
-  path        String   @unique
-  type        String   // 'task', 'memory', 'documentation'
-  metadata    Json     @default("{}")
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  tags        Tag[]
-  references  Reference[]    @relation("SourceReferences")
+  id           String        @id @default(uuid())
+  title        String
+  content      String        @db.Text
+  path         String        @unique
+  type         String // 'task', 'memory', 'documentation'
+  metadata     Json          @default("{}")
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  tags         Tag[]
+  references   Reference[]   @relation("SourceReferences")
   referencedBy Reference[]   @relation("TargetReferences")
   interactions Interaction[]
-  tasks       Task[]         // Add relation field for tasks
-  memories    Memory[]       // Add relation field for memories
+  tasks        Task[] // Add relation field for tasks
+  memories     Memory[] // Add relation field for memories
 
   @@index([type, created_at])
   @@index([path])
@@ -32,22 +32,23 @@ model Document {
 }
 
 model Task {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   title        String
-  description  String?  @db.Text
+  description  String?    @db.Text
   status       TaskStatus
-  priority     Priority @default(MEDIUM)
+  priority     Priority   @default(MEDIUM)
   assignee     String?
+  filePath     String     @unique // Add unique file path field
   due_date     DateTime?
   completed_at DateTime?
-  metadata     Json     @default("{}")
+  metadata     Json       @default("{}")
   parent_id    String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  document     Document? @relation(fields: [document_id], references: [id])
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+  document     Document?  @relation(fields: [document_id], references: [id])
   document_id  String?
-  subtasks     Task[]   @relation("TaskHierarchy")
-  parent_task  Task?    @relation("TaskHierarchy", fields: [parent_id], references: [id])
+  subtasks     Task[]     @relation("TaskHierarchy")
+  parent_task  Task?      @relation("TaskHierarchy", fields: [parent_id], references: [id])
   tags         Tag[]
 
   @@index([status, due_date])
@@ -55,14 +56,14 @@ model Task {
 }
 
 model Memory {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   type        MemoryType
-  content     String   @db.Text
-  metadata    Json     @default("{}")
-  embedding   Float[]  // For vector similarity search
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  document    Document? @relation(fields: [document_id], references: [id])
+  content     String     @db.Text
+  metadata    Json       @default("{}")
+  embedding   Float[] // For vector similarity search
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  document    Document?  @relation(fields: [document_id], references: [id])
   document_id String?
   tags        Tag[]
 
@@ -70,15 +71,15 @@ model Memory {
 }
 
 model Reference {
-  id          String   @id @default(uuid())
-  source      Document @relation("SourceReferences", fields: [source_id], references: [id])
-  source_id   String
-  target      Document @relation("TargetReferences", fields: [target_id], references: [id])
-  target_id   String
-  type        ReferenceType
-  confidence  Float
-  metadata    Json     @default("{}")
-  created_at  DateTime @default(now())
+  id         String        @id @default(uuid())
+  source     Document      @relation("SourceReferences", fields: [source_id], references: [id])
+  source_id  String
+  target     Document      @relation("TargetReferences", fields: [target_id], references: [id])
+  target_id  String
+  type       ReferenceType
+  confidence Float
+  metadata   Json          @default("{}")
+  created_at DateTime      @default(now())
 
   @@unique([source_id, target_id, type])
   @@index([source_id])
@@ -86,41 +87,41 @@ model Reference {
 }
 
 model Tag {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  color       String?
-  documents   Document[]
-  tasks       Task[]
-  memories    Memory[]
-  created_at  DateTime  @default(now())
+  id         String     @id @default(uuid())
+  name       String     @unique
+  color      String?
+  documents  Document[]
+  tasks      Task[]
+  memories   Memory[]
+  created_at DateTime   @default(now())
 }
 
 model Integration {
-  id            String    @id @default(uuid())
-  type          IntegrationType
-  name          String
-  config        Json      @default("{}")
-  credentials   Json      @default("{}")
-  status        IntegrationStatus @default(INACTIVE)
-  last_sync     DateTime?
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
-  interactions  Interaction[]
+  id           String            @id @default(uuid())
+  type         IntegrationType
+  name         String
+  config       Json              @default("{}")
+  credentials  Json              @default("{}")
+  status       IntegrationStatus @default(INACTIVE)
+  last_sync    DateTime?
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+  interactions Interaction[]
 
   @@unique([type, name])
 }
 
 model Interaction {
-  id            String    @id @default(uuid())
-  type          InteractionType
-  content       String    @db.Text
-  metadata      Json      @default("{}")
-  integration   Integration? @relation(fields: [integration_id], references: [id])
+  id             String          @id @default(uuid())
+  type           InteractionType
+  content        String          @db.Text
+  metadata       Json            @default("{}")
+  integration    Integration?    @relation(fields: [integration_id], references: [id])
   integration_id String?
-  document      Document? @relation(fields: [document_id], references: [id])
-  document_id   String?
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
+  document       Document?       @relation(fields: [document_id], references: [id])
+  document_id    String?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
 
   @@index([type, created_at])
   @@index([integration_id])
