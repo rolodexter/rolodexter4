@@ -39,9 +39,16 @@ async function verifyVercelPostgres() {
     try {
       const url = new URL(value);
       console.log(`  ${envVar}:`);
+      console.log(`    Protocol: ${url.protocol}`);
       console.log(`    Host: ${url.hostname}`);
       console.log(`    Database: ${url.pathname.slice(1)}`);
       console.log(`    SSL Mode: ${url.searchParams.get('sslmode') || 'not specified'}`);
+      if (url.protocol !== 'postgresql:') {
+        console.warn(`    ⚠️ Warning: Protocol should be 'postgresql://' but got '${url.protocol}//'`);
+      }
+      if (!url.searchParams.has('sslmode')) {
+        console.warn(`    ⚠️ Warning: No SSL mode specified, connection may fail`);
+      }
     } catch (e) {
       console.error(`  ❌ Invalid URL format for ${envVar}`);
     }
@@ -59,7 +66,8 @@ async function verifyVercelPostgres() {
   const client = new pg.Client({
     connectionString,
     ssl: {
-      rejectUnauthorized: true
+      rejectUnauthorized: true,
+      requestCert: true
     },
     connectionTimeoutMillis: 10000, // 10 second timeout
     query_timeout: 5000
@@ -67,7 +75,7 @@ async function verifyVercelPostgres() {
 
   try {
     console.log('Attempting direct SQL connection...');
-    console.log('Using non-pooling connection URL...');
+    console.log('Using non-pooling connection URL with SSL...');
     await client.connect();
     const result = await client.query('SELECT version()');
     console.log('✓ Direct Postgres SQL connection successful');
@@ -98,7 +106,7 @@ async function verifyVercelPostgres() {
 
   try {
     console.log('Attempting Prisma connection...');
-    console.log('Using Prisma connection URL with pgbouncer...');
+    console.log('Using Prisma connection URL with pgbouncer and SSL...');
     await prisma.$connect();
     console.log('Connection established, testing query...');
     const result = await prisma.$queryRaw`SELECT 1 as test`;
