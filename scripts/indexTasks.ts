@@ -64,20 +64,17 @@ async function indexTasks() {
           const relativePath = path.relative(process.cwd(), file);
           const status = await getTaskStatus(file);
           const title = await getTaskTitle(file);
-          const stats = await fs.stat(file);
           
           await prisma.task.upsert({
             where: { filePath: relativePath },
             update: {
               title,
-              status: status as TaskStatus,
-              updatedAt: stats.mtime
+              status: status as TaskStatus
             },
             create: {
               title,
               status: status as TaskStatus,
-              filePath: relativePath,
-              updatedAt: stats.mtime
+              filePath: relativePath
             }
           });
           
