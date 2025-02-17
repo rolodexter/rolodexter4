@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { searchDocuments } from '@/utils/db';
+import { searchDocuments, type Document } from '@/utils/db';
 
 interface SearchResult {
   title: string;
@@ -8,16 +8,9 @@ interface SearchResult {
   rank: number;
 }
 
-interface RawSearchResult {
-  title: string;
-  path: string;
-  excerpt: string;
-  rank: string;
-}
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<SearchResult[] | { message: string }>
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -32,7 +25,7 @@ export default async function handler(
     const results = await searchDocuments(query);
     
     // Format results with proper type handling
-    const formattedResults: SearchResult[] = results.map((doc) => ({
+    const formattedResults: SearchResult[] = results.map((doc: Document) => ({
       title: doc.title || "",
       path: doc.path || "",
       excerpt: typeof doc.metadata?.excerpt === 'string' ? doc.metadata.excerpt : "",
