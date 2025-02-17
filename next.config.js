@@ -1,4 +1,5 @@
-import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import webpack from 'webpack';
 
 /**
@@ -7,6 +8,12 @@ import webpack from 'webpack';
  * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
  * - Vercel Blob Integration: agents/rolodexterVS/tasks/active-tasks/vercel-blob-integration.html
  */
+
+// ES modules replacement for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   // Enhanced webpack configuration
@@ -33,14 +40,14 @@ const nextConfig = {
     // See agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html for structure details
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.join(__dirname, './src'),
-      '@components': path.join(__dirname, './src/components'),
-      '@lib': path.join(__dirname, './src/lib'),
-      '@utils': path.join(__dirname, './src/lib/utils'),
-      '@db': path.join(__dirname, './src/lib/db'), // Direct import for database module
-      '@styles': path.join(__dirname, './src/styles'),
-      'pages': path.join(__dirname, './pages'),
-      'api': path.join(__dirname, './pages/api')
+      '@': join(__dirname, './src'),
+      '@components': join(__dirname, './src/components'),
+      '@lib': join(__dirname, './src/lib'),
+      '@utils': join(__dirname, './src/lib/utils'),
+      '@db': join(__dirname, './src/lib/db'), // Direct import for database module
+      '@styles': join(__dirname, './src/styles'),
+      'pages': join(__dirname, './pages'),
+      'api': join(__dirname, './pages/api')
     }
 
     // Development-specific optimizations

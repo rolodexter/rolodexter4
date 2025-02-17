@@ -1,18 +1,28 @@
-import { PrismaClient, ErrorFormat } from '@prisma/client';
+/**
+ * Database Utility Module
+ * 
+ * Provides centralized database access and utility functions.
+ * Handles both Prisma and Vercel Postgres connections.
+ * 
+ * Related Tasks:
+ * - Database Migration: agents/rolodexterVS/tasks/active-tasks/database-migration.html
+ * - Vercel Blob Integration: agents/rolodexterVS/tasks/active-tasks/vercel-blob-integration.html
+ */
+
+import { PrismaClient, Prisma } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const prismaClientOptions = {
+const prismaClientOptions: Prisma.PrismaClientOptions = {
   datasources: {
     db: {
       url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
     }
   },
-  log: ['error', 'warn'] as const,
-  errorFormat: 'minimal' as ErrorFormat
+  log: ['error', 'warn']
 };
 
 async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<boolean> {
