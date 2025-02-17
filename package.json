@@ -7,6 +7,10 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "build:with-sync": "prisma generate && tsx scripts/syncHtmlToBlob.ts && next build",
+    "build:local": "npx prisma generate && npx tsx scripts/syncHtmlToBlob.ts && next build",
+    "db:push": "npx prisma db push",
+    "db:migrate": "npx prisma migrate deploy",
+    "check:postgres": "npx tsx scripts/checkPostgres.ts",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -16,7 +20,7 @@
     "sync-html": "tsx scripts/syncHtmlToBlob.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
+    "@prisma/client": "^6.3.1",
     "@types/pg": "^8.11.11",
     "@vercel/blob": "^0.27.1",
     "@vercel/postgres": "^0.10.0",
@@ -40,16 +44,13 @@
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "^10.4.15",
-    "esbuild": "0.20.1",
+    "esbuild": "^0.25.0",
     "postcss": "^8.4.28",
-    "prisma": "^5.10.2",
+    "prisma": "^6.3.1",
     "tailwindcss": "^3.3.3",
     "ts-node": "^10.9.2",
-    "tsx": "4.7.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.2.2",
     "webpack": "^5.98.0"
-  },
-  "overrides": {
-    "esbuild": "0.20.1"
   }
 }

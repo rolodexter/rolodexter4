@@ -16,39 +16,54 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Environment-specific configuration
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+
 const prismaClientOptions: Prisma.PrismaClientOptions = {
   datasources: {
     db: {
       url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
     }
   },
-  log: ['error', 'warn']
+  log: isDevelopment ? ['query', 'error', 'warn'] : ['error', 'warn']
 };
 
 async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<boolean> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await client.$connect();
-      console.log('Successfully connected to database');
+      console.log(`Successfully connected to database in ${process.env.NODE_ENV} environment`);
       return true;
     } catch (error) {
       if (i === maxRetries - 1) {
         console.error('Failed to connect to database after', maxRetries, 'attempts:', error);
         throw error;
       }
-      console.warn(`Connection attempt ${i + 1} failed, retrying in ${Math.pow(2, i)}s...`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+      const delay = Math.min(1000 * Math.pow(2, i), 10000); // Cap at 10 seconds
+      console.warn(`Connection attempt ${i + 1} failed, retrying in ${delay/1000}s...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   return false;
 }
 
+// Initialize Prisma client with environment-specific settings
 export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 
-// Initialize connection
-connectWithRetry(prisma).catch(console.error);
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Initialize connection with environment logging
+connectWithRetry(prisma)
+  .then(() => {
+    console.log(`Database initialized in ${process.env.NODE_ENV} environment`);
+  })
+  .catch(error => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  });
 
 // Vercel Postgres client for raw SQL operations
 export const sql = createClient({

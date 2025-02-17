@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build:with-sync",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "POSTGRES_PRISMA_URL": "@postgres-prisma-url",
+    "POSTGRES_URL_NON_POOLING": "@postgres-url-non-pooling",
+    "BLOB_READ_WRITE_TOKEN": "@blob-read-write-token"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_VERCEL_ENV": "production"
+    }
+  }
+} 
