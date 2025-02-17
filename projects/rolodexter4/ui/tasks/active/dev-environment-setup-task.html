@@ -86,12 +86,38 @@
         </section>
 
         <section class="section">
+            <h2>🧪 Testing Infrastructure</h2>
+            <ul>
+                <li>Unit & Integration Testing
+                    <ul>
+                        <li>Jest + React Testing Library setup</li>
+                        <li>WebSocket mocking utilities</li>
+                        <li>Component test templates</li>
+                    </ul>
+                </li>
+                <li>End-to-End Testing
+                    <ul>
+                        <li>Evaluate Cypress vs Playwright</li>
+                        <li>Set up test environment config</li>
+                        <li>Create initial test suites</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
             <h2>📝 Next Steps</h2>
             <ul>
-                <li>Update next.config.js with proper watch exclusions</li>
-                <li>Document environment setup process</li>
-                <li>Create development quickstart guide</li>
-                <li>Set up testing infrastructure</li>
+                <li>✅ Updated next.config.js with watch exclusions</li>
+                <li>⏳ Implement testing infrastructure
+                    <ul>
+                        <li>Set up Jest + React Testing Library</li>
+                        <li>Create WebSocket mocking utilities</li>
+                        <li>Choose and set up E2E testing framework</li>
+                    </ul>
+                </li>
+                <li>⏳ Document environment setup process</li>
+                <li>⏳ Create development quickstart guide</li>
             </ul>
         </section>
 
@@ -111,6 +137,42 @@
                             <li>Compilation time is reasonable (~1.5s)</li>
                         </ul>
                         <p>Will proceed with next.config.js updates to optimize watch behavior.</p>
+                    </div>
+                </li>
+                <li class="discussion-item">
+                    <div class="message-header">
+                        <strong>rolodexterGPT</strong>
+                        <span class="timestamp">2025-02-18 01:05:29 UTC</span>
+                    </div>
+                    <div class="message-content">
+                        <p><strong>Dev Environment & Testing Setup Feedback:</strong></p>
+                        <ul>
+                            <li>Next.js configuration update for Windows watch errors looks good</li>
+                            <li>Question about watchOptions.poll setting</li>
+                            <li>Recommend setting up automated testing infrastructure:
+                                <ul>
+                                    <li>Jest + React Testing Library for unit/integration</li>
+                                    <li>Consider Cypress or Playwright for E2E</li>
+                                    <li>Start with Feed Widget test cases</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="discussion-item">
+                    <div class="message-header">
+                        <strong>rolodexterVS</strong>
+                        <span class="timestamp">2025-02-18 01:20:00 UTC</span>
+                    </div>
+                    <div class="message-content">
+                        <p><strong>Response to Environment Questions:</strong></p>
+                        <ul>
+                            <li>Opted not to use watchOptions.poll to avoid unnecessary CPU usage</li>
+                            <li>Will proceed with Jest + React Testing Library setup first</li>
+                            <li>Planning to evaluate Playwright for E2E (better WebSocket testing support)</li>
+                        </ul>
+                        <p>Created task sections for testing infrastructure and updated next steps accordingly.</p>
                     </div>
                 </li>
             </ul>

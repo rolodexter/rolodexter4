@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="test-templates">
+    <meta name="graph-tags" content="testing, jest, react-testing-library, websocket">
+    <title>UI Testing Templates</title>
+</head>
+<body>
+    <div class="template-container">
+        <h1>🧪 UI Testing Templates</h1>
+        
+        <section>
+            <h2>Available Templates</h2>
+            <ul>
+                <li><code>component-test.template.ts</code> - Base template for React component testing</li>
+                <li><code>websocket-test.template.ts</code> - WebSocket mocking utilities</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Usage Guidelines</h2>
+            <ul>
+                <li>Always extend from these templates for consistency</li>
+                <li>Maintain the standard test structure:
+                    <ul>
+                        <li>Rendering tests</li>
+                        <li>Interaction tests</li>
+                        <li>Integration tests</li>
+                        <li>State management tests</li>
+                    </ul>
+                </li>
+                <li>Use WebSocket mocking for real-time components</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Test Organization</h2>
+            <pre>
+/tests
+    /components
+        /__tests__/
+            Component.test.ts
+    /hooks
+        /__tests__/
+            hook.test.ts
+    /utils
+        /__tests__/
+            util.test.ts
+    /mocks
+        websocket.mock.ts
+    /setup
+        jest.setup.ts</pre>
+        </section>
+    </div>
+
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .template-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2 { color: var(--accent-green); }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        pre {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="documentation">
+    <meta name="graph-tags" content="testing, jest, react-testing-library, websocket">
+    <title>UI Testing Guidelines</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+            --code-bg: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .doc-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: var(--accent-green); }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-container">
+        <h1>🧪 UI Testing Guidelines</h1>
+
+        <section class="section">
+            <h2>Getting Started</h2>
+            <p>Our testing infrastructure uses:</p>
+            <ul>
+                <li>Jest + React Testing Library for component testing</li>
+                <li>Custom WebSocket mocking utilities</li>
+                <li>Standardized test templates</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Test File Organization</h2>
+            <pre>
+/components
+    /ComponentName
+        ComponentName.tsx
+        /__tests__
+            ComponentName.test.tsx
+/hooks
+    /useHookName
+        useHookName.ts
+        /__tests__
+            useHookName.test.ts
+/utils
+    /utilName
+        utilName.ts
+        /__tests__
+            utilName.test.ts</pre>
+        </section>
+
+        <section class="section">
+            <h2>Using Test Templates</h2>
+            <p>Copy test templates from <code>/templates</code> directory:</p>
+            <ul>
+                <li><code>component-test.template.ts</code> - For React components</li>
+                <li><code>websocket-test.template.ts</code> - For WebSocket functionality</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>WebSocket Testing</h2>
+            <p>Use our WebSocket mocking utilities for testing real-time features:</p>
+            <pre>
+import { MockWebSocket } from '@/test/utils/websocket-test.utils';
+
+const mockWS = MockWebSocket.setup({
+    url: 'ws://localhost:3000/api/socket',
+    autoConnect: true
+});
+
+// Simulate incoming message
+mockWS.mockServerMessage({
+    type: 'update',
+    data: { /* ... */ }
+});
+
+// Simulate network issues
+const connection = mockWS.simulateNetworkLoss();
+// Test disconnected state
+connection.restore();
+// Test reconnected state</pre>
+        </section>
+
+        <section class="section">
+            <h2>Best Practices</h2>
+            <ul>
+                <li>Group tests logically (rendering, interactions, WebSocket)</li>
+                <li>Use React Testing Library's user-centric queries</li>
+                <li>Mock WebSocket connections in component tests</li>
+                <li>Test offline/reconnection scenarios</li>
+                <li>Validate state updates and UI reactions</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Running Tests</h2>
+            <p>Available commands:</p>
+            <ul>
+                <li><code>npm test</code> - Run all tests</li>
+                <li><code>npm test:watch</code> - Run tests in watch mode</li>
+                <li><code>npm test:coverage</code> - Generate coverage report</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>Last updated: 2025-02-18 01:55:00 UTC</p>
+            <p>Maintained by: rolodexterVS</p>
+        </footer>
+    </div>
+</body>
+</html>
