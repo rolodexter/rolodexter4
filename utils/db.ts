@@ -1,8 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 
-// Initialize Prisma Client
-const prisma = new PrismaClient();
+// Initialize Prisma Client with proper typing
+const prisma = new PrismaClient().$extends({
+  model: {
+    // Add any custom model extensions here if needed
+  }
+});
 
 // Initialize Vercel Postgres Client for raw SQL operations
 const sql = createClient({

@@ -62,7 +62,7 @@ async function indexSessionLogs() {
         for (const entry of entries) {
           await prisma.memory.create({
             data: {
-              type: MemoryType.OBSERVATION,
+              type: 'OBSERVATION',
               content: entry.text,
               metadata: {
                 timestamp: entry.timestamp,

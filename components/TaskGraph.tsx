@@ -222,7 +222,7 @@ const TaskGraph = () => {
               {/* Critical points */}
               <Line
                 type="monotone"
-                dataKey={(entry: any) => entry.dependencies < 70 ? entry.dependencies : null}
+                dataKey={(entry: TaskGraphData) => entry.dependencies < 70 ? entry.dependencies : null}
                 stroke="#FF0000"
                 strokeWidth={4}
                 dot={{ r: 6, fill: '#FF0000', filter: 'url(#glow)' }}
