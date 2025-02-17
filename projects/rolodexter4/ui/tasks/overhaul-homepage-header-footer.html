@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="task">
+    <meta name="graph-tags" content="ui, homepage, header, footer, design">
+    <meta name="graph-connections" content="../../knowledge-graph/index.html,../components/Header.tsx,../components/Footer.tsx">
+    <title>UI Overhaul - Homepage, Header, and Footer Task</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+            --success-bg: rgba(74, 222, 128, 0.1);
+            --warning-bg: rgba(234, 179, 8, 0.1);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: var(--accent-green); }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        .status { color: var(--accent-green); }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <h1>🎨 UI Overhaul: Homepage, Header, and Footer</h1>
+        
+        <section class="section">
+            <h2>📝 Task Overview</h2>
+            <p>Development of a visually engaging, responsive, and dynamic UI for the homepage, with properly enforced header and footer components to ensure consistent look across all pages.</p>
+            
+            <h3>🎯 Goals</h3>
+            <ul>
+                <li>Improve homepage layout using modern UI elements</li>
+                <li>Implement fixed and visually appealing header/footer</li>
+                <li>Ensure full responsiveness and cross-device compatibility</li>
+                <li>Apply gamification UI elements (cards, icons, animations)</li>
+                <li>Enforce design standardization across all pages</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>📋 Requirements</h2>
+            
+            <h3>1. Layout Structure</h3>
+            <ul>
+                <li>All pages inherit from Layout.tsx</li>
+                <li>Grid/flexbox-based structure for clean alignment</li>
+                <li>Proper spacing, padding, and margins for readability</li>
+            </ul>
+
+            <h3>2. Homepage Styling</h3>
+            <ul>
+                <li>Clear & bold typography (Crypto & Gamer audience focus)</li>
+                <li>Visually distinct sections with different background colors</li>
+                <li>Shadow, gradients, or neon glow effects for dynamism</li>
+            </ul>
+
+            <h3>3. Header Requirements</h3>
+            <ul>
+                <li>Fixed to top, sticky on scroll</li>
+                <li>Navigation: Home, Agents, Projects, Community, API</li>
+                <li>Icons next to links for better visual engagement</li>
+            </ul>
+
+            <h3>4. Footer Requirements</h3>
+            <ul>
+                <li>Fixed to bottom, consistent across pages</li>
+                <li>Social links, copyright, API reference</li>
+                <li>Quick-access buttons (Docs, Discord, GitHub)</li>
+            </ul>
+
+            <h3>5. Responsive Design</h3>
+            <ul>
+                <li>Mobile-friendly navigation with hamburger menu</li>
+                <li>Dynamic scaling of fonts and containers</li>
+                <li>Accessibility compliance (contrast, keyboard nav, ARIA)</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>📊 Status Tracking</h2>
+            <ul>
+                <li class="status">✅ Task Created: February 17, 2025</li>
+                <li class="status">✅ Files & Structure Verified</li>
+                <li class="status">🔄 Implementation In Progress</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🔗 Related Files</h2>
+            <ul>
+                <li><code>pages/index.tsx</code> - Homepage implementation</li>
+                <li><code>components/Header.tsx</code> - Header component</li>
+                <li><code>components/Footer.tsx</code> - Footer component</li>
+                <li><code>layout/Layout.tsx</code> - Main layout wrapper</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

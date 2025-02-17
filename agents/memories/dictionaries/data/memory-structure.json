@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "rolodexter4 Memory Structure",
+  "description": "Defines how memory is stored, retrieved, and organized across the system",
+  "version": "1.0.0",
+  "lastUpdated": "2025-02-17",
+  "memoryTypes": {
+    "session": {
+      "description": "Daily interaction logs",
+      "structure": {
+        "path": "/agents/memories/session-logs/{year}/{month}/{day}.html",
+        "format": "html",
+        "metadata": {
+          "date": "ISO-8601 date",
+          "agent": "string",
+          "sessionId": "string"
+        },
+        "retention": "1 year"
+      }
+    },
+    "dictionary": {
+      "description": "System-wide definitions and structures",
+      "structure": {
+        "path": "/agents/memories/dictionaries/{category}/{file}.json",
+        "format": "json",
+        "categories": ["data", "entities", "terminology"],
+        "retention": "permanent"
+      }
+    },
+    "agent": {
+      "description": "Agent-specific memories",
+      "structure": {
+        "path": "/agents/{agentName}/memories/{type}/{file}",
+        "format": ["json", "html"],
+        "types": {
+          "interactions": "Direct interactions with users or other agents",
+          "decisions": "Decision-making processes and outcomes",
+          "training": "Learning and improvement data",
+          "execution": "Task execution logs"
+        },
+        "retention": "configurable per agent"
+      }
+    }
+  },
+  "retrievalMethods": {
+    "direct": {
+      "description": "Direct file system access",
+      "use": "Recent or frequently accessed memories"
+    },
+    "indexed": {
+      "description": "Database-indexed lookup",
+      "use": "Historical or complex queries"
+    },
+    "graph": {
+      "description": "Knowledge graph traversal",
+      "use": "Relationship-based queries"
+    }
+  },
+  "consolidation": {
+    "frequency": "daily",
+    "process": [
+      "Aggregate session logs",
+      "Update knowledge graph",
+      "Optimize retrieval indexes",
+      "Archive old memories"
+    ],
+    "archival": {
+      "trigger": "age > retention period",
+      "location": "cold storage",
+      "format": "compressed json"
+    }
+  },
+  "relationships": {
+    "graphStructure": {
+      "nodes": {
+        "memory": "Individual memory entries",
+        "agent": "Memory owners/creators",
+        "concept": "Tagged concepts/topics",
+        "entity": "Referenced entities"
+      },
+      "edges": {
+        "creates": "Agent creates memory",
+        "references": "Memory references entity",
+        "relates": "Memory relates to concept",
+        "connects": "Memory links to other memory"
+      }
+    }
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "rolodexter4 API Metadata",
+  "description": "Defines standard request/response structures for the API",
+  "version": "1.0.0",
+  "lastUpdated": "2025-02-17",
+  "endpoints": {
+    "agents": {
+      "GET /api/agents": {
+        "description": "List all agents",
+        "parameters": {
+          "type": {
+            "in": "query",
+            "type": "string",
+            "enum": ["AI", "HUMAN", "HYBRID"],
+            "description": "Filter by agent type"
+          },
+          "status": {
+            "in": "query",
+            "type": "string",
+            "enum": ["ACTIVE", "INACTIVE", "MAINTENANCE"],
+            "description": "Filter by agent status"
+          }
+        },
+        "response": {
+          "200": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Agent"
+            }
+          }
+        }
+      },
+      "POST /api/agents/memories": {
+        "description": "Store a new memory for an agent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Memory"
+              }
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "$ref": "#/components/schemas/Memory"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Agent": {
+        "type": "object",
+        "required": ["id", "name", "type"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Agent display name"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["AI", "HUMAN", "HYBRID"],
+            "description": "Agent type"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of agent capabilities"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "INACTIVE", "MAINTENANCE"],
+            "default": "ACTIVE",
+            "description": "Current status"
+          }
+        }
+      },
+      "Memory": {
+        "type": "object",
+        "required": ["agent_id", "type", "content"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier"
+          },
+          "agent_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Associated agent ID"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["INTERACTION", "DECISION", "TRAINING", "EXECUTION"],
+            "description": "Memory type"
+          },
+          "content": {
+            "type": "object",
+            "description": "Memory content"
+          },
+          "context": {
+            "type": "object",
+            "description": "Additional context"
+          }
+        }
+      }
+    }
+  }
+}

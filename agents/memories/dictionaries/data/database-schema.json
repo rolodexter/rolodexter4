@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "rolodexter4 Database Schema",
+  "description": "Defines all database table structures and relationships",
+  "version": "1.0.0",
+  "lastUpdated": "2025-02-17",
+  "schemas": {
+    "agents": {
+      "table": "agents",
+      "description": "Stores agent information and capabilities",
+      "fields": {
+        "id": {
+          "type": "uuid",
+          "primary": true,
+          "description": "Unique identifier for the agent"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Agent's display name"
+        },
+        "type": {
+          "type": "enum",
+          "values": ["AI", "HUMAN", "HYBRID"],
+          "required": true,
+          "description": "Type of agent"
+        },
+        "capabilities": {
+          "type": "jsonb",
+          "description": "Array of agent capabilities"
+        },
+        "status": {
+          "type": "enum",
+          "values": ["ACTIVE", "INACTIVE", "MAINTENANCE"],
+          "default": "ACTIVE",
+          "description": "Current agent status"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "default": "NOW()",
+          "description": "When the agent was created"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "default": "NOW()",
+          "description": "Last update timestamp"
+        }
+      },
+      "indexes": [
+        {
+          "name": "agents_name_idx",
+          "fields": ["name"],
+          "unique": true
+        },
+        {
+          "name": "agents_type_status_idx",
+          "fields": ["type", "status"]
+        }
+      ]
+    },
+    "memories": {
+      "table": "memories",
+      "description": "Stores agent memory entries",
+      "fields": {
+        "id": {
+          "type": "uuid",
+          "primary": true,
+          "description": "Unique identifier for the memory"
+        },
+        "agent_id": {
+          "type": "uuid",
+          "required": true,
+          "references": "agents.id",
+          "description": "Associated agent"
+        },
+        "type": {
+          "type": "enum",
+          "values": ["INTERACTION", "DECISION", "TRAINING", "EXECUTION"],
+          "required": true,
+          "description": "Type of memory"
+        },
+        "content": {
+          "type": "jsonb",
+          "required": true,
+          "description": "Memory content"
+        },
+        "context": {
+          "type": "jsonb",
+          "description": "Additional context for the memory"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "default": "NOW()",
+          "description": "When the memory was created"
+        }
+      },
+      "indexes": [
+        {
+          "name": "memories_agent_type_idx",
+          "fields": ["agent_id", "type"]
+        },
+        {
+          "name": "memories_created_at_idx",
+          "fields": ["created_at"]
+        }
+      ]
+    }
+  }
+}

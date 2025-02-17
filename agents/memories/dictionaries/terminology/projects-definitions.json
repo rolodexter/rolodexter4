@@ -1,0 +1,73 @@
+{
+  "projects": {
+    "rolodexter4": {
+      "description": "The flagship project integrating AI agents, knowledge management, and task automation into a cohesive development ecosystem",
+      "type": "main",
+      "sub_projects": {
+        "knowledge-graph": {
+          "description": "Core system for mapping relationships between files, tasks, and insights across the entire rolodexter4 ecosystem",
+          "features": [
+            "Metadata processing",
+            "Graph-based navigation",
+            "Relationship mapping",
+            "Context preservation"
+          ]
+        },
+        "ui": {
+          "description": "Modern web interface for interacting with rolodexter4's features and visualizing the knowledge graph",
+          "features": [
+            "Component library",
+            "Responsive design",
+            "Task management interface",
+            "Graph visualization"
+          ]
+        },
+        "tasks": {
+          "description": "Task management and tracking system for organizing development workflows and project initiatives",
+          "features": [
+            "Project initialization",
+            "Task definitions",
+            "Progress tracking",
+            "Integration with knowledge graph"
+          ]
+        }
+      }
+    },
+    "rolodexter-labs": {
+      "description": "Experimental division focused on R&D, prototyping new features and exploring emerging technologies",
+      "type": "research",
+      "focus_areas": [
+        "AI integration",
+        "Workflow automation",
+        "Developer experience",
+        "Tool optimization"
+      ]
+    },
+    "research": {
+      "description": "Dedicated research initiative exploring AI, automation, and developer productivity enhancements",
+      "type": "research",
+      "areas": [
+        "AI agents",
+        "Development workflows",
+        "Knowledge management",
+        "Tool integration"
+      ]
+    },
+    "community": {
+      "description": "Hub for community engagement, documentation, and collaborative development initiatives",
+      "type": "community",
+      "components": [
+        "Documentation",
+        "Contribution guidelines",
+        "Community projects",
+        "Feedback channels"
+      ]
+    }
+  },
+  "metadata": {
+    "last_updated": "2025-02-17",
+    "version": "1.0.0",
+    "maintained_by": "rolodexterVS",
+    "update_frequency": "As needed when new projects or sub-projects are added"
+  }
+} 

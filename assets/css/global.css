@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-bg: #0f172a;
+  --primary-text: #f8fafc;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Layout enforced styles */
+.bg-primary {
+  background-color: var(--primary-bg);
+}
+
+.text-primary {
+  color: var(--primary-text);
+}
+
+/* Ensures footer sticks to bottom */
+#__next {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

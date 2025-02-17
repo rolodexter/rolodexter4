@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="UI">
+    <meta name="graph-tags" content="header, footer, responsive, gamification, crypto, gaming, social-fi">
+    <meta name="graph-connections" content="../../../knowledge-graph/index.html,../../ui/components/Header.tsx,../../ui/components/Footer.tsx">
+    <title>UI Task: Header & Footer Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .task-header {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--accent-green);
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent-green);
+            margin-top: 2rem;
+        }
+        .objective {
+            background: rgba(74, 222, 128, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .requirements-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        li::before {
+            content: "•";
+            color: var(--accent-green);
+            position: absolute;
+            left: 0;
+        }
+        .checklist {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            background: rgba(74, 222, 128, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <header class="task-header">
+            <h1>🎨 Header & Footer Design Task</h1>
+            <div class="objective">
+                <strong>🎯 Objective:</strong> Design and implement a highly engaging, responsive header & footer for rolodexter4, targeting crypto traders, gamers, and social-fi users.
+            </div>
+        </header>
+
+        <section class="requirements-section">
+            <h2>🚀 Header Requirements</h2>
+            <ul>
+                <li>
+                    <strong>Dynamic Navigation</strong>
+                    <ul>
+                        <li>Active state tracking</li>
+                        <li>Smooth transitions between pages</li>
+                        <li>Mobile-responsive menu</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Gamification Elements</strong>
+                    <ul>
+                        <li>User progress bar</li>
+                        <li>Achievement badges display</li>
+                        <li>Daily tasks counter</li>
+                        <li>Experience points (XP) display</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Theme Management</strong>
+                    <ul>
+                        <li>Dark/Light mode toggle</li>
+                        <li>Custom theme selection</li>
+                        <li>Theme persistence</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Notifications</strong>
+                    <ul>
+                        <li>Real-time updates</li>
+                        <li>Badge count for unread items</li>
+                        <li>Notification categories</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="requirements-section">
+            <h2>🌟 Footer Requirements</h2>
+            <ul>
+                <li>
+                    <strong>Dynamic Content</strong>
+                    <ul>
+                        <li>Latest session logs preview</li>
+                        <li>Trending pages section</li>
+                        <li>Community activity feed</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Quick Links</strong>
+                    <ul>
+                        <li>Labs projects</li>
+                        <li>Community hub</li>
+                        <li>Research papers</li>
+                        <li>Active tasks</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Live Updates</strong>
+                    <ul>
+                        <li>System status indicator</li>
+                        <li>Recent deployments</li>
+                        <li>Active contributors</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="requirements-section">
+            <h2>📝 Technical Requirements</h2>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <strong>Component Structure</strong>
+                    <span class="status">Next.js + TypeScript</span>
+                </div>
+                <div class="checklist-item">
+                    <strong>State Management</strong>
+                    <span class="status">Context API</span>
+                </div>
+                <div class="checklist-item">
+                    <strong>Styling</strong>
+                    <span class="status">Tailwind CSS</span>
+                </div>
+                <div class="checklist-item">
+                    <strong>Performance Target</strong>
+                    <span class="status">Load Time < 300ms</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="requirements-section">
+            <h2>📅 Timeline & Stakeholders</h2>
+            <ul>
+                <li><strong>Design Review:</strong> TBD</li>
+                <li><strong>Implementation:</strong> TBD</li>
+                <li><strong>Testing:</strong> TBD</li>
+                <li><strong>Deployment:</strong> TBD</li>
+            </ul>
+            <p><strong>Key Stakeholders:</strong> Visual Engineer team, UX Research team, Frontend developers, Community managers</p>
+        </section>
+    </div>
+</body>
+</html>

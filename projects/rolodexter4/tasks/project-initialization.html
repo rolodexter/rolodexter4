@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="Project Task">
+    <meta name="graph-tags" content="initialization, setup, website, infrastructure">
+    <meta name="graph-connections" content="../knowledge-graph/index.html,../ui/tasks/header-footer-task.html">
+    <title>rolodexter4 Website - Project Initialization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .task-header {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--accent-green);
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent-green);
+            margin-top: 2rem;
+        }
+        .objective {
+            background: rgba(74, 222, 128, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .requirements-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        li::before {
+            content: "•";
+            color: var(--accent-green);
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <header class="task-header">
+            <h1>🌐 rolodexter4 Website Project Initialization</h1>
+            <div class="objective">
+                <strong>🎯 Objective:</strong> Set up the core infrastructure and development environment for the rolodexter4 website.
+            </div>
+        </header>
+
+        <section class="requirements-section">
+            <h2>🚀 Infrastructure Setup</h2>
+            <ul>
+                <li>
+                    <strong>Next.js Configuration</strong>
+                    <ul>
+                        <li>TypeScript setup ✅</li>
+                        <li>Tailwind CSS integration ✅</li>
+                        <li>Path aliases configuration ✅</li>
+                        <li>Environment variables structure</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Database & Caching</strong>
+                    <ul>
+                        <li>Vercel Postgres setup</li>
+                        <li>Redis configuration ✅</li>
+                        <li>Prisma schema definition ✅</li>
+                        <li>Connection pooling setup</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>CI/CD Pipeline</strong>
+                    <ul>
+                        <li>GitHub Actions workflow ✅</li>
+                        <li>Layout enforcement checks ✅</li>
+                        <li>Automated testing setup</li>
+                        <li>Deployment configuration</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="requirements-section">
+            <h2>📂 Project Structure</h2>
+            <ul>
+                <li>
+                    <strong>Core Components</strong>
+                    <ul>
+                        <li>Header component ✅</li>
+                        <li>Footer component ✅</li>
+                        <li>Layout wrapper ✅</li>
+                        <li>Theme provider</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>API Routes</strong>
+                    <ul>
+                        <li>Agents endpoints</li>
+                        <li>Projects endpoints</li>
+                        <li>Operations endpoints</li>
+                        <li>Authentication middleware</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="requirements-section">
+            <h2>🎨 Design System</h2>
+            <ul>
+                <li>
+                    <strong>UI Components</strong>
+                    <ul>
+                        <li>Button system</li>
+                        <li>Card templates</li>
+                        <li>Navigation elements</li>
+                        <li>Form components</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Theme Configuration</strong>
+                    <ul>
+                        <li>Color palette ✅</li>
+                        <li>Typography system ✅</li>
+                        <li>Spacing scale</li>
+                        <li>Animation library</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="requirements-section">
+            <h2>📅 Timeline & Stakeholders</h2>
+            <ul>
+                <li><strong>Visual Engineer:</strong> UI/UX implementation</li>
+                <li><strong>rolodexterVS:</strong> Infrastructure & automation</li>
+                <li><strong>rolodexterGPT:</strong> Content & intelligence</li>
+                <li><strong>Joe Maristela:</strong> Project oversight</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>
