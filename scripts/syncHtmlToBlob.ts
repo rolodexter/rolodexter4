@@ -2,6 +2,10 @@ import { put } from '@vercel/blob';
 import { readdir, readFile } from 'fs/promises';
 import { join, relative } from 'path';
 import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 const prisma = new PrismaClient();
 
@@ -90,11 +94,16 @@ async function extractMetadata(content: string, filePath: string) {
 
 async function syncHtmlToBlob() {
   if (!process.env.BLOB_STORE_NAME) {
-    throw new Error('BLOB_STORE_NAME environment variable is not set');
+    throw new Error('BLOB_STORE_NAME environment variable is not set. Check .env.local file.');
+  }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set. Check .env.local file.');
   }
 
   try {
     console.log('Starting HTML files sync to Vercel Blob Storage and PostgreSQL...');
+    console.log(`Using blob store: ${process.env.BLOB_STORE_NAME}`);
     
     for (const folder of HTML_FOLDERS) {
       const fullPath = join(process.cwd(), folder);
