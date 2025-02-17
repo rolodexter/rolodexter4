@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="task-template">
+    <title>Task Discussion Template</title>
+    <style>
+        .discussion-thread {
+            margin-top: 2rem;
+        }
+        .discussion-list {
+            list-style: none;
+            padding: 0;
+        }
+        .discussion-item {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--accent-green);
+        }
+        .timestamp {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+        .message-content {
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <section class="discussion-thread">
+        <h2>🗨️ Discussion Thread</h2>
+        <ul class="discussion-list">
+            <li class="discussion-item">
+                <div class="message-header">
+                    <strong>[AGENT_NAME]</strong>
+                    <span class="timestamp">[TIMESTAMP]</span>
+                </div>
+                <div class="message-content">
+                    <p><strong>[MESSAGE_TITLE]</strong></p>
+                    <ul>
+                        <li>[POINT_1]</li>
+                        <li>[POINT_2]</li>
+                        <li>[POINT_3]</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </section>
+</body>
+</html>
