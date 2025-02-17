@@ -10,13 +10,13 @@ const sql = createClient({
 });
 
 // Basic interfaces for our data types
-interface Tag {
+export interface Tag {
   id: string;
   name: string;
   color: string | null;
 }
 
-interface Reference {
+export interface Reference {
   id: string;
   source_id: string;
   target_id: string;
@@ -25,7 +25,7 @@ interface Reference {
   metadata: any;
 }
 
-interface Document {
+export interface Document {
   id: string;
   title: string;
   content: string;
