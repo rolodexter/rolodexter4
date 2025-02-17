@@ -25,6 +25,11 @@ const Header = () => {
     { icon: <FiCpu className="w-4 h-4" />, label: 'SYSTEM LOAD', value: '72%', status: 'warning' },
     { icon: <FiShield className="w-4 h-4" />, label: 'SECURITY', value: '98%', status: 'nominal' },
   ])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Simulate metric updates with more realistic values
   useEffect(() => {
@@ -70,6 +75,18 @@ const Header = () => {
     { icon: FiMoon, label: 'DARK MODE', value: 'dark' },
     { icon: FiMonitor, label: 'SYSTEM', value: 'system' }
   ]
+
+  const renderThemeIcon = () => {
+    if (!mounted) return null // Prevent hydration mismatch
+    
+    if (theme === 'light') {
+      return <FiSun className="w-5 h-5 text-red-400" />
+    } else if (theme === 'dark') {
+      return <FiMoon className="w-5 h-5 text-red-400" />
+    } else {
+      return <FiMonitor className="w-5 h-5 text-red-400" />
+    }
+  }
 
   return (
     <motion.header 
@@ -242,13 +259,7 @@ const Header = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowThemeMenu(!showThemeMenu)}
             >
-              {theme === 'light' ? (
-                <FiSun className="w-5 h-5 text-red-400" />
-              ) : theme === 'dark' ? (
-                <FiMoon className="w-5 h-5 text-red-400" />
-              ) : (
-                <FiMonitor className="w-5 h-5 text-red-400" />
-              )}
+              {renderThemeIcon()}
               <motion.div 
                 className="absolute inset-0 border border-red-500/30 rounded-lg"
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
