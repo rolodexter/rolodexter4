@@ -43,11 +43,12 @@ const generateMockData = (count: number): TaskData[] => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="custom-tooltip bg-black/90 border border-[#ff3a3a] p-3 rounded-lg backdrop-blur-sm">
-        <p className="font-mono text-sm">TIME: <span className="text-blue-400">{label}</span></p>
+      <div className="custom-tooltip">
+        <p className="text-hud mb-2">Time: <span className="text-data">{label}</span></p>
         {payload.map((entry: any, index: number) => (
-          <p key={index} className="font-mono text-sm">
-            {entry.name.toUpperCase()}: <span style={{ color: entry.color }}>{entry.value}</span>
+          <p key={index} className="text-hud flex justify-between items-center gap-4">
+            <span>{entry.name}:</span>
+            <span className="text-data">{entry.value}</span>
           </p>
         ))}
       </div>
@@ -60,64 +61,91 @@ const TaskVolumeChart = () => {
   const [data, setData] = useState<TaskData[]>([]);
   const [status, setStatus] = useState('NOMINAL');
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const isMountedRef = useRef(false);
 
   useEffect(() => {
-    console.log('TaskVolumeChart mounted');
-    console.log('Initial render - Container ref:', containerRef.current);
-    
-    if (containerRef.current) {
-      const { offsetWidth, offsetHeight } = containerRef.current;
-      console.log('Container dimensions on mount:', {
-        width: offsetWidth,
-        height: offsetHeight,
-        style: window.getComputedStyle(containerRef.current)
+    // Only initialize data if not already mounted
+    if (!isMountedRef.current) {
+      console.log('TaskVolumeChart mounted');
+      isMountedRef.current = true;
+      
+      // Enhanced dimension logging
+      const logDimensions = () => {
+        if (containerRef.current) {
+          const { offsetWidth, offsetHeight } = containerRef.current;
+          const computedStyle = window.getComputedStyle(containerRef.current);
+          
+          console.log('Container dimensions:', {
+            offset: { width: offsetWidth, height: offsetHeight },
+            client: { 
+              width: containerRef.current.clientWidth, 
+              height: containerRef.current.clientHeight 
+            },
+            computed: {
+              width: computedStyle.width,
+              height: computedStyle.height,
+              padding: computedStyle.padding,
+              margin: computedStyle.margin
+            }
+          });
+          
+          setDimensions({ width: offsetWidth, height: offsetHeight });
+        }
+      };
+
+      // Log initial dimensions
+      logDimensions();
+
+      // Enhanced resize observer
+      const resizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          console.log('Container resized:', {
+            width,
+            height,
+            aspectRatio: width / height
+          });
+          setDimensions({ width, height });
+        }
+        logDimensions();
       });
-    }
 
-    // Initialize with mock data
-    const initialData = generateMockData(20);
-    console.log('Initial chart data:', initialData);
-    setData(initialData);
-
-    // Add resize observer
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        console.log('Container resized:', {
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    // Update data periodically
-    const interval = setInterval(() => {
-      setData(prevData => {
-        const newData = [...prevData.slice(1), {
-          time: `${prevData.length}m`,
-          completion: Math.floor(Math.random() * 40) + 60,
-          volume: Math.floor(Math.random() * 100),
-          completed: Math.floor(Math.random() * 60),
-          pending: Math.floor(Math.random() * 40)
-        }];
-
-        // Update status based on recent performance
-        const avgCompletion = newData.slice(-5).reduce((acc, curr) => acc + curr.completion, 0) / 5;
-        setStatus(avgCompletion < 70 ? 'CRITICAL' : avgCompletion < 80 ? 'SUBOPTIMAL' : 'NOMINAL');
-
-        return newData;
-      });
-    }, 3000);
-
-    return () => {
-      clearInterval(interval);
       if (containerRef.current) {
-        resizeObserver.unobserve(containerRef.current);
+        resizeObserver.observe(containerRef.current);
       }
-    };
+
+      // Initialize with mock data
+      const initialData = generateMockData(20);
+      console.log('Initial chart data:', initialData);
+      setData(initialData);
+
+      // Update data periodically
+      const interval = setInterval(() => {
+        setData(prevData => {
+          const newData = [...prevData.slice(1), {
+            time: `${prevData.length}m`,
+            completion: Math.floor(Math.random() * 40) + 60,
+            volume: Math.floor(Math.random() * 100),
+            completed: Math.floor(Math.random() * 60),
+            pending: Math.floor(Math.random() * 40)
+          }];
+
+          // Update status based on recent performance
+          const avgCompletion = newData.slice(-5).reduce((acc, curr) => acc + curr.completion, 0) / 5;
+          setStatus(avgCompletion < 70 ? 'CRITICAL' : avgCompletion < 80 ? 'SUBOPTIMAL' : 'NOMINAL');
+
+          return newData;
+        });
+      }, 3000);
+
+      return () => {
+        clearInterval(interval);
+        if (containerRef.current) {
+          resizeObserver.unobserve(containerRef.current);
+        }
+      };
+    }
   }, []);
 
   // Debug log when data changes
@@ -128,33 +156,28 @@ const TaskVolumeChart = () => {
   return (
     <div 
       ref={containerRef}
-      className="hud-panel relative overflow-visible bg-gray-900/90 border-2 border-red-500/30"
-      style={{ 
-        height: '100%',
-        minHeight: '400px',
-        zIndex: 10,
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        visibility: 'visible'
-      }}
+      className="hud-panel relative w-full h-full flex flex-col overflow-hidden"
+      style={{ minHeight: '400px' }}
     >
-      {/* Debug info with more details */}
-      <div className="absolute top-2 right-2 z-50 bg-black/80 p-2 text-xs font-mono text-red-500">
-        <div>Data points: {data.length}</div>
-        <div>Width: {containerRef.current?.offsetWidth || 0}px</div>
-        <div>Height: {containerRef.current?.offsetHeight || 0}px</div>
-        <div>Data valid: {Boolean(data && data.length > 0).toString()}</div>
-      </div>
+      {/* Scanline Effect */}
+      <div className="scanline"></div>
 
-      {/* Header with Status */}
-      <div className="flex items-center justify-between p-4 mb-2" style={{ zIndex: 20 }}>
-        <h3 className="text-red-500 text-sm uppercase font-mono">Task Volume Analysis</h3>
+      {/* Debug Overlay - Only visible during development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute top-2 left-2 z-50 bg-black/80 p-2 text-xs text-hud pointer-events-none">
+          <div>Container: {dimensions.width.toFixed(0)}x{dimensions.height.toFixed(0)}</div>
+          <div>Aspect: {(dimensions.width / dimensions.height).toFixed(2)}</div>
+          <div>Data Points: {data.length}</div>
+        </div>
+      )}
+
+      {/* Status Overlay */}
+      <div className="absolute top-4 right-4 z-20 flex items-center space-x-4">
         <motion.span 
-          className={`text-sm font-mono ${
-            status === 'CRITICAL' ? 'text-red-500' :
-            status === 'SUBOPTIMAL' ? 'text-yellow-500' :
-            'text-green-500'
+          className={`text-status ${
+            status === 'CRITICAL' ? 'status-critical' :
+            status === 'SUBOPTIMAL' ? 'status-warning' :
+            'status-nominal'
           }`}
           animate={{ opacity: [1, 0.5, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -163,52 +186,80 @@ const TaskVolumeChart = () => {
         </motion.span>
       </div>
 
-      {/* Chart Container with debug styles */}
-      <div className="flex flex-col flex-grow h-full p-4 chart-debug" style={{ minHeight: 0, position: 'relative', zIndex: 20 }}>
+      {/* Chart Container */}
+      <div className="flex-1 flex flex-col min-h-0 gap-4 relative z-10 p-4">
         {/* Main Performance Chart */}
-        <div className="flex-grow mb-4 bg-gray-900/50 p-2 rounded-lg border border-red-500/20" 
-          style={{ 
-            minHeight: 0, 
-            height: 'calc(100% - 140px)',
-            border: '2px solid yellow',
-            position: 'relative',
-            zIndex: 25
-          }}
-        >
+        <div className="flex-1 min-h-0 relative bg-gray-900/20 rounded-lg border border-red-500/20 backdrop-blur-sm" style={{ height: 'calc(100% - 96px)' }}>
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300} debounce={50}>
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
               <ComposedChart 
                 data={data} 
-                margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                style={{ visibility: 'visible', zIndex: 30 }}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               >
                 <defs>
                   <linearGradient id="completionGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ff3a3a" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#ff3a3a" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#E0E0E0" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#E0E0E0" stopOpacity={0.1}/>
                   </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
                 </defs>
                 
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 58, 58, 0.1)" />
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(48, 48, 48, 0.2)"
+                  vertical={false}
+                />
                 <XAxis 
                   dataKey="time" 
-                  stroke="#4B5563"
-                  tick={{ fill: '#4B5563', fontSize: 12 }}
-                  height={30}
+                  stroke="#404040"
+                  tick={{ 
+                    fill: '#A0A0A0', 
+                    fontSize: 12,
+                    fontFamily: 'var(--font-tactical)',
+                    letterSpacing: '0.05em'
+                  }}
+                  axisLine={{ stroke: '#404040' }}
+                  tickLine={{ stroke: '#404040' }}
                 />
                 <YAxis 
-                  stroke="#4B5563"
-                  tick={{ fill: '#4B5563', fontSize: 12 }}
-                  width={40}
+                  stroke="#404040"
+                  tick={{ 
+                    fill: '#A0A0A0', 
+                    fontSize: 12,
+                    fontFamily: 'var(--font-tactical)',
+                    letterSpacing: '0.05em'
+                  }}
+                  axisLine={{ stroke: '#404040' }}
+                  tickLine={{ stroke: '#404040' }}
                   domain={[0, 100]}
                 />
-                <Tooltip content={CustomTooltip} />
-                <Legend wrapperStyle={{ position: 'relative', marginTop: '10px' }}/>
+                <Tooltip 
+                  content={CustomTooltip}
+                  cursor={{ stroke: '#404040' }}
+                />
+                <Legend 
+                  wrapperStyle={{ 
+                    padding: '10px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(16, 16, 16, 0.95)',
+                    border: '1px solid var(--border-color)',
+                    fontFamily: 'var(--font-tactical)',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase'
+                  }}
+                />
                 
                 <Area
                   type="monotone"
                   dataKey="completion"
-                  stroke="#ff3a3a"
+                  stroke="#E0E0E0"
+                  strokeWidth={2}
                   fill="url(#completionGradient)"
                   name="completion"
                   isAnimationActive={false}
@@ -216,7 +267,7 @@ const TaskVolumeChart = () => {
                 <Line 
                   type="monotone"
                   dataKey="completion"
-                  stroke="#ff3a3a"
+                  stroke="#E0E0E0"
                   strokeWidth={2}
                   dot={false}
                   name="completion"
@@ -225,52 +276,88 @@ const TaskVolumeChart = () => {
               </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-full border-2 border-red-500">
+            <div className="flex items-center justify-center h-full">
               <span className="text-red-500 font-mono">No Data Available</span>
             </div>
           )}
         </div>
 
         {/* Volume Chart */}
-        <div className="h-[120px] bg-gray-900/50 p-2 rounded-lg border-2 border-blue-500" style={{ position: 'relative', zIndex: 25 }}>
+        <div className="h-24 relative bg-gray-900/20 rounded-lg border border-red-500/20 backdrop-blur-sm">
           {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height={100} debounce={50}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={data} 
-                margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
-                style={{ visibility: 'visible', zIndex: 30 }}
+                margin={{ top: 10, right: 20, bottom: 0, left: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 58, 58, 0.1)" />
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(48, 48, 48, 0.2)"
+                  vertical={false}
+                />
                 <XAxis 
                   dataKey="time" 
-                  stroke="#4B5563"
-                  tick={{ fill: '#4B5563', fontSize: 12 }}
-                  height={30}
+                  stroke="#404040"
+                  tick={{ fill: '#A0A0A0', fontSize: 12 }}
+                  axisLine={{ stroke: '#404040' }}
+                  tickLine={{ stroke: '#404040' }}
                 />
                 <YAxis 
-                  stroke="#4B5563"
-                  tick={{ fill: '#4B5563', fontSize: 12 }}
-                  width={40}
+                  stroke="#404040"
+                  tick={{ fill: '#A0A0A0', fontSize: 12 }}
+                  axisLine={{ stroke: '#404040' }}
+                  tickLine={{ stroke: '#404040' }}
                 />
-                <Tooltip content={CustomTooltip} />
-                <Legend wrapperStyle={{ position: 'relative', marginTop: '5px' }}/>
+                <Tooltip 
+                  content={CustomTooltip}
+                  cursor={{ fill: 'rgba(48, 48, 48, 0.1)' }}
+                />
+                <Legend 
+                  wrapperStyle={{ 
+                    padding: '5px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(16, 16, 16, 0.95)',
+                    border: '1px solid var(--border-color)'
+                  }}
+                />
                 
-                <Bar dataKey="completed" stackId="a" fill="#4ade80" name="completed" isAnimationActive={false} />
-                <Bar dataKey="pending" stackId="a" fill="#ff3a3a" name="pending" isAnimationActive={false} />
+                <Bar 
+                  dataKey="completed" 
+                  stackId="a" 
+                  fill="#E0E0E0" 
+                  fillOpacity={0.8}
+                  name="completed" 
+                  isAnimationActive={false}
+                />
+                <Bar 
+                  dataKey="pending" 
+                  stackId="a" 
+                  fill="#FF2C2C" 
+                  fillOpacity={0.8}
+                  name="pending" 
+                  isAnimationActive={false}
+                />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-full border-2 border-red-500">
+            <div className="flex items-center justify-center h-full">
               <span className="text-red-500 font-mono">No Data Available</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Move overlays after the charts */}
-      <div className="absolute top-0 left-0 w-full h-full" style={{ zIndex: 5 }}>
+      {/* Enhanced Background Effects */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-500/5 to-transparent"></div>
         <div className="scanner-overlay"></div>
         <div className="grid-overlay"></div>
+        
+        {/* Corner Decorations */}
+        <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-red-500/30"></div>
+        <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-red-500/30"></div>
+        <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-red-500/30"></div>
+        <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-red-500/30"></div>
       </div>
     </div>
   );

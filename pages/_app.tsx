@@ -1,20 +1,25 @@
 import type { AppProps } from 'next/app'
-import Layout from './layout/Layout'
+import { useState } from 'react'
+import BackgroundAnimation from '../components/BackgroundAnimation'
 import '@/styles/globals.css'
-import { useEffect } from 'react'
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // Handle initial dark mode
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.documentElement.classList.add('dark')
-    }
-  }, [])
+  const [debugMode, setDebugMode] = useState(false)
+
+  // Enable debug mode with Ctrl+Shift+D
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        setDebugMode(!debugMode)
+      }
+    })
+  }
 
   return (
-    <Layout>
+    <div className={`app-container ${debugMode ? 'debug-mode' : ''}`}>
+      <BackgroundAnimation />
       <Component {...pageProps} />
-    </Layout>
+    </div>
   )
 }
 

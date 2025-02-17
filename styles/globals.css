@@ -1,27 +1,36 @@
+/* Import IBM Plex Mono font */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --primary-bg: #0a0d14;
-  --primary-text: #e2e8f0;
-  --accent-red: #ff3a3a;
-  --accent-blue: #00a8ff;
-  --accent-green: #39ff14;
-  --border-glow: 0 0 10px rgba(255, 58, 58, 0.5);
-  --foreground-rgb: 226, 232, 240;
-  --background-start-rgb: 10, 13, 20;
-  --background-end-rgb: 8, 10, 15;
-  --hud-border: 2px solid var(--accent-red);
-  --hud-bg: rgba(10, 13, 20, 0.9);
-  --data-stream-color: rgba(255, 58, 58, 0.15);
+  --primary-bg: transparent;
+  --secondary-bg: transparent;
+  --panel-bg: transparent;
+  --panel-bg-hover: rgba(24, 24, 24, 0.3);
+  --text-primary: #E0E0E0;
+  --text-secondary: #A0A0A0;
+  --border-color: #303030;
+  --highlight-red: #FF2C2C;
+  --foreground-rgb: 224, 224, 224;
+  --background-start-rgb: 16, 16, 16;
+  --background-end-rgb: 12, 12, 12;
+  --hud-border: 1px solid var(--border-color);
+  --hud-bg: transparent;
+  --data-stream-color: rgba(255, 58, 58, 0.3);
+  --font-tactical: 'IBM Plex Mono', monospace;
+  --text-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --text-shadow-strong: 0 1px 3px rgba(0, 0, 0, 0.75);
+  --backdrop-blur: blur(8px);
+  --backdrop-blur-strong: blur(12px);
 }
 
 [data-theme='dark'] {
-  --primary-bg: #0f172a;
-  --primary-text: #f8fafc;
-  --accent-green: #4ade80;
-  --border-color: #334155;
+  --primary-bg: #101010;
+  --primary-text: #E0E0E0;
+  --border-color: #303030;
 }
 
 html {
@@ -29,6 +38,7 @@ html {
 }
 
 body {
+  font-family: var(--font-tactical);
   background: linear-gradient(
     to bottom,
     rgb(var(--background-start-rgb)),
@@ -38,6 +48,7 @@ body {
   color: rgb(var(--foreground-rgb));
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
+  letter-spacing: 0.02em;
 }
 
 /* Dark mode styles */
@@ -91,8 +102,13 @@ body {
 
 /* Game UI specific styles */
 .hud-panel {
-  @apply relative border-2 border-red-500 bg-gray-900/90 backdrop-blur-md;
-  box-shadow: var(--border-glow);
+  @apply relative border border-gray-700;
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 0 20px rgba(0, 0, 0, 0.3),
+    inset 0 0 30px rgba(0, 0, 0, 0.2);
   clip-path: polygon(
     0 10px,
     10px 0,
@@ -103,81 +119,36 @@ body {
     10px 100%,
     0 calc(100% - 10px)
   );
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 58, 58, 0.3);
-  box-shadow: 0 0 15px rgba(255, 58, 58, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.3s ease;
+  z-index: 10;
 }
 
-.hud-panel::after {
+.hud-panel::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    transparent 0%,
-    rgba(255, 58, 58, 0.1) 50%,
-    transparent 100%
-  );
+  background: rgba(0, 0, 0, 0.2);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.hud-panel::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(45deg, transparent 0%, rgba(255, 58, 58, 0.2) 50%, transparent 100%);
-  z-index: -1;
-  animation: borderPulse 3s ease-in-out infinite;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 58, 58, 0.5),
-    transparent
-  );
-  animation: scanline 2s linear infinite;
-}
-
-.hud-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 58, 58, 0.5), transparent);
-  animation: scanline 2s linear infinite;
-}
-
-.hud-panel::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  background: #ff3a3a;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #ff3a3a;
+.hud-panel:hover::before {
+  opacity: 0.3;
 }
 
 .hud-panel-secondary {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 58, 58, 0.2);
+  background: transparent !important;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   transition: all 0.3s ease;
+  backdrop-filter: var(--backdrop-blur);
 }
 
 .hud-panel-secondary:hover {
-  border-color: rgba(255, 58, 58, 0.4);
-  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2);
+  border-color: var(--highlight-red);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  background: rgba(24, 24, 24, 0.2) !important;
 }
 
 .hud-border {
@@ -193,20 +164,17 @@ body {
 
 .stat-value {
   @apply font-mono text-2xl font-bold;
-  text-shadow: 0 0 10px var(--accent-red);
-  background: linear-gradient(to right, #ff3a3a, #ff5555);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
   font-size: 1.5rem;
-  font-family: monospace;
-  color: #f8fafc;
-  text-shadow: 0 0 10px rgba(255, 58, 58, 0.3);
+  font-family: var(--font-tactical);
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 .cyber-grid {
   background-image: 
-    linear-gradient(to right, rgba(255, 58, 58, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 58, 58, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(48, 48, 48, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(48, 48, 48, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
   position: relative;
   background-image: 
@@ -223,7 +191,7 @@ body {
   background: radial-gradient(
     circle at center,
     transparent 0%,
-    rgba(10, 13, 20, 0.8) 100%
+    rgba(16, 16, 16, 0.8) 100%
   );
   pointer-events: none;
 }
@@ -233,7 +201,7 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(255, 58, 58, 0.1) 50%,
+    rgba(255, 44, 44, 0.1) 50%,
     transparent 100%
   );
   animation: scan 8s linear infinite;
@@ -242,15 +210,7 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
-    transparent,
-    rgba(255, 58, 58, 0.2),
-    rgba(255, 58, 58, 0.8),
-    rgba(255, 58, 58, 0.2),
-    transparent
-  );
-  animation: scan 3s linear infinite;
-  z-index: 100;
+  opacity: 0.5;
 }
 
 .shadow-glow {
@@ -258,20 +218,21 @@ body {
 }
 
 .progress-bar {
-  @apply relative h-2 bg-gray-800 rounded-full overflow-hidden;
+  @apply relative h-2 rounded-full overflow-hidden;
   height: 4px;
-  background: rgba(255, 58, 58, 0.1);
+  background: rgba(48, 48, 48, 0.2);
   border-radius: 2px;
-  overflow: hidden;
 }
 
 .progress-bar-fill {
-  @apply absolute inset-y-0 left-0 bg-red-500;
-  animation: progressPulse 2s ease-in-out infinite;
+  @apply absolute inset-y-0 left-0;
   height: 100%;
-  background: linear-gradient(90deg, #ff3a3a, #ff6b6b);
-  box-shadow: 0 0 10px rgba(255, 58, 58, 0.5);
+  background: #404040;
   transition: width 0.5s ease;
+}
+
+.progress-bar-fill.critical {
+  background: var(--highlight-red);
 }
 
 /* Animations */
@@ -324,14 +285,14 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(
-      transparent 0%,
-      rgba(255, 58, 58, 0.1) 50%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    transparent 0%,
+    rgba(255, 58, 58, 0.1) 50%,
+    transparent 100%
+  );
   animation: scan 4s linear infinite;
   pointer-events: none;
+  mix-blend-mode: overlay;
 }
 
 .grid-overlay {
@@ -341,27 +302,39 @@ body {
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(255, 58, 58, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 58, 58, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(255, 58, 58, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 58, 58, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
   animation: gridPulse 4s ease-in-out infinite;
   pointer-events: none;
+  mix-blend-mode: overlay;
 }
 
 @keyframes gridPulse {
   0%, 100% {
-    opacity: 0.5;
+    opacity: 0.3;
+    background-size: 20px 20px;
   }
   50% {
-    opacity: 1;
+    opacity: 0.5;
+    background-size: 22px 22px;
   }
 }
 
 .custom-tooltip {
-  box-shadow: 0 0 10px rgba(255, 58, 58, 0.3),
-              0 0 20px rgba(255, 58, 58, 0.2),
-              0 0 30px rgba(255, 58, 58, 0.1);
-  backdrop-filter: blur(4px);
+  background: rgba(16, 16, 16, 0.95) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
+  padding: 0.75rem !important;
+  border-radius: 4px !important;
+  max-width: 300px !important;
+  z-index: 1000 !important;
+}
+
+.custom-tooltip .text-data {
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-subtle);
 }
 
 /* Responsive Utilities */
@@ -487,6 +460,9 @@ body {
 .system-metrics {
   grid-area: 1 / 1 / 2 / 2;
   min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .performance-chart {
@@ -495,18 +471,22 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
 }
 
 .mission-log {
   grid-area: 2 / 1 / 3 / 2;
   min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tactical-controls {
   grid-area: 2 / 2 / 3 / 3;
   min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Chart Debug Styles */
@@ -515,10 +495,10 @@ body {
   visibility: visible !important;
   min-height: 300px !important;
   max-height: 100% !important;
-  background-color: rgba(0, 255, 0, 0.1);
-  border: 3px solid red;
-  position: relative;
-  z-index: 100;
+  background-color: rgba(0, 255, 0, 0.1) !important;
+  border: 3px solid red !important;
+  position: relative !important;
+  z-index: 100 !important;
 }
 
 /* Chart specific styles */
@@ -527,25 +507,13 @@ body {
   position: relative !important;
   width: 100% !important;
   height: 100% !important;
-  min-height: 0 !important;
-  flex: 1;
-  visibility: visible !important;
-  z-index: 30 !important;
+  min-height: 300px !important;
+  z-index: 3;
 }
 
 .recharts-surface {
-  overflow: visible;
-  visibility: visible !important;
-}
-
-.recharts-default-tooltip {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(255, 58, 58, 0.3) !important;
-  border-radius: 4px;
-  padding: 8px !important;
-  z-index: 1000;
-  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2);
-  visibility: visible !important;
+  overflow: visible !important;
+  z-index: 4;
 }
 
 .recharts-tooltip-wrapper {
@@ -564,23 +532,81 @@ body {
 
 .recharts-legend-item-text {
   color: #e2e8f0 !important;
-  font-family: monospace !important;
+  font-family: var(--font-tactical) !important;
   font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  font-weight: 500 !important;
+}
+
+.recharts-legend-wrapper {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 58, 58, 0.2) !important;
+  border-radius: 4px !important;
+  padding: 8px !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 58, 58, 0.3) !important;
+  border-radius: 4px !important;
+  padding: 8px !important;
+  box-shadow: 0 0 15px rgba(255, 58, 58, 0.2) !important;
 }
 
 /* Performance Chart Container */
 .performance-chart {
-  position: relative;
-  height: 100%;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
+  position: relative !important;
+  height: 100% !important;
+  min-height: 400px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  overflow: visible !important;
+  z-index: 1;
 }
 
 .performance-chart > div {
-  flex: 1;
-  position: relative;
+  flex: 1 !important;
+  position: relative !important;
+  width: 100% !important;
   height: 100% !important;
+  min-height: 300px !important;
+  z-index: 2;
+}
+
+/* Chart Container Animation */
+@keyframes chartPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 15px rgba(255, 58, 58, 0.1),
+      inset 0 0 15px rgba(255, 58, 58, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px rgba(255, 58, 58, 0.2),
+      inset 0 0 20px rgba(255, 58, 58, 0.2);
+  }
+}
+
+.chart-container {
+  @apply relative flex flex-col;
+  height: 100% !important;
+  min-height: 300px !important;
+  background: rgba(24, 24, 24, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.chart-container:hover {
+  background: rgba(24, 24, 24, 0.7);
+  border-color: #404040;
 }
 
 /* Responsive Grid Adjustments */
@@ -726,4 +752,315 @@ body {
   transform: translateY(-50%);
   animation: scanline 3s linear infinite;
   opacity: 0.5;
+}
+
+/* Typography enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 58, 58, 0.3);
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  background: linear-gradient(to right, #ff3a3a, #ff5555);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 15px rgba(255, 58, 58, 0.5);
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* Enhanced text classes */
+.text-tactical {
+  font-family: var(--font-tactical);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: var(--text-shadow-subtle);
+}
+
+.text-display {
+  font-family: var(--font-tactical);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-strong);
+}
+
+.text-status {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: var(--text-shadow-strong);
+}
+
+.text-hud {
+  font-family: var(--font-tactical);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-subtle);
+}
+
+.text-data {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  background: linear-gradient(to right, #00ffff, #00a8ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 
+    0 0 8px rgba(0, 255, 255, 0.3),
+    2px 2px 4px rgba(0, 0, 0, 0.75);
+}
+
+/* Chart typography */
+.chart-label {
+  font-family: var(--font-tactical);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-subtle);
+}
+
+.chart-value {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-strong);
+}
+
+/* Status text variations */
+.status-critical {
+  color: var(--highlight-red);
+  text-shadow: var(--text-shadow-strong);
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.status-critical::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.75em;
+  height: 0.75em;
+  background: var(--highlight-red);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--highlight-red);
+}
+
+.status-warning {
+  color: var(--text-secondary);
+  text-shadow: var(--text-shadow-strong);
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.status-warning::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.75em;
+  height: 0.75em;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+.status-nominal {
+  color: var(--text-primary);
+  text-shadow: var(--text-shadow-strong);
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.status-nominal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.75em;
+  height: 0.75em;
+  background: var(--text-primary);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 
+      0 0 10px rgba(255, 44, 44, 0.3),
+      2px 2px 4px rgba(0, 0, 0, 0.75);
+  }
+  50% {
+    opacity: 0.8;
+    text-shadow: 
+      0 0 15px rgba(255, 44, 44, 0.5),
+      2px 2px 4px rgba(0, 0, 0, 0.75);
+  }
+}
+
+.font-mono {
+  font-family: var(--font-tactical) !important;
+  letter-spacing: 0.05em;
+}
+
+/* Status text enhancements */
+.status-text {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Chart labels and values */
+.chart-label {
+  font-family: var(--font-tactical);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chart-value {
+  font-family: var(--font-tactical);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-family: var(--font-tactical) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 500 !important;
+  fill: var(--text-secondary) !important;
+  text-shadow: var(--text-shadow-subtle) !important;
+}
+
+/* Background effects toggle */
+.effects-toggle {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.effects-toggle:hover {
+  background: var(--panel-bg-hover);
+  border-color: #404040;
+}
+
+/* Disable background effects */
+.effects-disabled .scanner-overlay,
+.effects-disabled .grid-overlay,
+.effects-disabled .data-stream {
+  display: none !important;
+}
+
+/* Tron Grid Styles */
+.tron-grid {
+  position: fixed;
+  inset: 0;
+  transform-style: preserve-3d;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  z-index: -1;
+}
+
+.grid-pattern {
+  position: absolute;
+  inset: -200% -100%;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 100px 100px;
+  transform-origin: 50% 50%;
+  animation: gridPulse 8s ease-in-out infinite;
+}
+
+.horizon-glow {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 100%
+  );
+  transform-origin: bottom;
+  animation: glowPulse 6s ease-in-out infinite;
+  z-index: -2;
+}
+
+.light-beam {
+  position: absolute;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  filter: blur(1px);
+  box-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.15),
+    0 0 30px rgba(255, 255, 255, 0.1);
+  z-index: -1;
+}
+
+.floating-platform {
+  position: absolute;
+  width: 150px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  filter: blur(1px);
+  box-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.1),
+    0 0 30px rgba(255, 255, 255, 0.05);
+  transform: perspective(1000px) rotateX(60deg);
+  z-index: -1;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scaleY(1.2);
+  }
 }
