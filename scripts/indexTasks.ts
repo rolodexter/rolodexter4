@@ -12,6 +12,8 @@ const TASK_FOLDERS = [
   'agents/rolodexterVS/tasks/archived'
 ];
 
+type TaskStatus = 'ACTIVE' | 'PENDING' | 'RESOLVED' | 'ARCHIVED';
+
 async function getFilesRecursively(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = await Promise.all(
@@ -28,12 +30,12 @@ async function getFilesRecursively(dir: string): Promise<string[]> {
   return files.flat();
 }
 
-async function getTaskStatus(filePath: string): Promise<string> {
-  if (filePath.includes('active-tasks')) return 'active';
-  if (filePath.includes('pending-tasks')) return 'pending';
-  if (filePath.includes('resolved-tasks')) return 'resolved';
-  if (filePath.includes('archived')) return 'archived';
-  return 'unknown';
+async function getTaskStatus(filePath: string): Promise<TaskStatus> {
+  if (filePath.includes('active-tasks')) return 'ACTIVE';
+  if (filePath.includes('pending-tasks')) return 'PENDING';
+  if (filePath.includes('resolved-tasks')) return 'RESOLVED';
+  if (filePath.includes('archived')) return 'ARCHIVED';
+  return 'PENDING'; // Default to PENDING instead of unknown
 }
 
 async function getTaskTitle(filePath: string): Promise<string> {
@@ -68,14 +70,14 @@ async function indexTasks() {
             where: { filePath: relativePath },
             update: {
               title,
-              status,
-              lastModified: stats.mtime
+              status: status as TaskStatus,
+              updatedAt: stats.mtime
             },
             create: {
               title,
-              status,
+              status: status as TaskStatus,
               filePath: relativePath,
-              lastModified: stats.mtime
+              updatedAt: stats.mtime
             }
           });
           
