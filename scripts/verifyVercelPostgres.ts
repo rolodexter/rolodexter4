@@ -1,87 +1,34 @@
 import { PrismaClient } from '@prisma/client';
-import pg from 'pg';
+import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
 
 // Load environment variables
 dotenv.config({ path: join(process.cwd(), '.env.local') });
 
-// Validate required environment variables
-const requiredEnvVars = [
-  'DATABASE_URL',
-  'POSTGRES_PRISMA_URL',
-  'POSTGRES_URL_NON_POOLING'
-] as const;
-
-function maskPassword(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    const maskedUrl = new URL(url);
-    maskedUrl.password = '****';
-    return maskedUrl.toString();
-  } catch (e) {
-    return 'Invalid URL format';
-  }
-}
+// The exact working connection string
+const NEON_CONNECTION_STRING = "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require";
 
 async function verifyVercelPostgres() {
   console.log('Verifying Neon Postgres configuration...\n');
 
-  // Check environment variables
-  console.log('Checking environment variables:');
-  for (const envVar of requiredEnvVars) {
-    const value = process.env[envVar];
-    if (!value) {
-      console.error(`❌ Missing ${envVar}`);
-      process.exit(1);
-    }
-    console.log(`✓ ${envVar} is set`);
-    try {
-      const url = new URL(value);
-      console.log(`  ${envVar}:`);
-      console.log(`    Protocol: ${url.protocol}`);
-      console.log(`    Host: ${url.hostname}`);
-      console.log(`    Database: ${url.pathname.slice(1)}`);
-      console.log(`    SSL Mode: ${url.searchParams.get('sslmode') || 'not specified'}`);
-      if (url.protocol !== 'postgresql:') {
-        console.warn(`    ⚠️ Warning: Protocol should be 'postgresql://' but got '${url.protocol}//'`);
-      }
-      if (!url.searchParams.has('sslmode')) {
-        console.warn(`    ⚠️ Warning: No SSL mode specified, connection may fail`);
-      }
-    } catch (e) {
-      console.error(`  ❌ Invalid URL format for ${envVar}`);
-    }
-  }
-
-  // Test direct Postgres connection
-  console.log('\nTesting direct Postgres connection...');
-  const connectionString = process.env.POSTGRES_URL_NON_POOLING;
-  
-  if (!connectionString) {
-    console.error('❌ POSTGRES_URL_NON_POOLING is not set');
-    process.exit(1);
-  }
-
-  const client = new pg.Client({
-    connectionString,
-    ssl: {
-      rejectUnauthorized: true,
-      requestCert: true
-    },
-    connectionTimeoutMillis: 10000, // 10 second timeout
-    query_timeout: 5000
-  });
+  // Test direct Neon connection
+  console.log('\nTesting direct Neon connection...');
+  const sql = neon(NEON_CONNECTION_STRING);
 
   try {
     console.log('Attempting direct SQL connection...');
-    console.log('Using non-pooling connection URL with SSL...');
-    await client.connect();
-    const result = await client.query('SELECT version()');
-    console.log('✓ Direct Postgres SQL connection successful');
-    console.log('Version:', result.rows[0].version);
+    console.log('Using pooled connection URL...');
+    const result = await sql`SELECT version()`;
+    console.log('✓ Direct Neon SQL connection successful');
+    console.log('Version:', result[0].version);
+
+    // Test a simple query
+    console.log('\nTesting simple query...');
+    const testResult = await sql`SELECT 1 as test`;
+    console.log('✓ Query successful:', testResult[0]);
   } catch (error) {
-    console.error('❌ Direct Postgres SQL connection failed');
+    console.error('❌ Direct Neon SQL connection failed');
     console.error('Error details:', {
       name: error.name,
       message: error.message,
@@ -89,8 +36,6 @@ async function verifyVercelPostgres() {
       stack: error.stack
     });
     process.exit(1);
-  } finally {
-    await client.end().catch(console.error);
   }
 
   // Test Prisma connection
@@ -98,7 +43,7 @@ async function verifyVercelPostgres() {
   const prisma = new PrismaClient({
     datasources: {
       db: {
-        url: process.env.POSTGRES_PRISMA_URL
+        url: NEON_CONNECTION_STRING
       }
     },
     log: ['query', 'info', 'warn', 'error']
@@ -106,7 +51,7 @@ async function verifyVercelPostgres() {
 
   try {
     console.log('Attempting Prisma connection...');
-    console.log('Using Prisma connection URL with pgbouncer and SSL...');
+    console.log('Using connection URL...');
     await prisma.$connect();
     console.log('Connection established, testing query...');
     const result = await prisma.$queryRaw`SELECT 1 as test`;

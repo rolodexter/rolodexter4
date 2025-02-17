@@ -22,6 +22,7 @@
     "sync-html": "tsx scripts/syncHtmlToBlob.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^6.3.1",
     "@types/pg": "^8.11.11",
     "@vercel/blob": "^0.27.1",
