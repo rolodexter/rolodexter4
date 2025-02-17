@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
-import type { Document, Memory, Task, Reference, Tag } from '@prisma/client';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
@@ -10,13 +9,18 @@ const sql = createClient({
   connectionString: process.env.POSTGRES_URL
 });
 
-export interface Document {
+// Types for our database models
+export interface DocumentType {
   id: string;
   title: string;
   content: string;
   path: string;
+  type: string;
+  metadata: any;
   created_at: Date;
   updated_at: Date;
+  tags?: Array<{ id: string; name: string; color?: string }>;
+  references?: Array<{ id: string; target_id: string; type: string; confidence: number }>;
 }
 
 // Initialize the database with required tables
@@ -56,7 +60,7 @@ export async function initializeDatabase() {
 // Search documents with full-text search
 export async function searchDocuments(query: string) {
   try {
-    return await prisma.Document.findMany({
+    return await prisma.document.findMany({
       where: {
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
@@ -86,11 +90,13 @@ export async function searchDocuments(query: string) {
 export async function searchSimilarMemories(embedding: Float64Array, threshold: number = 0.8) {
   try {
     await sql.connect();
+    // Convert Float64Array to string representation for SQL
+    const embeddingStr = `[${Array.from(embedding).join(',')}]`;
     const result = await sql.sql`
       SELECT id, type, content, metadata,
-             1 - (embedding <=> ${Buffer.from(embedding.buffer)}::vector) as similarity
+             1 - (embedding <=> ${embeddingStr}::vector) as similarity
       FROM "Memory"
-      WHERE 1 - (embedding <=> ${Buffer.from(embedding.buffer)}::vector) > ${threshold}
+      WHERE 1 - (embedding <=> ${embeddingStr}::vector) > ${threshold}
       ORDER BY similarity DESC
       LIMIT 10;
     `;
@@ -112,7 +118,7 @@ export async function upsertDocument(doc: {
   metadata?: any;
 }) {
   try {
-    return await prisma.Document.upsert({
+    return await prisma.document.upsert({
       where: { path: doc.path },
       update: {
         title: doc.title,

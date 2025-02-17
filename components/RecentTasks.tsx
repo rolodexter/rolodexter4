@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+interface Tag {
+  name: string;
+  color: string | null;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -8,6 +13,8 @@ interface Task {
   file_path: string;
   createdAt: string;
   updatedAt: string;
+  tags: Tag[];
+  priority: string;
 }
 
 const RecentTasks = () => {
@@ -54,6 +61,20 @@ const RecentTasks = () => {
     }
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority.toUpperCase()) {
+      case 'HIGH':
+      case 'URGENT':
+        return 'text-red-500';
+      case 'MEDIUM':
+        return 'text-yellow-500';
+      case 'LOW':
+        return 'text-blue-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -88,15 +109,41 @@ const RecentTasks = () => {
           tasks.map((task, index) => (
             <motion.div
               key={task.id}
-              className="hud-panel-secondary p-3 flex justify-between items-center"
+              className="hud-panel-secondary p-3"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              <span className="text-hud truncate flex-1">{task.title}</span>
-              <span className={`ml-4 ${getStatusColor(task.status)}`}>
-                {task.status.toUpperCase()}
-              </span>
+              <div className="flex flex-col space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-hud truncate flex-1">{task.title}</span>
+                  <span className={`ml-4 ${getStatusColor(task.status)}`}>
+                    {task.status.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className={`${getPriorityColor(task.priority)}`}>
+                    {task.priority}
+                  </span>
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-500">•</span>
+                      {task.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-1.5 py-0.5 rounded text-xs"
+                          style={{
+                            backgroundColor: tag.color || '#374151',
+                            color: 'white'
+                          }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </motion.div>
           ))
         ) : (
