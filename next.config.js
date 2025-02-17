@@ -1,11 +1,5 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
 import webpack from 'webpack';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export const runtime = 'edge';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -30,14 +24,15 @@ const nextConfig = {
       aggregateTimeout: 300
     }
 
-    // Path aliases for cleaner imports
+    // Path aliases for cleaner imports - aligned with tsconfig.json
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.join(__dirname),
-      '@components': path.join(__dirname, 'components'),
-      '@lib': path.join(__dirname, 'lib'),
-      '@styles': path.join(__dirname, 'styles'),
-      '@utils': path.join(__dirname, 'utils')
+      '@': path.join(__dirname, './src'),
+      '@components': path.join(__dirname, './src/components'),
+      '@lib': path.join(__dirname, './src/lib'),
+      '@utils': path.join(__dirname, './src/lib/utils'),
+      '@db': path.join(__dirname, './src/lib/db'),
+      '@styles': path.join(__dirname, './src/styles')
     }
 
     // Development-specific optimizations

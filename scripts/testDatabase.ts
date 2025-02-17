@@ -1,11 +1,21 @@
-import { testDatabaseConnection, prisma } from '../utils/db';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import * as dotenv from 'dotenv';
+import { testConnection, prisma } from '../utils/db.js';
+
+// Get the directory path of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env.local
+dotenv.config({ path: join(dirname(__dirname), '.env.local') });
 
 async function testDatabase() {
   console.log('Testing database connections...');
   
   try {
     // Test basic connectivity
-    const isConnected = await testDatabaseConnection();
+    const isConnected = await testConnection();
     if (!isConnected) {
       throw new Error('Database connection test failed');
     }
