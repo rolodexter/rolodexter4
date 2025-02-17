@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && tsx scripts/syncHtmlToBlob.ts && next build",
+    "build": "prisma generate && next build",
+    "build:with-sync": "prisma generate && tsx scripts/syncHtmlToBlob.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",

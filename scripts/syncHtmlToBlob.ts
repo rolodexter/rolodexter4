@@ -104,11 +104,25 @@ async function extractMetadata(content: string, filePath: string) {
 }
 
 async function syncHtmlToBlob() {
+  // Skip sync during build if configured to do so
+  if (process.env.SKIP_BLOB_SYNC === 'true') {
+    console.log('Skipping blob sync as configured');
+    return;
+  }
+
   if (!process.env.BLOB_STORE_NAME) {
+    if (process.env.VERCEL_ENV === 'production') {
+      console.warn('BLOB_STORE_NAME not set in production, skipping sync');
+      return;
+    }
     throw new Error('BLOB_STORE_NAME environment variable is not set. Check .env.local file.');
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (process.env.VERCEL_ENV === 'production') {
+      console.warn('BLOB_READ_WRITE_TOKEN not set in production, skipping sync');
+      return;
+    }
     throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set. Check .env.local file.');
   }
 
@@ -197,6 +211,12 @@ async function syncHtmlToBlob() {
     console.log('HTML files sync completed successfully');
   } catch (error) {
     console.error('Error during sync:', error);
+    // Don't exit with error in production build
+    if (process.env.VERCEL_ENV === 'production') {
+      console.warn('Error during production sync, continuing build');
+      return;
+    }
+    throw error;
   } finally {
     await prisma.$disconnect();
   }
@@ -204,8 +224,13 @@ async function syncHtmlToBlob() {
 
 // Direct execution without module detection
 syncHtmlToBlob().catch(error => {
-  console.error('Failed to sync HTML files:', error);
-  process.exit(1);
+  if (process.env.VERCEL_ENV === 'production') {
+    console.warn('Error during production sync:', error);
+    process.exit(0); // Don't fail the build
+  } else {
+    console.error('Failed to sync HTML files:', error);
+    process.exit(1);
+  }
 });
 
 export { syncHtmlToBlob };

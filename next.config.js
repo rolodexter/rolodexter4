@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 /** @type {import('next').NextConfig} */
 const path = require('path')
 
@@ -43,11 +45,21 @@ const nextConfig = {
       }
     }
 
+    // Skip blob sync during build if environment variables aren't available
+    if (process.env.VERCEL_ENV === 'production' && !process.env.BLOB_READ_WRITE_TOKEN) {
+      console.warn('Skipping blob sync during build - BLOB_READ_WRITE_TOKEN not available');
+      config.plugins = config.plugins || [];
+      config.plugins.push(new webpack.DefinePlugin({
+        'process.env.SKIP_BLOB_SYNC': JSON.stringify('true'),
+      }));
+    }
+
     return config
   },
   // Environment configuration
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    BLOB_STORE_NAME: 'rolodexter4-documents'
   }
 }
 

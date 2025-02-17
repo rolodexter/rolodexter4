@@ -1,12 +1,54 @@
 import { PrismaClient } from '@prisma/client';
 import { createClient } from '@vercel/postgres';
 
-// Initialize Prisma Client
-const prisma = new PrismaClient();
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-// Initialize Vercel Postgres Client for raw SQL operations
-const sql = createClient({
-  connectionString: process.env.POSTGRES_URL
+const prismaClientOptions = {
+  datasources: {
+    db: {
+      url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
+    }
+  },
+  log: ['error', 'warn'],
+  errorFormat: 'minimal',
+};
+
+async function connectWithRetry(client: PrismaClient, maxRetries = 5): Promise<boolean> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await client.$connect();
+      console.log('Successfully connected to database');
+      return true;
+    } catch (error) {
+      if (i === maxRetries - 1) {
+        console.error('Failed to connect to database after', maxRetries, 'attempts:', error);
+        throw error;
+      }
+      console.warn(`Connection attempt ${i + 1} failed, retrying in ${Math.pow(2, i)}s...`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+    }
+  }
+  return false;
+}
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
+
+// Initialize connection
+connectWithRetry(prisma).catch(console.error);
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Vercel Postgres client for raw SQL operations
+export const sql = createClient({
+  connectionString: process.env.POSTGRES_URL,
+  ssl: process.env.POSTGRES_SSL === 'true'
+});
+
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+  await sql.end();
 });
 
 // Basic interfaces for our data types
@@ -148,4 +190,21 @@ export async function testConnection() {
   }
 }
 
-export { prisma, sql }; 
+export async function testDatabaseConnection() {
+  try {
+    // Test Prisma connection
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('Prisma connection successful');
+
+    // Test Vercel Postgres connection
+    await sql.query('SELECT 1');
+    console.log('Vercel Postgres connection successful');
+
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return false;
+  }
+}
+
+export default prisma;
