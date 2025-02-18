@@ -136,7 +136,19 @@ const TaskBar: React.FC = () => {
           backgroundColor: 'rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          transition: 'transform 0.3s ease, opacity 0.3s ease',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={(e) => {
+          const target = e.currentTarget;
+          target.style.transform = 'scale(1.1)';
+          target.style.opacity = '0.8';
+        }}
+        onMouseLeave={(e) => {
+          const target = e.currentTarget;
+          target.style.transform = 'scale(1)';
+          target.style.opacity = '0.5';
         }}
       >
         <img
@@ -145,7 +157,16 @@ const TaskBar: React.FC = () => {
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            transition: 'filter 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.filter = 'brightness(1.2)';
+          }}
+          onMouseLeave={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.filter = 'none';
           }}
           onError={(e) => {
             console.error('Error loading logo:', e);
