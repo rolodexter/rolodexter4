@@ -1,16 +1,17 @@
 import React from 'react';
-import { TimeDisplay } from './TimeDisplay';
+import TimeDisplay from './TimeDisplay';
 import { TaskList } from './TaskList';
 import { TaskGraph } from './TaskGraph';
 import { motion, AnimatePresence } from 'framer-motion';
 import Draggable from 'react-draggable';
 
-interface Task {
+interface Task extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   status: 'active' | 'pending' | 'resolved';
   lastUpdated: string;
   systemArea: string;
+  connections: string[];
 }
 
 export const TaskMonitor: React.FC = () => {
@@ -24,56 +25,64 @@ export const TaskMonitor: React.FC = () => {
       title: 'CORE.PROTOCOL.SYNC',
       status: 'active',
       lastUpdated: new Date().toISOString(),
-      systemArea: 'CORE'
+      systemArea: 'CORE',
+      connections: ['02', '08']
     },
     {
       id: '02',
       title: 'SCANNING.NODE.15X',
       status: 'active',
       lastUpdated: new Date(Date.now() - 1000 * 30).toISOString(),
-      systemArea: 'SCAN'
+      systemArea: 'SCAN',
+      connections: ['01', '03']
     },
     {
       id: '03',
       title: 'MEMORY.SECTOR.7G',
       status: 'pending',
       lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
-      systemArea: 'MEMORY'
+      systemArea: 'MEMORY',
+      connections: ['02', '04']
     },
     {
       id: '04',
       title: 'NET.SIGNAL.PARSE',
       status: 'active',
       lastUpdated: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-      systemArea: 'NETWORK'
+      systemArea: 'NETWORK',
+      connections: ['03', '05']
     },
     {
       id: '05',
       title: 'DATA.STREAM.0X4F',
       status: 'resolved',
       lastUpdated: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-      systemArea: 'DATA'
+      systemArea: 'DATA',
+      connections: ['04', '06']
     },
     {
       id: '06',
       title: 'SYSTEM.PATCH.9D',
       status: 'pending',
       lastUpdated: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-      systemArea: 'SYSTEM'
+      systemArea: 'SYSTEM',
+      connections: ['05', '07']
     },
     {
       id: '07',
       title: 'NODE.ANALYZE.3H',
       status: 'active',
       lastUpdated: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-      systemArea: 'NODE'
+      systemArea: 'NODE',
+      connections: ['06', '08']
     },
     {
       id: '08',
       title: 'CORE.MAP.SYNC',
       status: 'resolved',
       lastUpdated: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      systemArea: 'CORE'
+      systemArea: 'CORE',
+      connections: ['07', '01']
     }
   ]);
 
