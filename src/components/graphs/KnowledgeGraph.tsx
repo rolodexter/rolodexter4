@@ -180,36 +180,63 @@ export const KnowledgeGraph = () => {
 
     // Create force simulation with adjusted parameters
     const simulation = d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 100 : 150))
-      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -400 : -600).distanceMax(350))
-      .force('center', d3.forceCenter<Node>(width / 2, height / 2))
-      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 8 : 25).strength(0.8))
-      // Add x and y forces for clustering with reduced strength
-      .force('x', d3.forceX<Node>().strength(0.05).x(d => {
+      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
+        .distance((d: Link) => d.type === 'document-tag' ? 400 : 600)
+        .strength(0.5))
+      .force('charge', d3.forceManyBody<Node>()
+        .strength((d: Node) => d.type === 'tag' ? -2000 : -3000)
+        .distanceMax(1000)
+        .theta(0.9))
+      .force('center', d3.forceCenter<Node>(width / 2, height / 2).strength(0.05))
+      .force('collision', d3.forceCollide<Node>()
+        .radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 30 : 80)
+        .strength(1)
+        .iterations(4))
+      .force('x', d3.forceX<Node>().strength(0.01).x(d => {
         if (d.type === 'tag') return width * 0.3;
         if (d.path.includes('/tasks/')) return width * 0.6;
         if (d.path.includes('/memories/')) return width * 0.7;
         return width * 0.5;
       }))
-      .force('y', d3.forceY<Node>().strength(0.05).y(d => {
+      .force('y', d3.forceY<Node>().strength(0.01).y(d => {
         if (d.type === 'tag') return height * 0.5;
         if (d.path.includes('/tasks/')) return height * 0.3;
         if (d.path.includes('/memories/')) return height * 0.7;
         return height * 0.5;
       }));
 
+    // Increase stability parameters
+    simulation.alphaDecay(0.008);
+    simulation.velocityDecay(0.3);
+    simulation.alpha(0.3);
+
     // Set up zoom behavior with adjusted scale
     const zoom = d3.zoom()
-      .scaleExtent([0.2, 2]) // Reduced max zoom to keep nodes more compact
+      .scaleExtent([0.1, 20])
+      .filter(event => {
+        if (event.type === 'mousedown' && event.button === 2) return false;
+        return true;
+      })
       .on('zoom', (event) => {
         container.attr('transform', event.transform);
+        
+        const scale = event.transform.k;
+        simulation.force('collision', d3.forceCollide<Node>()
+          .radius((d: Node) => (d.type === 'tag' ? (d.tagCount || 1) * 30 : 80) / Math.max(1, scale / 4))
+          .strength(1)
+          .iterations(4));
+
+        if (Math.abs(scale - (event as any).previousScale || 0) > 0.1) {
+          simulation.alpha(0.2).restart();
+        }
+        (event as any).previousScale = scale;
       });
 
     // Apply zoom behavior and set initial zoom
     svg.call(zoom as any)
       .call(zoom.transform as any, d3.zoomIdentity
         .translate(width / 2, height / 2)
-        .scale(0.7) // Reduced initial zoom scale
+        .scale(0.7)
         .translate(-width / 2, -height / 2));
 
     // Create SVG elements for links with different styles
@@ -336,7 +363,11 @@ export const KnowledgeGraph = () => {
 
     // Function to find node positions
     const findNodeByType = (type: string) => {
-      return nodes.find(n => n.path.toLowerCase().includes(type.toLowerCase()));
+      return nodes.find(n => {
+        if (type === 'rolodexterGPT') return n.path.toLowerCase().includes('gpt');
+        if (type === 'rolodexterVS') return n.path.toLowerCase().includes('vs');
+        return false;
+      });
     };
 
     // Update chat bubbles on simulation tick
@@ -348,8 +379,6 @@ export const KnowledgeGraph = () => {
         .attr('y2', (d: any) => d.target.y);
 
       nodeGroup
-        .transition()
-        .duration(50)
         .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 
       // Update chat bubbles if showing
@@ -362,17 +391,40 @@ export const KnowledgeGraph = () => {
           // Clear previous chat bubbles
           chatContainer.selectAll('*').remove();
 
+          // Calculate midpoint with slight offset based on message direction
+          const midX = ((fromNode.x ?? 0) + (toNode.x ?? 0)) / 2;
+          const midY = ((fromNode.y ?? 0) + (toNode.y ?? 0)) / 2 - 30; // Offset upward
+
           // Add new chat bubble
           const bubble = chatContainer.append('g')
-            .attr('transform', `translate(${((fromNode.x ?? 0) + (toNode.x ?? 0)) / 2},${((fromNode.y ?? 0) + (toNode.y ?? 0)) / 2})`);
+            .attr('transform', `translate(${midX},${midY})`);
 
-          // Chat bubble background
+          // Chat bubble background with improved shape
+          const padding = 10;
+          const messageWidth = currentMessage.message.length * 6;
+          const bubbleWidth = messageWidth + (padding * 2);
+          const bubbleHeight = 30;
+          
+          // Create bubble path with arrow pointing to source
+          const isFromLeft = (fromNode.x ?? 0) < (toNode.x ?? 0);
+          const arrowX = isFromLeft ? 0 : bubbleWidth;
+          const bubblePath = `
+            M${padding},0
+            L${bubbleWidth - padding},0
+            Q${bubbleWidth},0 ${bubbleWidth},${padding}
+            L${bubbleWidth},${bubbleHeight - padding}
+            Q${bubbleWidth},${bubbleHeight} ${bubbleWidth - padding},${bubbleHeight}
+            L${arrowX + (isFromLeft ? padding : -padding)},${bubbleHeight}
+            L${arrowX},${bubbleHeight + 10}
+            L${arrowX + (isFromLeft ? -padding : padding)},${bubbleHeight}
+            L${padding},${bubbleHeight}
+            Q0,${bubbleHeight} 0,${bubbleHeight - padding}
+            L0,${padding}
+            Q0,0 ${padding},0
+          `;
+
           bubble.append('path')
-            .attr('d', () => {
-              const width = currentMessage.message.length * 8;
-              const height = 30;
-              return `M0,0 L${width},0 L${width},${height} L10,${height} L0,${height + 10} L0,0`;
-            })
+            .attr('d', bubblePath)
             .attr('fill', '#ffffff')
             .attr('stroke', '#000000')
             .attr('stroke-width', '1')
@@ -380,8 +432,9 @@ export const KnowledgeGraph = () => {
 
           // Chat message text
           bubble.append('text')
-            .attr('x', 10)
-            .attr('y', 20)
+            .attr('x', padding)
+            .attr('y', bubbleHeight/2)
+            .attr('dy', '0.35em')
             .attr('fill', '#000000')
             .attr('font-family', 'monospace')
             .attr('font-size', '12px')
