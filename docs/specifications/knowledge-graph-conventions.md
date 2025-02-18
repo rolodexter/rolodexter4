@@ -7,17 +7,20 @@
 #### Size Convention
 
 - **Base Size**: 15px (constant)
-- **Growth Factor**: Logarithmic scaling using `Math.log1p(connections) * 0.3`
-- **Formula**: `nodeSize = baseSize * (1 + Math.log1p(connectionCount) * 0.3)`
-- **Rationale**: Logarithmic scaling ensures nodes remain visually manageable even with many connections
+- **Growth Factor**: Moderate logarithmic scaling using `Math.pow((connectionCount - threshold) / threshold, 0.8)`
+- **Maximum Scale**: Base * 1.2 for highly connected nodes
+- **Standard Scale**: Linear scaling up to 30% increase for normal nodes
+- **Rationale**: Maintain visual hierarchy while avoiding overwhelming size differences
 
 #### Color System (Grayscale)
 
 - **Base Value**: 220 (light gray)
-- **Darkening Factor**: 15 per connection
-- **Maximum Darkening**: 80 units
-- **Minimum Intensity**: 140 (prevents too dark nodes)
-- **Formula**: `intensity = Math.max(220 - Math.min(connections * 15, 80), 140)`
+- **Darkening Range**: 60-100 units
+- **Minimum Brightness**: 120 (ensures readability)
+- **Formula**: `intensity = Math.max(220 - darkenAmount, 120)`
+- **Scaling**: 
+  - Regular nodes: Linear darkening up to 60 units
+  - Highly connected nodes (80th percentile+): Additional darkening up to 40 units with 0.8 power curve
 - **Color Application**: `rgb(intensity, intensity, intensity)`
 
 ### Node Types and Shapes
@@ -86,6 +89,10 @@ Object.values(references).flat().forEach(link => {
 const getNodeSize = (nodeId: string) => {
   const connectionCount = connections.get(nodeId) || 0;
   const baseSize = 15;
+  const threshold = 10; // Example threshold value
+  if (connectionCount > threshold) {
+    return baseSize * Math.min(1.2, Math.pow((connectionCount - threshold) / threshold, 0.8));
+  }
   return baseSize * (1 + Math.log1p(connectionCount) * 0.3);
 };
 
@@ -93,7 +100,7 @@ const getNodeColor = (nodeId: string) => {
   const connectionCount = connections.get(nodeId) || 0;
   const baseValue = 220;
   const darkenAmount = Math.min(connectionCount * 15, 80);
-  const intensity = Math.max(baseValue - darkenAmount, 140);
+  const intensity = Math.max(baseValue - darkenAmount, 120);
   return `rgb(${intensity}, ${intensity}, ${intensity})`;
 };
 ```

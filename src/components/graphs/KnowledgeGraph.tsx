@@ -28,7 +28,6 @@ interface Node extends d3.SimulationNodeDatum {
   type: 'document' | 'tag' | 'status';
   x?: number;
   y?: number;
-  content?: string;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -45,7 +44,7 @@ interface GraphData {
   };
 }
 
-// Error boundary component
+// Error boundary component for graceful fallback
 class KnowledgeGraphErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }
@@ -84,34 +83,60 @@ class KnowledgeGraphErrorBoundary extends React.Component<
   }
 }
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout | null = null;
+  
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(later, wait);
+  } as T;
+}
+
 export const KnowledgeGraph: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [nodeConnectionsMap, setNodeConnectionsMap] = useState<Map<string, number>>(new Map());
+  const wheelTimeoutRef = useRef<NodeJS.Timeout>();
+  const [dimensions, setDimensions] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1000,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800
+  });
 
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = debounce(() => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }, 250);
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
         const response = await fetch('/api/graph');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
         const jsonData = await response.json();
-        
-        // Basic validation of the response data
-        if (!jsonData.documents || !jsonData.references) {
-          throw new Error('Invalid data structure received from API');
-        }
-        
         setData(jsonData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
+        setError(err instanceof Error ? err.message : 'Failed to fetch graph data');
         console.error('Error fetching graph data:', err);
       } finally {
         setIsLoading(false);
@@ -121,431 +146,331 @@ export const KnowledgeGraph: React.FC = () => {
     fetchData();
   }, []);
 
+  // Setup and update visualization
   useEffect(() => {
-    if (!data || !svgRef.current) return;
+    if (!data || !svgRef.current || !dimensions.width || !dimensions.height) return;
 
-    // Calculate node connections and validate links
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+
+    const width = dimensions.width;
+    const height = dimensions.height;
+
+    // Calculate node connections for visual weighting
     const connections = new Map<string, number>();
-    const nodeIds = new Set(data.documents.map(node => node.id));
-    
-    // Filter and validate links
-    const validLinks = Object.values(data.references)
+    Object.values(data.references)
       .flat()
-      .filter(link => {
+      .forEach(link => {
         const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
         const targetId = typeof link.target === 'string' ? link.target : link.target.id;
-        const isValid = nodeIds.has(sourceId) && nodeIds.has(targetId);
-        
-        if (isValid) {
-          connections.set(sourceId, (connections.get(sourceId) || 0) + 1);
-          connections.set(targetId, (connections.get(targetId) || 0) + 1);
-        } else {
-          console.warn(`Invalid link found: ${sourceId} -> ${targetId}`);
-        }
-        
-        return isValid;
+        connections.set(sourceId, (connections.get(sourceId) || 0) + 1);
+        connections.set(targetId, (connections.get(targetId) || 0) + 1);
       });
-
-    setNodeConnectionsMap(connections);
 
     // Node styling functions
     const getNodeSize = (nodeId: string) => {
       const connectionCount = connections.get(nodeId) || 0;
-      const baseSize = 15;
-      return baseSize * (1 + Math.log1p(connectionCount) * 0.3);
+      const baseSize = 8;  // Reduced from 15
+      
+      // Find the 80th percentile threshold
+      const allConnections = Array.from(connections.values());
+      const sortedConnections = [...allConnections].sort((a, b) => a - b);
+      const threshold = sortedConnections[Math.floor(sortedConnections.length * 0.8)];
+      
+      // Apply more moderate scaling for highly connected nodes
+      if (connectionCount > threshold) {
+        const scaleFactor = 1 + Math.pow((connectionCount - threshold) / threshold, 0.6); // Reduced power from 1.5 to 0.6
+        return baseSize * (1.2 + scaleFactor * 0.3); // Reduced multipliers
+      }
+      
+      // Linear scaling for less connected nodes
+      return baseSize * (1 + (connectionCount / threshold) * 0.2); // Reduced from 0.5 to 0.2
     };
 
     const getNodeColor = (nodeId: string) => {
       const connectionCount = connections.get(nodeId) || 0;
-      const baseValue = 220; // Light gray base
-      const darkenAmount = Math.min(connectionCount * 15, 80); // Max darkening of 80
-      const intensity = Math.max(baseValue - darkenAmount, 140); // Minimum intensity of 140
+      
+      // Find the 80th percentile threshold
+      const allConnections = Array.from(connections.values());
+      const sortedConnections = [...allConnections].sort((a, b) => a - b);
+      const threshold = sortedConnections[Math.floor(sortedConnections.length * 0.8)];
+      
+      const baseValue = 220; // Light gray
+      let darkenAmount;
+      
+      if (connectionCount > threshold) {
+        // Exponential darkening for highly connected nodes
+        const ratio = (connectionCount - threshold) / threshold;
+        darkenAmount = Math.min(160, 80 + Math.pow(ratio, 1.5) * 80);
+      } else {
+        // Linear darkening for less connected nodes
+        darkenAmount = Math.min(80, (connectionCount / threshold) * 80);
+      }
+      
+      const intensity = Math.max(baseValue - darkenAmount, 60); // Allow darker grays down to 60
       return `rgb(${intensity}, ${intensity}, ${intensity})`;
     };
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // Calculate node shell position based on connections
+    const getNodeShellRadius = (nodeId: string) => {
+      const connectionCount = connections.get(nodeId) || 0;
+      const allConnections = Array.from(connections.values());
+      const sortedConnections = [...allConnections].sort((a, b) => b - a); // Sort descending
+      const percentile = sortedConnections.findIndex(c => c <= connectionCount) / sortedConnections.length;
+      
+      // Map percentile to radius - more connected nodes are closer to center
+      const minRadius = width * 0.1;  // Inner shell
+      const maxRadius = width * 0.4;  // Outer shell
+      return minRadius + (maxRadius - minRadius) * percentile;
+    };
 
-    const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', [0, 0, width, height].join(' '));
+    // Set up container for zoom with 3D perspective
+    svg.attr('width', width)
+       .attr('height', height)
+       .attr('viewBox', [-width/2, -height/2, width, height].join(' '))
+       .style('overflow', 'visible');
 
-    // Clear any existing content
-    svg.selectAll("*").remove();
-
-    // Create container for all graph elements with initial transform
+    // Simplified container structure
     const container = svg.append('g')
-      .attr('class', 'container')
-      .attr('transform', `translate(${width / 2}, ${height / 2})`);
+                        .attr('class', 'container');
 
-    // Create separate groups for links and nodes
-    const linksGroup = container.append('g').attr('class', 'links');
-    const nodesGroup = container.append('g').attr('class', 'nodes');
-    const labelsGroup = container.append('g').attr('class', 'labels');
+    // Main container for all transformations
+    const transformContainer = container.append('g')
+                                     .attr('class', 'transform-container');
 
-    // Configure zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.2, 2])
-      .filter(event => {
-        // Prevent zoom behavior during drag
-        if (event.type === 'mousedown' && (event.target as Element).tagName === 'circle') {
-          return false;
-        }
-        return true;
-      })
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-      });
+    // Create separate groups for better organization
+    const linksGroup = transformContainer.append('g').attr('class', 'links');
+    const nodesGroup = transformContainer.append('g').attr('class', 'nodes');
+    const labelsGroup = transformContainer.append('g').attr('class', 'labels');
 
-    // Apply zoom to svg
-    svg.call(zoom);
+    // Track transform state
+    let currentTransform = d3.zoomIdentity;
 
-    // Create force simulation with more stable parameters
-    const simulation = d3.forceSimulation<Node>()
-      .force('link', d3.forceLink<Node, Link>().id(d => d.id).distance(100))
-      .force('charge', d3.forceManyBody()
-        .strength(-400)
-        .distanceMin(50)
-        .distanceMax(300))
-      .force('center', d3.forceCenter(0, 0))
-      .force('collision', d3.forceCollide().radius(40).strength(1))
+    // Create links with proper positioning
+    const links = Object.values(data.references).flat();
+    
+    // Initialize force simulation with lower decay
+    const simulation = d3.forceSimulation<Node>(data.documents)
+      .force('link', d3.forceLink<Node, Link>(links)
+        .id(d => d.id)
+        .distance(d => {
+          const sourceRadius = getNodeShellRadius((d.source as Node).id);
+          const targetRadius = getNodeShellRadius((d.target as Node).id);
+          const sourceConnections = connections.get((d.source as Node).id) || 0;
+          const targetConnections = connections.get((d.target as Node).id) || 0;
+          const connectionFactor = Math.max(sourceConnections, targetConnections) * 2;
+          return Math.abs(sourceRadius - targetRadius) + 100 + connectionFactor;
+        }))
+      .force('charge', d3.forceManyBody<Node>()
+        .strength(d => {
+          const radius = getNodeShellRadius(d.id);
+          const connectionCount = connections.get(d.id) || 0;
+          return -1500 * (1 - radius / (width * 0.4)) * (1 + connectionCount * 0.1);
+        })
+        .distanceMax(width * 0.5))
+      .force('collision', d3.forceCollide<Node>()
+        .radius(d => getNodeSize(d.id) * 3)
+        .strength(1))
+      .force('center', d3.forceCenter(0, 0).strength(0.1))
       .velocityDecay(0.6)
-      .alpha(0.3)
+      .alpha(0.5)
       .alphaDecay(0.01)
       .alphaMin(0.001)
-      .on('tick', () => {
-        // Constrain nodes to viewport
-        data.documents.forEach(node => {
-          node.x = Math.max(-width/2, Math.min(width/2, node.x || 0));
-          node.y = Math.max(-height/2, Math.min(height/2, node.y || 0));
-        });
+      .alphaTarget(0.05); // Keep a small constant motion
 
-        // Update positions
-        link
-          .attr('x1', d => (d.source as Node).x!)
-          .attr('y1', d => (d.source as Node).y!)
-          .attr('x2', d => (d.target as Node).x!)
-          .attr('y2', d => (d.target as Node).y!);
-
-        nodeSelection
-          .attr('cx', d => d.x!)
-          .attr('cy', d => d.y!);
-
-        labels
-          .attr('x', d => d.x!)
-          .attr('y', d => d.y!);
+    // Setup unified zoom behavior
+    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        currentTransform = event.transform;
+        transformContainer.attr('transform', currentTransform.toString());
+      })
+      .on('end', () => {
+        // Resume simulation with a gentle alpha target when zoom ends
+        simulation.alpha(0.3).restart();
       });
 
-    // Define drag behavior with improved stability
+    // Initialize zoom behavior
+    svg.call(zoomBehavior)
+       .call(zoomBehavior.transform, d3.zoomIdentity)
+       .on('wheel', (event) => {
+         event.preventDefault();
+         isInteracting = true;
+         // Clear any existing timeout
+         if (wheelTimeoutRef.current) {
+           clearTimeout(wheelTimeoutRef.current);
+         }
+         // Set a new timeout to resume simulation after wheel stops
+         wheelTimeoutRef.current = setTimeout(() => {
+           isInteracting = false;
+           simulation.alpha(0.3).restart();
+         }, 150);
+       });
+
+    // Create nodes with improved drag behavior
     const drag = d3.drag<SVGCircleElement, Node>()
-      .on('start', (event) => {
-        if (!event.active) {
-          simulation.alphaTarget(0.3).restart();
-        }
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-        d3.select(event.sourceEvent.target)
-          .style('cursor', 'grabbing');
+      .on('start', (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = (event.x - currentTransform.x) / currentTransform.k;
+        d.fy = (event.y - currentTransform.y) / currentTransform.k;
+        d3.select(event.sourceEvent.target).style('cursor', 'grabbing');
+        event.sourceEvent.stopPropagation(); // Stop event from bubbling
       })
-      .on('drag', (event) => {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
+      .on('drag', (event, d) => {
+        d.fx = (event.x - currentTransform.x) / currentTransform.k;
+        d.fy = (event.y - currentTransform.y) / currentTransform.k;
+        event.sourceEvent.stopPropagation(); // Stop event from bubbling
       })
-      .on('end', (event) => {
-        if (!event.active) {
-          simulation.alphaTarget(0);
-        }
-        event.subject.fx = null;
-        event.subject.fy = null;
-        d3.select(event.sourceEvent.target)
-          .style('cursor', 'grab');
+      .on('end', (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+        d3.select(event.sourceEvent.target).style('cursor', 'pointer'); // Change cursor back to pointer
+        event.sourceEvent.stopPropagation(); // Stop event from bubbling
       });
 
-    // Create nodes with improved styling
-    const nodeSelection = nodesGroup
-      .selectAll<SVGCircleElement, Node>('circle')
+    // Create the link elements
+    const link = linksGroup
+      .selectAll('line')
+      .data(links)
+      .join('line')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.3)
+      .attr('stroke-width', d => Math.sqrt(d.confidence || 1) * 0.5);
+
+    // Create the node elements with drag behavior
+    const node = nodesGroup
+      .selectAll('circle')
       .data(data.documents)
       .join('circle')
       .attr('r', d => getNodeSize(d.id))
       .attr('fill', d => getNodeColor(d.id))
-      .style('cursor', 'grab')
+      .style('cursor', 'pointer')
       .style('stroke', '#fff')
-      .style('stroke-width', '1px')
-      .style('stroke-opacity', 0.5)
-      .call(drag as any);
-
-    // Create links with enhanced styling and animations
-    const link = linksGroup
-      .selectAll('line')
-      .data(validLinks)
-      .join('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', d => Math.sqrt(d.confidence || 1))
-      .style('stroke-dasharray', '6,3')
-      .style('animation', 'dash 20s linear infinite')
-      .style('transition', 'all 300ms ease-in-out');
-
-    // Add animated gradient definitions
-    const defs = svg.append('defs');
-    
-    // Create gradient for hover effect
-    const gradient = defs.append('linearGradient')
-      .attr('id', 'link-gradient')
-      .attr('gradientUnits', 'userSpaceOnUse');
-
-    gradient.append('stop')
-      .attr('offset', '0%')
-      .attr('stop-color', '#999');
-    
-    gradient.append('stop')
-      .attr('offset', '50%')
-      .attr('stop-color', '#666');
-    
-    gradient.append('stop')
-      .attr('offset', '100%')
-      .attr('stop-color', '#999');
-
-    // Add styles to the document head
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes dash {
-        to {
-          stroke-dashoffset: -30;
-        }
-      }
-      @keyframes glow {
-        0% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.7)); }
-        50% { filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)); }
-        100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.7)); }
-      }
-      @keyframes fadeInText {
-        from {
-          opacity: 0;
-          transform: translateY(5px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .preview-text {
-        animation: fadeInText 0.3s ease-out forwards;
-        font-family: monospace;
-        font-size: 8px;
-        fill: rgba(255, 255, 255, 0.9);
-        pointer-events: none;
-        text-shadow: 0 0 2px rgba(0,0,0,0.5);
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Enhanced hover effects
-    nodeSelection
-      .on('mouseover', async function(event, d) {
-        console.log('Node hover started:', d.title); // Debug log
-
-        // Highlight the node
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .style('stroke-width', '3px')
-          .style('stroke-opacity', 1)
-          .style('filter', 'drop-shadow(0 0 4px rgba(255,255,255,0.7))')
-          .style('animation', 'glow 1.5s ease-in-out infinite');
-
-        // Fetch and display content preview if not already loaded
-        if (!d.content && d.path.endsWith('.html')) {
-          console.log('Fetching content for:', d.path); // Debug log
-          try {
-            const response = await fetch(`/api/document/${encodeURIComponent(d.path)}`);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const html = await response.text();
-            console.log('Content fetched successfully'); // Debug log
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            // Extract text content and clean it up
-            const content = tempDiv.textContent?.replace(/\s+/g, ' ').trim().slice(0, 300) + '...';
-            d.content = content;
-          } catch (error) {
-            console.error('Error fetching content:', error);
-            d.content = 'Content preview unavailable';
-          }
-        }
-
-        // Create or update preview text
-        const previewGroup = container.append('g')
-          .attr('class', 'preview-group')
-          .attr('transform', `translate(${d.x}, ${d.y})`);
-
-        console.log('Creating preview at:', { x: d.x, y: d.y }); // Debug log
-
-        // Add semi-transparent background for better readability
-        const previewBackground = previewGroup.append('rect')
-          .attr('class', 'preview-background')
-          .attr('x', -100)
-          .attr('y', getNodeSize(d.id) + 10)
-          .attr('width', 200)
-          .attr('height', 80)
-          .attr('fill', 'rgba(0, 0, 0, 0.3)')
-          .attr('rx', 4)
-          .style('opacity', 0)
-          .transition()
-          .duration(300)
-          .style('opacity', 1);
-
-        const previewText = previewGroup.append('text')
-          .attr('class', 'preview-text')
-          .attr('text-anchor', 'middle')
-          .attr('dy', getNodeSize(d.id) + 20);
-
-        // Split text into multiple lines
-        const words = (d.content || '').split(' ');
-        let line = '';
-        let lineNumber = 0;
-        const maxWidth = 80; // Reduced characters per line
-
-        words.forEach((word, i) => {
-          const testLine = line + word + ' ';
-          if (testLine.length > maxWidth) {
-            previewText.append('tspan')
-              .attr('x', 0)
-              .attr('dy', lineNumber === 0 ? 0 : '1.2em')
-              .text(line.trim());
-            line = word + ' ';
-            lineNumber++;
-            if (lineNumber >= 4) { // Reduced to 4 lines
-              if (i === words.length - 1) {
-                line += '...';
-              }
-              return;
-            }
-          } else {
-            line = testLine;
-            if (i === words.length - 1) {
-              previewText.append('tspan')
-                .attr('x', 0)
-                .attr('dy', lineNumber === 0 ? 0 : '1.2em')
-                .text(line.trim());
-            }
-          }
-        });
-
-        console.log('Preview text created with lines:', lineNumber + 1); // Debug log
-
-        // Highlight connected links with gradient effect
-        link
-          .style('stroke', function(l) {
-            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
-            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
-            return (sourceId === d.id || targetId === d.id) ? 'url(#link-gradient)' : '#999';
-          })
-          .style('stroke-opacity', l => {
-            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
-            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
-            return (sourceId === d.id || targetId === d.id) ? 1 : 0.2;
-          })
-          .style('stroke-width', l => {
-            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
-            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
-            return (sourceId === d.id || targetId === d.id) 
-              ? Math.sqrt((l.confidence || 1) * 2)
-              : Math.sqrt(l.confidence || 1);
-          });
-
-        // Highlight connected nodes
-        nodeSelection
-          .style('opacity', n => {
-            const isConnected = validLinks.some(l => {
-              const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
-              const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
-              return (sourceId === d.id && targetId === n.id) || (targetId === d.id && sourceId === n.id);
-            });
-            return n.id === d.id || isConnected ? 1 : 0.4;
-          });
-
-        // Highlight connected labels
-        labels
-          .style('opacity', n => {
-            const isConnected = validLinks.some(l => {
-              const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
-              const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
-              return (sourceId === d.id && targetId === n.id) || (targetId === d.id && sourceId === n.id);
-            });
-            return n.id === d.id || isConnected ? 1 : 0.3;
-          })
-          .style('font-weight', n => n.id === d.id ? 'bold' : 'normal');
+      .style('stroke-width', '0.5px')
+      .style('stroke-opacity', 0.3)
+      .call(drag as any)
+      .on('mousedown', (event: MouseEvent) => {
+        // Prevent mousedown from triggering other events
+        event.stopPropagation();
       })
-      .on('mouseout', function(event, d) {
-        console.log('Node hover ended:', d.title); // Debug log
+      .on('click', function(event: MouseEvent, d: Node) {
+        // Prevent click from triggering if we're dragging
+        if (event.defaultPrevented) return;
         
-        // Remove preview text
-        container.selectAll('.preview-group').remove();
-
-        // Reset node highlight
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .style('stroke-width', '1px')
-          .style('stroke-opacity', 0.5)
-          .style('filter', null)
-          .style('animation', null);
-
-        // Reset links
-        link
-          .style('stroke', '#999')
-          .style('stroke-opacity', 0.6)
-          .style('stroke-width', d => Math.sqrt(d.confidence || 1));
-
-        // Reset all nodes
-        nodeSelection
-          .style('opacity', 1);
-
-        // Reset all labels
-        labels
-          .style('opacity', 0.7)
-          .style('font-weight', 'normal');
+        // Stop event propagation
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Log node data for debugging
+        console.log('Node clicked:', d);
+        console.log('Node path:', d.path);
+        
+        try {
+          // Create an anchor element
+          const link = document.createElement('a');
+          link.href = `/api/document/${encodeURIComponent(d.path.replace(/^\//, ''))}`;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          
+          // Log the URL for debugging
+          console.log('Opening URL:', link.href);
+          
+          // Programmatically click the link
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          console.error('Error opening document:', error);
+          alert('Could not open the document. Please try again.');
+        }
       });
 
-    // Add labels with better positioning
+    // Add labels with improved styling
     const labels = labelsGroup
       .selectAll('text')
       .data(data.documents)
       .join('text')
-      .text(d => d.title)
-      .attr('font-size', '8px')
-      .attr('dx', d => getNodeSize(d.id) + 5)
-      .attr('dy', 3)
+      .attr('font-size', '10px')
+      .attr('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif')
+      .attr('fill', '#666')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'text-after-edge')
       .style('pointer-events', 'none')
-      .style('opacity', 0.7);
+      .style('opacity', 0.7)
+      .style('text-rendering', 'optimizeLegibility')
+      .each(function(d) {
+        const text = d3.select(this);
+        
+        // Clean up the title but preserve the full name
+        let cleanTitle = d.title
+          .replace(/\.html$/, '')  // Remove .html extension
+          .replace(/([A-Z])/g, ' $1')  // Add spaces before capitals
+          .trim()
+          .replace(/[-_]/g, ' ');  // Convert dashes and underscores to spaces
+        
+        // Split into words
+        const words = cleanTitle.split(/\s+/).filter(Boolean);
+        
+        text.text(''); // Clear existing text
+        
+        // Calculate roughly half the words for each line
+        const midPoint = Math.ceil(words.length / 2);
+        const firstLine = words.slice(0, midPoint).join(' ');
+        const secondLine = words.slice(midPoint).join(' ');
+        
+        // Add first line
+        text.append('tspan')
+          .attr('x', 0)
+          .attr('dy', 0)
+          .text(firstLine);
+        
+        // Add second line if it exists
+        if (secondLine) {
+          text.append('tspan')
+            .attr('x', 0)
+            .attr('dy', '1.2em')
+            .text(secondLine);
+        }
+      });
 
-    // Initialize node positions in a more spread out pattern
-    data.documents.forEach((node, i) => {
-      const angle = (i * 2 * Math.PI) / data.documents.length;
-      const radius = Math.min(width, height) / 4;
-      node.x = Math.cos(angle) * radius;
-      node.y = Math.sin(angle) * radius;
-    });
+    // Track interaction state
+    let isInteracting = false;
+    let autoRotationEnabled = true;
 
-    // Set up links after node initialization with validated links
-    simulation.force<d3.ForceLink<Node, Link>>('link')!
-      .links(validLinks);
+    // Add mouse enter/leave handlers to pause/resume rotation
+    svg.on('mouseenter', () => { autoRotationEnabled = false; })
+       .on('mouseleave', () => { 
+         setTimeout(() => { autoRotationEnabled = true; }, 500); 
+       });
 
-    // Set initial zoom transform
-    const initialTransform = d3.zoomIdentity
-      .translate(width / 2, height / 2)
-      .scale(0.8);
-    svg.call(zoom.transform, initialTransform);
+    // Update visual elements
+    const updateVisuals = () => {
+      link
+        .attr('x1', d => (typeof d.source === 'object' ? d.source.x || 0 : 0))
+        .attr('y1', d => (typeof d.source === 'object' ? d.source.y || 0 : 0))
+        .attr('x2', d => (typeof d.target === 'object' ? d.target.x || 0 : 0))
+        .attr('y2', d => (typeof d.target === 'object' ? d.target.y || 0 : 0));
 
-    // Cleanup
+      node
+        .attr('cx', d => d.x || 0)
+        .attr('cy', d => d.y || 0);
+
+      labels
+        .attr('transform', d => {
+          const x = d.x || 0;
+          const y = d.y || 0;
+          return `translate(${x}, ${y - getNodeSize(d.id) - 12})`;
+        });
+    };
+
+    // Update simulation tick function
+    simulation.on('tick', updateVisuals);
+
     return () => {
       simulation.stop();
-      style.remove();
     };
-  }, [data, nodeConnectionsMap]);
+  }, [data, dimensions]);
 
   if (error) {
     return (

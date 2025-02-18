@@ -20,4 +20,47 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-} 
+}
+
+/* Knowledge Graph Styles */
+.knowledge-graph {
+  touch-action: none; /* Prevents unwanted touch behaviors */
+  user-select: none; /* Prevents text selection during drag */
+}
+
+.knowledge-graph svg {
+  display: block; /* Removes unwanted spacing */
+  will-change: transform;
+  background: transparent;
+}
+
+.knowledge-graph .nodes circle {
+  transition: fill 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              r 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke-width 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.knowledge-graph .nodes circle:hover {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+  stroke-width: 2.5px;
+  stroke-opacity: 1;
+}
+
+.knowledge-graph .links line {
+  transition: stroke-opacity 0.4s ease,
+              stroke-width 0.4s ease;
+  stroke-opacity: 0.3;
+}
+
+.knowledge-graph text {
+  transition: font-size 0.4s ease,
+              opacity 0.4s ease;
+  fill: #4a5568;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  paint-order: stroke;
+  stroke: rgba(255,255,255,0.9);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
