@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Technical Memory - Knowledge Graph Implementation</title>
+    <meta name="type" content="technical-memory">
+    <meta name="component" content="KnowledgeGraph">
+    <meta name="last-updated" content="2025-02-19">
+</head>
+<body>
+    <h1>Knowledge Graph Technical Implementation</h1>
+
+    <section id="visual-design">
+        <h2>Visual Design System</h2>
+        
+        <h3>Node Styling</h3>
+        <ul>
+            <li>Base Size: 15px</li>
+            <li>Growth Factor: Logarithmic scaling using Math.log1p(connections) * 0.3</li>
+            <li>Color System:
+                <ul>
+                    <li>Base Value: 220 (light gray)</li>
+                    <li>Darkening: connections * 15 (max 80)</li>
+                    <li>Minimum Intensity: 140 (prevents too dark)</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Shape System</h3>
+        <ul>
+            <li>Documents & Status: Circles (universal recognition)</li>
+            <li>Dates: Diamonds (distinct temporal marker)</li>
+            <li>Tags: Hexagons (cluster-friendly shape)</li>
+            <li>Rationale: Shapes chosen for:
+                <ul>
+                    <li>Visual distinction without color dependency</li>
+                    <li>Optimal space utilization</li>
+                    <li>Connection point distribution</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section id="interaction-model">
+        <h2>Interaction Design</h2>
+        
+        <h3>Node Interactions</h3>
+        <ul>
+            <li>Hover Effects:
+                <ul>
+                    <li>Scale: 1.05x (subtle enhancement)</li>
+                    <li>Opacity: 0.9 to 1.0</li>
+                    <li>Transition: 400ms cubic-bezier</li>
+                </ul>
+            </li>
+            <li>Click Behavior:
+                <ul>
+                    <li>Documents: Open in new tab</li>
+                    <li>Tags: Filter view (planned)</li>
+                    <li>Status: Filter by status (planned)</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Chat Bubble System</h3>
+        <ul>
+            <li>Trigger: Hover on task nodes</li>
+            <li>Animation Sequence:
+                <ul>
+                    <li>Left bubble: 0ms delay</li>
+                    <li>Left text: +100ms delay</li>
+                    <li>Right bubble: +150ms delay</li>
+                    <li>Right text: +250ms delay</li>
+                </ul>
+            </li>
+            <li>Positioning:
+                <ul>
+                    <li>Offset: -60px vertical</li>
+                    <li>Spacing: 40px between bubbles</li>
+                    <li>Float Animation: 3px vertical oscillation</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section id="force-simulation">
+        <h2>Force Simulation Parameters</h2>
+        
+        <h3>Core Forces</h3>
+        <ul>
+            <li>Link Distance: 
+                <ul>
+                    <li>Base: 100px (increased from original)</li>
+                    <li>Scaling: Math.pow(avgConnections, 1.2) * 20</li>
+                    <li>Strength: 0.3 (reduced for looser connections)</li>
+                </ul>
+            </li>
+            <li>Charge:
+                <ul>
+                    <li>Base: -500 (increased repulsion)</li>
+                    <li>Scaling: Math.pow(connections, 1.2)</li>
+                    <li>Max Distance: 600px</li>
+                </ul>
+            </li>
+            <li>Collision:
+                <ul>
+                    <li>Base Radius: 35px</li>
+                    <li>Growth: Math.pow(connections, 1.1) * 8</li>
+                    <li>Strength: 1.0 (maximum)</li>
+                    <li>Iterations: 4 (for better precision)</li>
+                </ul>
+            </li>
+            <li>Center: 0.05 strength (very loose centering)</li>
+            <li>Position Forces (X/Y): 0.01 strength (minimal constraint)</li>
+        </ul>
+
+        <h3>Simulation Settings</h3>
+        <ul>
+            <li>Alpha: 0.5 (initial activity)</li>
+            <li>Alpha Decay: 0.01 (slow cooldown)</li>
+            <li>Velocity Decay: 0.3 (smooth movement)</li>
+            <li>Initial Zoom: 0.5 (wider view)</li>
+        </ul>
+
+        <h3>Spacing Strategy</h3>
+        <ul>
+            <li>Nodes are given more room to spread out through:
+                <ul>
+                    <li>Increased base link distances</li>
+                    <li>Stronger repulsion forces</li>
+                    <li>Larger collision radii</li>
+                    <li>Reduced centering and positional constraints</li>
+                </ul>
+            </li>
+            <li>Connected nodes maintain relationships while having space to breathe</li>
+            <li>Initial zoom level adjusted to show the full spread of the network</li>
+        </ul>
+    </section>
+
+    <section id="dependencies">
+        <h2>Technical Dependencies</h2>
+        <ul>
+            <li>D3.js: Force simulation and SVG manipulation</li>
+            <li>React: Component framework</li>
+            <li>TypeScript: Type safety and development</li>
+        </ul>
+    </section>
+
+    <section id="future-enhancements">
+        <h2>Planned Enhancements</h2>
+        <ul>
+            <li>Dynamic node filtering system</li>
+            <li>Zoom-based detail levels</li>
+            <li>Enhanced tooltips with metadata</li>
+            <li>Connection strength visualization</li>
+            <li>Cluster analysis visualization</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p>Last Updated: 2025-02-19</p>
+        <p>Maintained by: rolodexterVS</p>
+    </footer>
+</body>
+</html>

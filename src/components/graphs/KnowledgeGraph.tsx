@@ -4,12 +4,21 @@
  * Visualizes the relationships between different pieces of knowledge in the system.
  * Used in the dashboard to show how different concepts and documents are connected.
  * 
- * Related Tasks:
- * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
+ * Features:
+ * - Interactive node dragging and zooming
+ * - Hover preview of document content
+ * - Dynamic node sizing based on connections
+ * - Animated relationship lines
+ * 
+ * Related Documentation:
+ * - Knowledge Graph Conventions: docs/specifications/knowledge-graph-conventions.md
+ * - Dashboard UI Task: projects/rolodexter4/ui/tasks/active/dashboard-ui-task.html
+ * 
+ * Implementation Details:
+ * - Session Log (2025-02-18): agents/memories/session-logs/2025/02/18.html
  */
 
-import React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
 interface Node extends d3.SimulationNodeDatum {
@@ -17,13 +26,14 @@ interface Node extends d3.SimulationNodeDatum {
   title: string;
   path: string;
   type: 'document' | 'tag' | 'status';
-  tagCount?: number;
-  status?: string;
   x?: number;
   y?: number;
+  content?: string;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
+  source: string | Node;
+  target: string | Node;
   confidence: number;
   type: 'document-document' | 'document-tag';
 }
@@ -35,652 +45,547 @@ interface GraphData {
   };
 }
 
-export const KnowledgeGraph = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+// Error boundary component
+class KnowledgeGraphErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('KnowledgeGraph Error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-4">
+            <h3 className="text-lg font-semibold mb-2">Graph Visualization Error</h3>
+            <p className="text-gray-600 mb-4">There was an error loading the knowledge graph.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export const KnowledgeGraph: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ 
-    width: typeof window !== 'undefined' ? window.innerWidth : 1000,
-    height: typeof window !== 'undefined' ? window.innerHeight : 800
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [nodeConnectionsMap, setNodeConnectionsMap] = useState<Map<string, number>>(new Map());
 
-  // Update dimensions when window resizes
   useEffect(() => {
-    const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Fetch data only once on mount
-  useEffect(() => {
-    let isMounted = true;
-
     const fetchData = async () => {
       try {
-        console.log('Fetching graph data...');
-        const res = await fetch('/api/graph');
-        const newData = await res.json();
-        console.log('Received graph data:', newData);
-        if (isMounted) {
-          setData(newData);
-          setError(null);
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/graph');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const jsonData = await response.json();
+        
+        // Basic validation of the response data
+        if (!jsonData.documents || !jsonData.references) {
+          throw new Error('Invalid data structure received from API');
+        }
+        
+        setData(jsonData);
       } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
         console.error('Error fetching graph data:', err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch graph data');
-        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   useEffect(() => {
-    if (!data || !svgRef.current || !dimensions.width || !dimensions.height) return;
+    if (!data || !svgRef.current) return;
 
-    const svg = d3.select(svgRef.current);
-    const { width, height } = dimensions;
-
-    // Clear previous content
-    svg.selectAll('*').remove();
-
-    // Process tags, dates, and statuses from documents
-    const tagFrequency = new Map<string, number>();
-    const dateFrequency = new Map<string, number>();
-    const statusFrequency = new Map<string, number>();
+    // Calculate node connections and validate links
+    const connections = new Map<string, number>();
+    const nodeIds = new Set(data.documents.map(node => node.id));
     
-    data.documents.forEach(doc => {
-      const content = doc.path.toLowerCase();
-      
-      // Extract status - improved path detection
-      let status = null;
-      if (content.includes('/tasks/')) {
-        if (content.includes('/active-tasks/') || content.includes('/active/')) {
-          status = 'active';
-        } else if (content.includes('/pending-tasks/') || content.includes('/pending/')) {
-          status = 'pending';
-        } else if (content.includes('/resolved-tasks/') || content.includes('/resolved/') || content.includes('/completed/')) {
-          status = 'resolved';
+    // Filter and validate links
+    const validLinks = Object.values(data.references)
+      .flat()
+      .filter(link => {
+        const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+        const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+        const isValid = nodeIds.has(sourceId) && nodeIds.has(targetId);
+        
+        if (isValid) {
+          connections.set(sourceId, (connections.get(sourceId) || 0) + 1);
+          connections.set(targetId, (connections.get(targetId) || 0) + 1);
+        } else {
+          console.warn(`Invalid link found: ${sourceId} -> ${targetId}`);
         }
-      }
-      
-      if (status) {  // Only count if it's a known status
-        statusFrequency.set(status, (statusFrequency.get(status) || 0) + 1);
-      }
-      
-      // Extract tags
-      const tags = content.match(/graph-tags content="([^"]+)"/);
-      if (tags) {
-        tags[1].split(',').map(tag => tag.trim()).forEach(tag => {
-          tagFrequency.set(tag, (tagFrequency.get(tag) || 0) + 1);
-        });
-      }
-      
-      // Extract dates
-      const dateMatches = doc.path.match(/\d{4}-\d{2}-\d{2}/g) || [];
-      dateMatches.forEach(date => {
-        dateFrequency.set(date, (dateFrequency.get(date) || 0) + 1);
+        
+        return isValid;
       });
-    });
 
-    // Create status nodes
-    const statusNodes: Node[] = Array.from(statusFrequency.entries()).map(([status, count]) => ({
-      id: `status:${status}`,
-      title: status.toUpperCase(),
-      path: '',
-      type: 'status',
-      tagCount: count
-    }));
+    setNodeConnectionsMap(connections);
 
-    // Create tag nodes
-    const tagNodes: Node[] = Array.from(tagFrequency.entries()).map(([tag, count]) => ({
-      id: `tag:${tag}`,
-      title: tag,
-      path: '',
-      type: 'tag',
-      tagCount: count
-    }));
-
-    // Create date nodes
-    const dateNodes: Node[] = Array.from(dateFrequency.entries()).map(([date, count]) => ({
-      id: `date:${date}`,
-      title: date,
-      path: '',
-      type: 'tag', // Using tag type for similar visual treatment
-      tagCount: count
-    }));
-
-    // Create document nodes with type
-    const documentNodes: Node[] = data.documents.map(doc => ({
-      ...doc,
-      type: 'document'
-    }));
-
-    // Combine all nodes
-    const nodes = [...documentNodes, ...tagNodes, ...dateNodes, ...statusNodes];
-
-    // Create document-tag and document-date links
-    const metadataLinks: Link[] = documentNodes.flatMap(doc => {
-      const links: Link[] = [];
-      
-      // Add tag links
-      const tags = doc.path.toLowerCase().match(/graph-tags content="([^"]+)"/);
-      if (tags) {
-        tags[1].split(',').map(tag => tag.trim()).forEach(tag => {
-          links.push({
-            source: doc.id,
-            target: `tag:${tag}`,
-            confidence: 0.5,
-            type: 'document-tag'
-          });
-        });
-      }
-      
-      // Add date links
-      const dateMatches = doc.path.match(/\d{4}-\d{2}-\d{2}/g) || [];
-      dateMatches.forEach(date => {
-        links.push({
-          source: doc.id,
-          target: `date:${date}`,
-          confidence: 0.5,
-          type: 'document-tag'
-        });
-      });
-      
-      return links;
-    });
-
-    // Create document-status links
-    const statusLinks: Link[] = documentNodes.flatMap(doc => {
-      const links: Link[] = [];
-      const path = doc.path.toLowerCase();
-      
-      if (path.includes('/tasks/')) {
-        let status = null;
-        if (path.includes('/active-tasks/') || path.includes('/active/')) {
-          status = 'active';
-        } else if (path.includes('/pending-tasks/') || path.includes('/pending/')) {
-          status = 'pending';
-        } else if (path.includes('/resolved-tasks/') || path.includes('/resolved/') || path.includes('/completed/')) {
-          status = 'resolved';
-        }
-
-        if (status) {
-          links.push({
-            source: doc.id,
-            target: `status:${status}`,
-            confidence: 0.8,
-            type: 'document-tag'
-          });
-        }
-      }
-      return links;
-    });
-
-    // Combine all links
-    const documentLinks: Link[] = Object.values(data.references).flat().map(link => ({
-      ...link,
-      type: 'document-document'
-    }));
-    const links = [...documentLinks, ...metadataLinks, ...statusLinks];
-
-    // Calculate node connections for depth effect
-    const nodeConnections = new Map<string, number>();
-    links.forEach(link => {
-      const source = link.source as (Node | string);
-      const target = link.target as (Node | string);
-      const sourceId = typeof source === 'object' ? source.id : source;
-      const targetId = typeof target === 'object' ? target.id : target;
-      nodeConnections.set(sourceId, (nodeConnections.get(sourceId) || 0) + 1);
-      nodeConnections.set(targetId, (nodeConnections.get(targetId) || 0) + 1);
-    });
-
-    // Create container for zoom first
-    const container = svg.append('g');
-
-    // Create SVG elements for links
-    const link = container.append('g')
-      .selectAll('line')
-      .data(links)
-      .join('line')
-      .attr('stroke', d => d.type === 'document-tag' ? '#999999' : '#666666')
-      .attr('stroke-width', d => d.type === 'document-tag' ? 0.5 : d.confidence)
-      .attr('stroke-opacity', 0.3)
-      .style('stroke-dasharray', d => d.type === 'document-tag' ? '2,2' : '5,5')
-      .style('animation', 'dash 20s linear infinite');
-
-    // Add arrow markers for links
-    svg.append('defs').selectAll('marker')
-      .data(['end'])
-      .join('marker')
-      .attr('id', 'arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 30)
-      .attr('refY', 0)
-      .attr('markerWidth', 4)
-      .attr('markerHeight', 4)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('fill', '#666666')
-      .attr('d', 'M0,-5L10,0L0,5');
-
-    // Create node groups with modified drag behavior
-    const nodeGroup = container.append('g')
-      .selectAll('g')
-      .data(nodes)
-      .join('g')
-      .call(d3.drag<any, any>()
-        .on('start', (event, d) => {
-          // Just store current position
-          d.fx = d.x;
-          d.fy = d.y;
-        })
-        .on('drag', (event, d) => {
-          // Update position during drag
-          d.fx = event.x;
-          d.fy = event.y;
-          updatePositions();
-        })
-        .on('end', (event, d) => {
-          // Keep final position
-          d.fx = event.x;
-          d.fy = event.y;
-          updatePositions();
-        }));
-
-    // Function to update positions
-    const updatePositions = () => {
-      link
-        .attr('x1', (d: any) => d.source.x ?? initialPositions.get(d.source.id)?.x)
-        .attr('y1', (d: any) => d.source.y ?? initialPositions.get(d.source.id)?.y)
-        .attr('x2', (d: any) => d.target.x ?? initialPositions.get(d.target.id)?.x)
-        .attr('y2', (d: any) => d.target.y ?? initialPositions.get(d.target.id)?.y);
-
-      nodeGroup
-        .attr('transform', (d: any) => {
-          const x = d.x ?? initialPositions.get(d.id)?.x;
-          const y = d.y ?? initialPositions.get(d.id)?.y;
-          return `translate(${x},${y})`;
-        });
+    // Node styling functions
+    const getNodeSize = (nodeId: string) => {
+      const connectionCount = connections.get(nodeId) || 0;
+      const baseSize = 15;
+      return baseSize * (1 + Math.log1p(connectionCount) * 0.3);
     };
 
-    // Create force simulation with adjusted stability parameters
-    const simulation = d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
-        .distance((d: Link) => {
-          const source = d.source as (Node | string);
-          const target = d.target as (Node | string);
-          const sourceId = typeof source === 'object' ? source.id : source;
-          const targetId = typeof target === 'object' ? target.id : target;
-          const sourceConn = nodeConnections.get(sourceId) || 0;
-          const targetConn = nodeConnections.get(targetId) || 0;
-          return (d.type === 'document-tag' ? 400 : 600) * (1 + 1 / Math.max(sourceConn, targetConn));
-        })
-        .strength(0.5))
-      .force('charge', d3.forceManyBody<Node>()
-        .strength((d: Node) => {
-          const connections = nodeConnections.get(d.id) || 0;
-          return d.type === 'tag' ? -2000 : -3000 * (1 + connections / 5);
-        })
-        .distanceMax(1000)
-        .theta(0.9))
-      .force('center', d3.forceCenter<Node>(width / 2, height / 2).strength(0.05))
-      .force('collision', d3.forceCollide<Node>()
-        .radius((d: Node) => {
-          const connections = nodeConnections.get(d.id) || 0;
-          const baseRadius = d.type === 'tag' ? (d.tagCount || 1) * 30 : 80;
-          return baseRadius * (1 + connections / 10);
-        })
-        .strength(1)
-        .iterations(4))
-      .force('x', d3.forceX<Node>().strength(0.01).x(d => {
-        const connections = nodeConnections.get(d.id) || 0;
-        // More connected nodes tend towards center horizontally
-        const offset = 1 - Math.min(connections / 5, 1);
-        if (d.type === 'tag') return width * (0.3 + offset * 0.2);
-        if (d.path.includes('/tasks/')) return width * (0.6 + offset * 0.2);
-        if (d.path.includes('/memories/')) return width * (0.7 + offset * 0.2);
-        return width * (0.5 + offset * 0.2);
-      }))
-      .force('y', d3.forceY<Node>().strength(0.01).y(d => {
-        const connections = nodeConnections.get(d.id) || 0;
-        // More connected nodes tend towards center vertically
-        const offset = 1 - Math.min(connections / 5, 1);
-        if (d.type === 'tag') return height * (0.5 + offset * 0.2);
-        if (d.path.includes('/tasks/')) return height * (0.3 + offset * 0.2);
-        if (d.path.includes('/memories/')) return height * (0.7 + offset * 0.2);
-        return height * (0.5 + offset * 0.2);
-      }));
+    const getNodeColor = (nodeId: string) => {
+      const connectionCount = connections.get(nodeId) || 0;
+      const baseValue = 220; // Light gray base
+      const darkenAmount = Math.min(connectionCount * 15, 80); // Max darkening of 80
+      const intensity = Math.max(baseValue - darkenAmount, 140); // Minimum intensity of 140
+      return `rgb(${intensity}, ${intensity}, ${intensity})`;
+    };
 
-    // Run simulation once to get initial layout
-    simulation.alpha(1);
-    for (let i = 0; i < 300; i++) simulation.tick();
-    
-    // Instead of stopping, reduce the simulation intensity and let it continue
-    simulation
-      .alpha(0.1) // Reduce the simulation intensity
-      .alphaDecay(0.001) // Make it decay very slowly
-      .velocityDecay(0.3) // Add some damping to prevent wild movements
-      .on('tick', updatePositions); // Update positions on each tick
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    // Store initial positions
-    const initialPositions = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
+    const svg = d3.select(svgRef.current)
+      .attr('width', width)
+      .attr('height', height)
+      .attr('viewBox', [0, 0, width, height].join(' '));
 
-    // Set up zoom behavior with adjusted scale
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 20])
+    // Clear any existing content
+    svg.selectAll("*").remove();
+
+    // Create container for all graph elements with initial transform
+    const container = svg.append('g')
+      .attr('class', 'container')
+      .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+    // Create separate groups for links and nodes
+    const linksGroup = container.append('g').attr('class', 'links');
+    const nodesGroup = container.append('g').attr('class', 'nodes');
+    const labelsGroup = container.append('g').attr('class', 'labels');
+
+    // Configure zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.2, 2])
       .filter(event => {
-        if (event.type === 'mousedown' && event.button === 2) return false;
+        // Prevent zoom behavior during drag
+        if (event.type === 'mousedown' && (event.target as Element).tagName === 'circle') {
+          return false;
+        }
         return true;
       })
       .on('zoom', (event) => {
         container.attr('transform', event.transform);
       });
 
-    // Apply zoom behavior with smooth transition
-    svg.call(zoom as any)
-      .call(zoom.transform as any, d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(0.7)
-        .translate(-width / 2, -height / 2));
+    // Apply zoom to svg
+    svg.call(zoom);
 
-    // Prevent mousewheel from scrolling page
-    svg.on('wheel', (event: Event) => {
-      event.preventDefault();
-    });
+    // Create force simulation with more stable parameters
+    const simulation = d3.forceSimulation<Node>()
+      .force('link', d3.forceLink<Node, Link>().id(d => d.id).distance(100))
+      .force('charge', d3.forceManyBody()
+        .strength(-400)
+        .distanceMin(50)
+        .distanceMax(300))
+      .force('center', d3.forceCenter(0, 0))
+      .force('collision', d3.forceCollide().radius(40).strength(1))
+      .velocityDecay(0.6)
+      .alpha(0.3)
+      .alphaDecay(0.01)
+      .alphaMin(0.001)
+      .on('tick', () => {
+        // Constrain nodes to viewport
+        data.documents.forEach(node => {
+          node.x = Math.max(-width/2, Math.min(width/2, node.x || 0));
+          node.y = Math.max(-height/2, Math.min(height/2, node.y || 0));
+        });
 
-    // Enhance glow effect based on connections
-    const defs = svg.append('defs');
-    
-    // Enhanced shadow effect
-    const filter = defs.append('filter')
-      .attr('id', 'glow')
-      .attr('x', '-50%')
-      .attr('y', '-50%')
-      .attr('width', '200%')
-      .attr('height', '200%');
+        // Update positions
+        link
+          .attr('x1', d => (d.source as Node).x!)
+          .attr('y1', d => (d.source as Node).y!)
+          .attr('x2', d => (d.target as Node).x!)
+          .attr('y2', d => (d.target as Node).y!);
 
-    // Gaussian blur for soft shadow
-    filter.append('feGaussianBlur')
-      .attr('in', 'SourceAlpha')
-      .attr('stdDeviation', '3')
-      .attr('result', 'blur');
+        nodeSelection
+          .attr('cx', d => d.x!)
+          .attr('cy', d => d.y!);
 
-    // Offset the shadow
-    filter.append('feOffset')
-      .attr('in', 'blur')
-      .attr('dx', '2')
-      .attr('dy', '2')
-      .attr('result', 'offsetBlur');
-
-    // Create lighting effect
-    filter.append('feSpecularLighting')
-      .attr('in', 'blur')
-      .attr('surfaceScale', '5')
-      .attr('specularConstant', '1')
-      .attr('specularExponent', '20')
-      .attr('lighting-color', '#ffffff')
-      .attr('result', 'specOut')
-      .append('fePointLight')
-      .attr('x', '-5000')
-      .attr('y', '-10000')
-      .attr('z', '20000');
-
-    // Combine effects
-    const feMerge = filter.append('feMerge');
-    feMerge.append('feMergeNode')
-      .attr('in', 'offsetBlur');
-    feMerge.append('feMergeNode')
-      .attr('in', 'specOut');
-    feMerge.append('feMergeNode')
-      .attr('in', 'SourceGraphic');
-
-    // Modify node appearance with enhanced 3D effects
-    nodeGroup.each(function(d) {
-      const node = d3.select(this);
-      const data = d as Node;
-      const connections = nodeConnections.get(data.id) || 0;
-      const depth = Math.min(connections / 5, 1);
-
-      if (data.type === 'document' || data.type === 'status') {
-        // Document and status nodes get circles with consistent styling
-        node.append('circle')
-          .attr('r', d => {
-            const data = d as Node;
-            const connections = nodeConnections.get(data.id) || 0;
-            return 15 * (1 + connections * 0.1);
-          })
-          .attr('fill', d => {
-            const data = d as Node;
-            const connections = nodeConnections.get(data.id) || 0;
-            // Use same base color and darkening rules for both document and status nodes
-            let color = '#e6e6e6';  // Very light base gray
-            if (data.type === 'status') {
-              const status = data.title.toLowerCase();
-              if (status === 'active') color = '#dedede';
-              else if (status === 'pending') color = '#d6d6d6';
-              else if (status === 'resolved') color = '#cecece';
-            } else if (data.path.includes('/tasks/')) {
-              color = '#dedede';
-            } else if (data.path.includes('/memories/')) {
-              color = '#d6d6d6';
-            } else if (data.path.includes('/documentation/')) {
-              color = '#cecece';
-            }
-            const darkenAmount = Math.min(connections / 3, 2.0);
-            return d3.color(color)?.darker(darkenAmount).toString() || color;
-          })
-          .attr('stroke', 'none')
-          .attr('stroke-width', 0)
-          .style('filter', 'url(#glow)')
-          .style('opacity', 0.9)
-          .style('cursor', 'pointer')
-          .on('mouseover', function() {
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr('stroke-width', 2 + depth)
-              .style('opacity', 1);
-          })
-          .on('mouseout', function() {
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr('stroke-width', 1 + depth)
-              .style('opacity', 0.9);
-          })
-          .on('click', function(event, d) {
-            const data = d as Node;
-            if (data.type === 'document') {
-              window.open(`/api/document/${data.path}`, '_blank');
-            } else if (data.type === 'status') {
-              const status = data.title.toLowerCase();
-              window.open(`/api/document/list?status=${status}`, '_blank');
-            }
-          });
-
-      } else {
-        const isDateNode = d.id.startsWith('date:');
-        const baseSize = isDateNode ? 8 : 10;
-        const size = (d.tagCount || 1) * baseSize * (1 + connections * 0.1);
-        
-        if (isDateNode) {
-          // Enhanced diamond nodes
-          const diamondPath = d3.line()([[0, -size], [size, 0], [0, size], [-size, 0], [0, -size]]);
-          
-          // Add shadow/backdrop for depth
-          node.append('path')
-            .attr('d', diamondPath)
-            .attr('transform', 'translate(2, 2)')
-            .attr('fill', '#000000')
-            .style('opacity', 0.2);
-
-          node.append('path')
-            .attr('d', diamondPath)
-            .attr('fill', '#e5e7eb')
-            .attr('stroke', 'none')
-            .attr('stroke-width', 0)
-            .style('filter', 'url(#glow)')
-            .style('opacity', 0.9)
-            .on('mouseover', function() {
-              d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('stroke-width', 2 + depth)
-                .style('opacity', 1);
-            })
-            .on('mouseout', function() {
-              d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('stroke-width', 1 + depth)
-                .style('opacity', 0.9);
-            });
-        } else {
-          // Enhanced hexagon nodes
-          const hexagonPath = d3.line()([[0, -size], [size * 0.866, -size/2], 
-            [size * 0.866, size/2], [0, size], [-size * 0.866, size/2], 
-            [-size * 0.866, -size/2], [0, -size]]);
-          
-          // Add shadow/backdrop for depth
-          node.append('path')
-            .attr('d', hexagonPath)
-            .attr('transform', 'translate(2, 2)')
-            .attr('fill', '#000000')
-            .style('opacity', 0.2);
-
-          node.append('path')
-            .attr('d', hexagonPath)
-            .attr('fill', '#ffffff')
-            .attr('stroke', 'none')
-            .attr('stroke-width', 0)
-            .style('filter', 'url(#glow)')
-            .style('opacity', 0.9)
-            .on('mouseover', function() {
-              d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('stroke-width', 2 + depth)
-                .style('opacity', 1);
-            })
-            .on('mouseout', function() {
-              d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('stroke-width', 1 + depth)
-                .style('opacity', 0.9);
-            });
-        }
-      }
-    });
-
-    // Add labels with different styles for documents and tags
-    nodeGroup.append('text')
-      .text((d: Node) => d.title)
-      .attr('text-anchor', 'middle')
-      .attr('dy', (d: Node) => {
-        if (d.type === 'document') return '30';
-        return d.id.startsWith('date:') ? '0.35em' : '0.35em';
-      })
-      .attr('fill', (d: Node) => {
-        if (d.type === 'document') return '#333333';
-        if (d.type === 'status') return '#666666';  // Lighter color for status text
-        return d.id.startsWith('date:') ? '#4b5563' : '#000000';
-      })
-      .style('font-size', (d: Node) => {
-        if (d.type === 'document') return '11px';
-        if (d.type === 'status') return '10px';  // Smaller font for status
-        return d.id.startsWith('date:') ? '10px' : `${Math.min(14, 10 + (d.tagCount || 1))}px`;
-      })
-      .style('font-family', 'monospace')
-      .style('font-weight', (d: Node) => {
-        if (d.type === 'document') return 'normal';
-        if (d.type === 'status') return 'normal';  // Normal weight for status
-        return d.id.startsWith('date:') ? 'normal' : 'bold';
-      })
-      .style('opacity', (d: Node) => {
-        if (d.type === 'status') return 0.6;  // More transparent for status
-        return 0.7;
-      })
-      .style('cursor', (d: Node) => d.type === 'document' ? 'pointer' : 'default')
-      .on('click', (event: MouseEvent, d: Node) => {
-        if (d.type === 'document') {
-          window.open(`/api/document/${d.path}`, '_blank');
-        }
+        labels
+          .attr('x', d => d.x!)
+          .attr('y', d => d.y!);
       });
 
-    // Add pulsing animation to nodes
-    nodeGroup.each(function(d) {
-      const node = d3.select(this);
-      if (d.type === 'document') {
-        node.append('animate')
-          .attr('attributeName', 'r')
-          .attr('values', '15;17;15')
-          .attr('dur', '3s')
-          .attr('repeatCount', 'indefinite');
-      }
-    });
+    // Define drag behavior with improved stability
+    const drag = d3.drag<SVGCircleElement, Node>()
+      .on('start', (event) => {
+        if (!event.active) {
+          simulation.alphaTarget(0.3).restart();
+        }
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+        d3.select(event.sourceEvent.target)
+          .style('cursor', 'grabbing');
+      })
+      .on('drag', (event) => {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+      })
+      .on('end', (event) => {
+        if (!event.active) {
+          simulation.alphaTarget(0);
+        }
+        event.subject.fx = null;
+        event.subject.fy = null;
+        d3.select(event.sourceEvent.target)
+          .style('cursor', 'grab');
+      });
 
-    // Add CSS animation for dashed lines
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
+    // Create nodes with improved styling
+    const nodeSelection = nodesGroup
+      .selectAll<SVGCircleElement, Node>('circle')
+      .data(data.documents)
+      .join('circle')
+      .attr('r', d => getNodeSize(d.id))
+      .attr('fill', d => getNodeColor(d.id))
+      .style('cursor', 'grab')
+      .style('stroke', '#fff')
+      .style('stroke-width', '1px')
+      .style('stroke-opacity', 0.5)
+      .call(drag as any);
+
+    // Create links with enhanced styling and animations
+    const link = linksGroup
+      .selectAll('line')
+      .data(validLinks)
+      .join('line')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
+      .attr('stroke-width', d => Math.sqrt(d.confidence || 1))
+      .style('stroke-dasharray', '6,3')
+      .style('animation', 'dash 20s linear infinite')
+      .style('transition', 'all 300ms ease-in-out');
+
+    // Add animated gradient definitions
+    const defs = svg.append('defs');
+    
+    // Create gradient for hover effect
+    const gradient = defs.append('linearGradient')
+      .attr('id', 'link-gradient')
+      .attr('gradientUnits', 'userSpaceOnUse');
+
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#999');
+    
+    gradient.append('stop')
+      .attr('offset', '50%')
+      .attr('stop-color', '#666');
+    
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#999');
+
+    // Add styles to the document head
+    const style = document.createElement('style');
+    style.textContent = `
       @keyframes dash {
         to {
-          stroke-dashoffset: 100;
+          stroke-dashoffset: -30;
         }
       }
-    `;
-    document.head.appendChild(styleElement);
-
-    return () => {
-      if (styleElement && styleElement.parentNode) {
-        styleElement.parentNode.removeChild(styleElement);
+      @keyframes glow {
+        0% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.7)); }
+        50% { filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)); }
+        100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.7)); }
       }
-    };
-  }, [data, dimensions]);
+      @keyframes fadeInText {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .preview-text {
+        animation: fadeInText 0.3s ease-out forwards;
+        font-family: monospace;
+        font-size: 8px;
+        fill: rgba(255, 255, 255, 0.9);
+        pointer-events: none;
+        text-shadow: 0 0 2px rgba(0,0,0,0.5);
+      }
+    `;
+    document.head.appendChild(style);
 
-  if (error) return (
-    <div className="fixed top-4 left-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
-      Error: {error}
+    // Enhanced hover effects
+    nodeSelection
+      .on('mouseover', async function(event, d) {
+        console.log('Node hover started:', d.title); // Debug log
+
+        // Highlight the node
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .style('stroke-width', '3px')
+          .style('stroke-opacity', 1)
+          .style('filter', 'drop-shadow(0 0 4px rgba(255,255,255,0.7))')
+          .style('animation', 'glow 1.5s ease-in-out infinite');
+
+        // Fetch and display content preview if not already loaded
+        if (!d.content && d.path.endsWith('.html')) {
+          console.log('Fetching content for:', d.path); // Debug log
+          try {
+            const response = await fetch(`/api/document/${encodeURIComponent(d.path)}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const html = await response.text();
+            console.log('Content fetched successfully'); // Debug log
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            // Extract text content and clean it up
+            const content = tempDiv.textContent?.replace(/\s+/g, ' ').trim().slice(0, 300) + '...';
+            d.content = content;
+          } catch (error) {
+            console.error('Error fetching content:', error);
+            d.content = 'Content preview unavailable';
+          }
+        }
+
+        // Create or update preview text
+        const previewGroup = container.append('g')
+          .attr('class', 'preview-group')
+          .attr('transform', `translate(${d.x}, ${d.y})`);
+
+        console.log('Creating preview at:', { x: d.x, y: d.y }); // Debug log
+
+        // Add semi-transparent background for better readability
+        const previewBackground = previewGroup.append('rect')
+          .attr('class', 'preview-background')
+          .attr('x', -100)
+          .attr('y', getNodeSize(d.id) + 10)
+          .attr('width', 200)
+          .attr('height', 80)
+          .attr('fill', 'rgba(0, 0, 0, 0.3)')
+          .attr('rx', 4)
+          .style('opacity', 0)
+          .transition()
+          .duration(300)
+          .style('opacity', 1);
+
+        const previewText = previewGroup.append('text')
+          .attr('class', 'preview-text')
+          .attr('text-anchor', 'middle')
+          .attr('dy', getNodeSize(d.id) + 20);
+
+        // Split text into multiple lines
+        const words = (d.content || '').split(' ');
+        let line = '';
+        let lineNumber = 0;
+        const maxWidth = 80; // Reduced characters per line
+
+        words.forEach((word, i) => {
+          const testLine = line + word + ' ';
+          if (testLine.length > maxWidth) {
+            previewText.append('tspan')
+              .attr('x', 0)
+              .attr('dy', lineNumber === 0 ? 0 : '1.2em')
+              .text(line.trim());
+            line = word + ' ';
+            lineNumber++;
+            if (lineNumber >= 4) { // Reduced to 4 lines
+              if (i === words.length - 1) {
+                line += '...';
+              }
+              return;
+            }
+          } else {
+            line = testLine;
+            if (i === words.length - 1) {
+              previewText.append('tspan')
+                .attr('x', 0)
+                .attr('dy', lineNumber === 0 ? 0 : '1.2em')
+                .text(line.trim());
+            }
+          }
+        });
+
+        console.log('Preview text created with lines:', lineNumber + 1); // Debug log
+
+        // Highlight connected links with gradient effect
+        link
+          .style('stroke', function(l) {
+            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
+            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
+            return (sourceId === d.id || targetId === d.id) ? 'url(#link-gradient)' : '#999';
+          })
+          .style('stroke-opacity', l => {
+            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
+            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
+            return (sourceId === d.id || targetId === d.id) ? 1 : 0.2;
+          })
+          .style('stroke-width', l => {
+            const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
+            const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
+            return (sourceId === d.id || targetId === d.id) 
+              ? Math.sqrt((l.confidence || 1) * 2)
+              : Math.sqrt(l.confidence || 1);
+          });
+
+        // Highlight connected nodes
+        nodeSelection
+          .style('opacity', n => {
+            const isConnected = validLinks.some(l => {
+              const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
+              const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
+              return (sourceId === d.id && targetId === n.id) || (targetId === d.id && sourceId === n.id);
+            });
+            return n.id === d.id || isConnected ? 1 : 0.4;
+          });
+
+        // Highlight connected labels
+        labels
+          .style('opacity', n => {
+            const isConnected = validLinks.some(l => {
+              const sourceId = (typeof l.source === 'object' ? l.source.id : l.source).toString();
+              const targetId = (typeof l.target === 'object' ? l.target.id : l.target).toString();
+              return (sourceId === d.id && targetId === n.id) || (targetId === d.id && sourceId === n.id);
+            });
+            return n.id === d.id || isConnected ? 1 : 0.3;
+          })
+          .style('font-weight', n => n.id === d.id ? 'bold' : 'normal');
+      })
+      .on('mouseout', function(event, d) {
+        console.log('Node hover ended:', d.title); // Debug log
+        
+        // Remove preview text
+        container.selectAll('.preview-group').remove();
+
+        // Reset node highlight
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .style('stroke-width', '1px')
+          .style('stroke-opacity', 0.5)
+          .style('filter', null)
+          .style('animation', null);
+
+        // Reset links
+        link
+          .style('stroke', '#999')
+          .style('stroke-opacity', 0.6)
+          .style('stroke-width', d => Math.sqrt(d.confidence || 1));
+
+        // Reset all nodes
+        nodeSelection
+          .style('opacity', 1);
+
+        // Reset all labels
+        labels
+          .style('opacity', 0.7)
+          .style('font-weight', 'normal');
+      });
+
+    // Add labels with better positioning
+    const labels = labelsGroup
+      .selectAll('text')
+      .data(data.documents)
+      .join('text')
+      .text(d => d.title)
+      .attr('font-size', '8px')
+      .attr('dx', d => getNodeSize(d.id) + 5)
+      .attr('dy', 3)
+      .style('pointer-events', 'none')
+      .style('opacity', 0.7);
+
+    // Initialize node positions in a more spread out pattern
+    data.documents.forEach((node, i) => {
+      const angle = (i * 2 * Math.PI) / data.documents.length;
+      const radius = Math.min(width, height) / 4;
+      node.x = Math.cos(angle) * radius;
+      node.y = Math.sin(angle) * radius;
+    });
+
+    // Set up links after node initialization with validated links
+    simulation.force<d3.ForceLink<Node, Link>>('link')!
+      .links(validLinks);
+
+    // Set initial zoom transform
+    const initialTransform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(0.8);
+    svg.call(zoom.transform, initialTransform);
+
+    // Cleanup
+    return () => {
+      simulation.stop();
+      style.remove();
+    };
+  }, [data, nodeConnectionsMap]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center p-4">
+          <h3 className="text-lg font-semibold mb-2">Error Loading Graph</h3>
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center p-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading knowledge graph...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full">
+      <svg ref={svgRef} className="w-full h-full" />
     </div>
   );
-  
+};
+
+export default function SafeKnowledgeGraph() {
   return (
-    <svg
-      ref={svgRef}
-      width="100vw"
-      height="100vh"
-      style={{ 
-        background: '#f9fafb',
-        display: 'block', // Removes any default spacing
-        position: 'fixed',
-        top: 0,
-        left: 0
-      }}
-    >
-      {!data && (
-        <text 
-          x="50%" 
-          y="50%" 
-          textAnchor="middle" 
-          fill="#666"
-          style={{ fontFamily: 'monospace' }}
-        >
-          Loading knowledge graph...
-        </text>
-      )}
-    </svg>
+    <KnowledgeGraphErrorBoundary>
+      <KnowledgeGraph />
+    </KnowledgeGraphErrorBoundary>
   );
-}; 
+}
