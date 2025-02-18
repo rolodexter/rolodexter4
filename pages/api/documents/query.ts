@@ -7,23 +7,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { 
-    type,           // 'task' | 'memory' | 'documentation'
-    status,         // For tasks: 'ACTIVE' | 'PENDING' | 'RESOLVED' | 'ARCHIVED'
-    tags,           // Comma-separated tag names
-    search,         // Search term for title/content
-    limit = 10,     // Number of results to return
-    offset = 0      // Pagination offset
+    type,
+    status,
+    tags,
+    search,
+    limit = 10,
+    offset = 0,
+    sortBy = 'updated_at',
+    groupBy
   } = req.query;
 
   try {
     const where: any = {};
     
-    // Filter by type if specified
     if (type) {
       where.type = type;
     }
 
-    // Filter by status for tasks
     if (status && type === 'task') {
       where.tasks = {
         some: {
@@ -32,7 +32,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
     }
 
-    // Filter by tags if specified
     if (tags) {
       where.tags = {
         some: {
@@ -43,7 +42,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
     }
 
-    // Add search filter if specified
     if (search) {
       where.OR = [
         { title: { contains: search as string, mode: 'insensitive' } },
@@ -51,10 +49,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ];
     }
 
-    // Get total count for pagination
-    const total = await prisma.document.count({ where });
+    const orderBy: any = {};
+    
+    // Handle different sorting options
+    switch (sortBy) {
+      case 'priority':
+        orderBy.tasks = {
+          priority: 'desc'
+        };
+        break;
+      case 'due_date':
+        orderBy.tasks = {
+          due_date: 'asc'
+        };
+        break;
+      default:
+        orderBy.updated_at = 'desc';
+    }
 
-    // Get documents with tags
+    // Get documents with enhanced includes
     const documents = await prisma.document.findMany({
       where,
       include: {
@@ -67,20 +80,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         tasks: {
           select: {
             status: true,
-            priority: true
+            priority: true,
+            due_date: true,
+            completed_at: true,
+            parent_id: true
+          }
+        },
+        references: {
+          select: {
+            type: true,
+            target_id: true
           }
         }
       },
-      orderBy: {
-        updated_at: 'desc'
-      },
+      orderBy,
       take: Number(limit),
       skip: Number(offset)
     });
 
+    // Handle grouping if specified
+    let groupedDocuments = documents;
+    if (groupBy) {
+      const groups: Record<string, typeof documents> = {};
+      
+      switch (groupBy) {
+        case 'status':
+          documents.forEach(doc => {
+            const status = doc.tasks?.[0]?.status || 'NO_STATUS';
+            if (!groups[status]) groups[status] = [];
+            groups[status].push(doc);
+          });
+          break;
+        case 'priority':
+          documents.forEach(doc => {
+            const priority = doc.tasks?.[0]?.priority || 'NO_PRIORITY';
+            if (!groups[priority]) groups[priority] = [];
+            groups[priority].push(doc);
+          });
+          break;
+        case 'tags':
+          documents.forEach(doc => {
+            doc.tags.forEach(tag => {
+              if (!groups[tag.name]) groups[tag.name] = [];
+              groups[tag.name].push(doc);
+            });
+          });
+          break;
+      }
+      
+      return res.status(200).json({
+        total: documents.length,
+        groups,
+        groupBy,
+        limit: Number(limit),
+        offset: Number(offset)
+      });
+    }
+
+    const total = await prisma.document.count({ where });
+
     return res.status(200).json({
       total,
-      documents,
+      documents: groupedDocuments,
       limit: Number(limit),
       offset: Number(offset)
     });

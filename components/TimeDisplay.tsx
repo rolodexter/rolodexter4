@@ -25,7 +25,7 @@ const TimeDisplay = () => {
 
   return (
     <motion.span
-      className="text-xs font-mono text-red-500"
+      className="text-xs font-mono text-white tracking-wider"
       animate={{ opacity: [1, 0.5, 1] }}
       transition={{ duration: 2, repeat: Infinity }}
       suppressHydrationWarning
@@ -35,4 +35,4 @@ const TimeDisplay = () => {
   );
 };
 
-export default TimeDisplay; 
+export default TimeDisplay;
