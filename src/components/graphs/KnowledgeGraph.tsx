@@ -180,18 +180,18 @@ export const KnowledgeGraph = () => {
 
     // Create force simulation with adjusted parameters
     const simulation = d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 80 : 120))
-      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -300 : -500))
+      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 100 : 150))
+      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -400 : -600).distanceMax(350))
       .force('center', d3.forceCenter<Node>(width / 2, height / 2))
-      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 5 : 20))
-      // Add x and y forces for clustering
-      .force('x', d3.forceX<Node>().strength(0.1).x(d => {
+      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 8 : 25).strength(0.8))
+      // Add x and y forces for clustering with reduced strength
+      .force('x', d3.forceX<Node>().strength(0.05).x(d => {
         if (d.type === 'tag') return width * 0.3;
         if (d.path.includes('/tasks/')) return width * 0.6;
         if (d.path.includes('/memories/')) return width * 0.7;
         return width * 0.5;
       }))
-      .force('y', d3.forceY<Node>().strength(0.1).y(d => {
+      .force('y', d3.forceY<Node>().strength(0.05).y(d => {
         if (d.type === 'tag') return height * 0.5;
         if (d.path.includes('/tasks/')) return height * 0.3;
         if (d.path.includes('/memories/')) return height * 0.7;
