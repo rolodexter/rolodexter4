@@ -127,8 +127,8 @@ const TaskBar: React.FC = () => {
     >
       <div
         style={{
-          width: '32px',
-          height: '32px',
+          width: '56px',
+          height: '56px',
           borderRadius: '50%',
           overflow: 'hidden',
           opacity: 0.5,
