@@ -187,7 +187,7 @@ export const KnowledgeGraph = () => {
 
     // Add clickable node circles with enhanced styling
     const nodeCircles = nodeGroup.append('a')
-      .attr('href', (d: any) => `/${d.path}`)
+      .attr('href', (d: any) => `/api/document/${d.path}`)
       .attr('target', '_blank')
       .attr('rel', 'noopener noreferrer')
       .append('circle')
@@ -221,7 +221,7 @@ export const KnowledgeGraph = () => {
 
     // Add clickable labels with enhanced styling
     const nodeLabels = nodeGroup.append('a')
-      .attr('href', (d: any) => `/${d.path}`)
+      .attr('href', (d: any) => `/api/document/${d.path}`)
       .attr('target', '_blank')
       .attr('rel', 'noopener noreferrer')
       .append('text')
