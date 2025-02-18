@@ -20,12 +20,18 @@
 import { PrismaClient } from '@prisma/client';
 import { createPool } from '@vercel/postgres';
 
-// Initialize Prisma Client
-const prisma = new PrismaClient();
+// Initialize Prisma Client with connection pooling
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
+    }
+  }
+});
 
 // Initialize Vercel Postgres Pool for raw SQL operations
 const sql = createPool({
-  connectionString: process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
 });
 
 // Basic interfaces for our data types
