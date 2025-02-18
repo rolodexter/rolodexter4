@@ -2,7 +2,8 @@ import React from 'react';
 import { TimeDisplay } from './TimeDisplay';
 import { TaskList } from './TaskList';
 import { TaskGraph } from './TaskGraph';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Draggable from 'react-draggable';
 
 interface Task {
   id: string;
@@ -13,6 +14,10 @@ interface Task {
 }
 
 export const TaskMonitor: React.FC = () => {
+  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [isMaximized, setIsMaximized] = React.useState(false);
+  const [position, setPosition] = React.useState({ x: 0, y: 0 });
+  const [previousPosition, setPreviousPosition] = React.useState({ x: 0, y: 0 });
   const [tasks] = React.useState<Task[]>([
     {
       id: '01',
@@ -72,74 +77,181 @@ export const TaskMonitor: React.FC = () => {
     }
   ]);
 
+  const handleDrag = (e: any, data: { x: number; y: number }) => {
+    if (!isMaximized) {
+      setPosition({ x: data.x, y: data.y });
+    }
+  };
+
+  const handleDragStart = () => {
+    if (!isMaximized) {
+      setPreviousPosition(position);
+    }
+  };
+
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+    if (isMaximized) {
+      setIsMaximized(false);
+      setPosition(previousPosition);
+    }
+  };
+
+  const toggleMaximize = () => {
+    if (isMaximized) {
+      setPosition(previousPosition);
+    } else {
+      setPreviousPosition(position);
+      setPosition({ x: 0, y: 0 });
+    }
+    setIsMaximized(!isMaximized);
+    if (isMinimized) setIsMinimized(false);
+  };
+
+  const windowVariants = {
+    maximized: {
+      x: 0,
+      y: 0,
+      width: '100%',
+      height: '100%',
+      transition: { duration: 0.3, ease: 'easeInOut' }
+    },
+    normal: {
+      width: '80vw',
+      height: '80vh',
+      transition: { duration: 0.3, ease: 'easeInOut' }
+    },
+    minimized: {
+      y: 'calc(100vh - 2.5rem)',
+      transition: { duration: 0.3, ease: 'easeInOut' }
+    }
+  };
+
+  const contentVariants = {
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.2 }
+    },
+    hidden: {
+      opacity: 0,
+      scale: 0.98,
+      transition: { duration: 0.2 }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black">
-      {/* Background Grid */}
-      <div 
-        className="fixed inset-0" 
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px'
-        }}
-      />
-
-      <div className="relative z-10 p-6">
-        {/* Corner Frames */}
-        <div className="absolute top-0 left-0 w-24 h-24 border-l-2 border-t-2 border-white" />
-        <div className="absolute top-0 right-0 w-24 h-24 border-r-2 border-t-2 border-white" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 border-l-2 border-b-2 border-white" />
-        <div className="absolute bottom-0 right-0 w-24 h-24 border-r-2 border-b-2 border-white" />
-
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex justify-between items-center">
+    <AnimatePresence>
+      <Draggable
+        handle=".window-handle"
+        position={isMaximized ? { x: 0, y: 0 } : position}
+        onDrag={handleDrag}
+        onStart={handleDragStart}
+        disabled={isMaximized}
+        bounds="parent"
+      >
+        <motion.div 
+          className="fixed bg-black border-2 border-white"
+          initial={false}
+          animate={
+            isMaximized ? 'maximized' : 
+            isMinimized ? 'minimized' : 
+            'normal'
+          }
+          variants={windowVariants}
+        >
+          {/* Window Controls */}
+          <div className="window-handle absolute top-0 left-0 right-0 h-10 border-b-2 border-white flex items-center justify-between px-4 bg-black cursor-move select-none">
             <div className="flex items-center space-x-6">
-              <h1 className="text-white text-xl tracking-[0.5em] uppercase font-light">Monitor</h1>
+              <h1 className="text-white text-sm tracking-[0.5em] uppercase font-light">TaskMonitor</h1>
               <div className="h-px w-32 bg-white" />
             </div>
-            <TimeDisplay />
+            
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={toggleMinimize}
+                className="w-3 h-3 border border-white flex items-center justify-center hover:bg-white hover:text-black transition-colors cursor-pointer"
+              >
+                <span className="transform translate-y-[-2px]">−</span>
+              </button>
+              <button 
+                onClick={toggleMaximize}
+                className="w-3 h-3 border border-white flex items-center justify-center hover:bg-white hover:text-black transition-colors cursor-pointer"
+              >
+                <span className="transform translate-y-[-2px]">{isMaximized ? '□' : '⨉'}</span>
+              </button>
+            </div>
           </div>
-        </header>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-          <section className="border-2 border-white bg-black/50 backdrop-blur-sm p-6">
-            <h2 className="text-white text-sm tracking-[0.3em] uppercase mb-6 font-light flex items-center">
-              <span className="h-px w-4 bg-white mr-4" />
-              System Tasks
-            </h2>
-            <TaskList tasks={tasks} />
-          </section>
+          <AnimatePresence>
+            {!isMinimized && (
+              <motion.div 
+                className="p-6 pt-12 h-full"
+                variants={contentVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                {/* Background Grid */}
+                <div 
+                  className="absolute inset-0 opacity-10" 
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(to right, white 1px, transparent 1px),
+                      linear-gradient(to bottom, white 1px, transparent 1px)
+                    `,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
 
-          <section className="border-2 border-white bg-black/50 backdrop-blur-sm p-6"></section>
-            <h2 className="text-white text-sm tracking-[0.3em] uppercase mb-6 font-light flex items-center">
-              <span className="h-px w-4 bg-white mr-4" />
-              Network View
-            </h2>
-            <TaskGraph nodes={tasks} />
-          </section>
-        </div>
-      </div>
+                <div className="relative z-10 h-full">
+                  {/* Corner Frames */}
+                  <div className="absolute top-0 left-0 w-24 h-24 border-l-2 border-t-2 border-white" />
+                  <div className="absolute top-0 right-0 w-24 h-24 border-r-2 border-t-2 border-white" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 border-l-2 border-b-2 border-white" />
+                  <div className="absolute bottom-0 right-0 w-24 h-24 border-r-2 border-b-2 border-white" />
 
-      {/* Scanline Effect */}
-      <motion.div 
-        className="fixed inset-0 pointer-events-none z-50"
-        style={{
-          background: 'linear-gradient(to bottom, transparent 50%, rgba(255, 255, 255, 0.03) 50%)',
-          backgroundSize: '100% 4px'
-        }}
-        animate={{
-          backgroundPosition: ['0px 0px', '0px 4px']
-        }}
-        transition={{
-          duration: 0.2,
-          repeat: Infinity,
-          ease: 'steps(1)'
-        }}
-      />
-    </div>
+                  {/* Main Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                    <section className="border-2 border-white bg-black/50 backdrop-blur-sm p-6">
+                      <h2 className="text-white text-sm tracking-[0.3em] uppercase mb-6 font-light flex items-center">
+                        <span className="h-px w-4 bg-white mr-4" />
+                        System Tasks
+                      </h2>
+                      <TaskList tasks={tasks} />
+                    </section>
+
+                    <section className="border-2 border-white bg-black/50 backdrop-blur-sm p-6">
+                      <h2 className="text-white text-sm tracking-[0.3em] uppercase mb-6 font-light flex items-center">
+                        <span className="h-px w-4 bg-white mr-4" />
+                        Network View
+                      </h2>
+                      <TaskGraph nodes={tasks} />
+                    </section>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Scanline Effect */}
+          <motion.div 
+            className="absolute inset-0 pointer-events-none z-50"
+            style={{
+              background: 'linear-gradient(to bottom, transparent 50%, rgba(255, 255, 255, 0.03) 50%)',
+              backgroundSize: '100% 4px'
+            }}
+            animate={{
+              backgroundPosition: ['0px 0px', '0px 4px']
+            }}
+            transition={{
+              duration: 0.2,
+              repeat: Infinity,
+              ease: 'steps(1)'
+            }}
+          />
+        </motion.div>
+      </Draggable>
+    </AnimatePresence>
   );
 };

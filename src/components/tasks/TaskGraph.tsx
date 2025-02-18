@@ -165,6 +165,4 @@ export const TaskGraph = () => {
       </div>
     </div>
   );
-};
-
-export default TaskGraph; 
+}; 

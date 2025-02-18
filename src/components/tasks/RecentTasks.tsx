@@ -8,85 +8,78 @@
  * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DocumentList } from '@components/documents/DocumentList';
+import { format } from 'date-fns';
 
 type ViewType = 'priority' | 'hierarchy' | 'activity' | 'tags';
 
-const RecentTasks = () => {
+export const RecentTasks = () => {
   const [currentView, setCurrentView] = useState<ViewType>('priority');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTimestamp = (date: Date) => {
+    try {
+      return format(date, 'yyyy-MM-dd HH:mm:ss');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-lg font-bold font-mono">Task Monitor</h1>
-        <div className="flex space-x-2 font-mono text-sm">
+    <div className="p-4 font-mono text-white bg-black min-h-screen">
+      <div className="mb-4">
+        <h1 className="text-lg mb-2">TASK MONITOR v4.0</h1>
+        <div className="mb-1">[-]</div>
+        <div className="mb-1">SYS:ACTIVE</div>
+        <div className="mb-2">NODE:ROLODEXTER4•ONLINE</div>
+        <div className="flex gap-1 mb-4">
           <button 
             onClick={() => setCurrentView('priority')}
-            className={`px-3 py-1 border ${currentView === 'priority' ? 'bg-black text-white' : 'border-gray-200'}`}
+            className="px-2 border border-white hover:bg-white hover:text-black"
           >
-            Priority
+            [PRIORITY_VIEW]
           </button>
           <button 
             onClick={() => setCurrentView('hierarchy')}
-            className={`px-3 py-1 border ${currentView === 'hierarchy' ? 'bg-black text-white' : 'border-gray-200'}`}
+            className="px-2 border border-white hover:bg-white hover:text-black"
           >
-            Hierarchy
+            [HIERARCHY_VIEW]
           </button>
           <button 
             onClick={() => setCurrentView('activity')}
-            className={`px-3 py-1 border ${currentView === 'activity' ? 'bg-black text-white' : 'border-gray-200'}`}
+            className="px-2 border border-white hover:bg-white hover:text-black"
           >
-            Activity
-          </button>
-          <button 
-            onClick={() => setCurrentView('tags')}
-            className={`px-3 py-1 border ${currentView === 'tags' ? 'bg-black text-white' : 'border-gray-200'}`}
-          >
-            Tags
+            [ACTIVITY_LOG]
           </button>
         </div>
       </div>
 
-      <div className="panel">
-        {currentView === 'priority' && (
-          <DocumentList
-            type="task"
-            status="ACTIVE"
-            limit={10}
-            title="Priority Queue"
-            showType={false}
-          />
-        )}
-        {currentView === 'hierarchy' && (
-          <DocumentList
-            type="task"
-            tags={['parent']}
-            limit={10}
-            title="Task Hierarchy"
-            showType={false}
-          />
-        )}
-        {currentView === 'activity' && (
-          <DocumentList
-            type="task"
-            limit={10}
-            title="Recent Activity"
-            showType={false}
-          />
-        )}
-        {currentView === 'tags' && (
-          <DocumentList
-            type="task"
-            status="ACTIVE"
-            limit={10}
-            title="Tagged Tasks"
-            showType={false}
-          />
-        )}
+      {/* Main Content */}
+      <div className="mb-4 animate-stream">
+        <DocumentList 
+          type="task"
+          sortBy={currentView === 'priority' ? 'priority' : 'updated_at'}
+          groupBy={currentView === 'hierarchy' ? 'status' : undefined}
+          showType={false}
+          limit={20}
+        />
+      </div>
+
+      {/* Status Footer */}
+      <div className="text-sm space-y-0.5">
+        <div>MEMORY:STABLE</div>
+        <div>CPU:NOMINAL</div>
+        <div>NETWORK:ACTIVE</div>
+        <div>LAST_SYNC: {formatTimestamp(currentTime)}</div>
       </div>
     </div>
   );
 };
-
-export { RecentTasks };

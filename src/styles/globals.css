@@ -17,9 +17,89 @@
   --border-color: #e0e0e0;
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes cursor {
+  from, to { border-color: transparent; }
+  50% { border-color: white; }
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+.animate-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-scanline::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  animation: scanline 2s linear infinite;
+}
+
+.animate-flicker {
+  animation: flicker 0.3s infinite;
+}
+
+.animate-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid;
+  width: 0;
+  animation: 
+    typewriter 2s steps(40, end) forwards,
+    cursor 0.75s step-end infinite;
+}
+
+.animate-stream {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-stream::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  animation: scanline 10s linear infinite;
+}
+
 body {
-  background-color: var(--background-primary);
-  color: var(--text-primary);
+  background-color: black;
+  color: white;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -43,9 +123,19 @@ body {
 
 /* Task Monitor Specific */
 .task-item {
-  @apply border-b border-gray-100 py-2;
+  @apply border-b border-gray-800 py-2;
 }
 
 .task-header {
-  @apply font-bold mb-4 pb-2 border-b border-gray-200;
+  @apply font-bold mb-4 pb-2 border-b border-gray-800;
+}
+
+.monitor-active::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: white;
+  animation: blink 1s infinite;
+  margin-left: 4px;
 }

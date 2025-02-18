@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 interface Tag {
   name: string;
@@ -54,219 +54,140 @@ const DocumentList = ({
   status, 
   tags, 
   search, 
-  limit = 7,
+  limit = 10,
   title = "Documents",
   showType = true,
   sortBy = 'updated_at',
   groupBy
 }: DocumentListProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        setIsLoading(true);
-        const queryParams = new URLSearchParams({
-          ...(type && { type }),
-          ...(status && { status }),
-          ...(tags?.length && { tags: tags.join(',') }),
-          ...(search && { search }),
-          ...(sortBy && { sortBy }),
-          ...(groupBy && { groupBy }),
-          limit: limit.toString(),
-          offset: '0'
-        });
-
-        const response = await fetch(`/api/documents/query?${queryParams}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch documents');
-        }
-
-        const data = await response.json();
-        setDocuments(data.documents);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        setError('Failed to load documents');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchDocuments();
-    
-    // Set up polling for real-time updates
-    const pollInterval = setInterval(fetchDocuments, 30000); // Poll every 30 seconds
-    
-    return () => clearInterval(pollInterval);
   }, [type, status, tags, search, limit, sortBy, groupBy]);
 
-  const formatTitle = (title: string, maxLength: number = 50): string => {
-    if (title.length >= maxLength) {
-      return title.substring(0, maxLength - 3) + '...';
+  const fetchDocuments = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (type) params.append('type', type);
+      if (status) params.append('status', status);
+      if (tags) params.append('tags', tags.join(','));
+      if (search) params.append('search', search);
+      if (limit) params.append('limit', limit.toString());
+      if (sortBy) params.append('sortBy', sortBy);
+      if (groupBy) params.append('groupBy', groupBy);
+
+      const response = await fetch(`/api/tasks/recent?${params}`);
+      const data = await response.json();
+      setDocuments(data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
     }
-    return title.padEnd(maxLength, '.');
   };
 
   const toggleRowExpansion = (id: string) => {
-    setExpandedRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
+    const newExpandedRows = new Set(expandedRows);
+    if (expandedRows.has(id)) {
+      newExpandedRows.delete(id);
+    } else {
+      newExpandedRows.add(id);
+    }
+    setExpandedRows(newExpandedRows);
   };
 
   const renderPriorityIndicator = (priority?: string) => {
     if (!priority) return null;
-    const indicators = {
-      URGENT: '[***]',
-      HIGH: '[**]',
-      MEDIUM: '[*]',
-      LOW: '[ ]'
-    };
+    
     const colors = {
-      URGENT: 'text-black font-mono font-bold',
-      HIGH: 'text-black font-mono',
-      MEDIUM: 'text-gray-600 font-mono',
-      LOW: 'text-gray-400 font-mono'
+      HIGH: 'text-red-500',
+      MEDIUM: 'text-yellow-500',
+      LOW: 'text-green-500'
     };
+
     return (
-      <span className={`mr-2 ${colors[priority as keyof typeof colors]}`}>
-        {indicators[priority as keyof typeof indicators] || ''}
+      <span className={`${colors[priority as keyof typeof colors]} font-bold`}>
+        [{priority}]
       </span>
     );
   };
 
   const renderStatus = (status: string) => {
-    const styles = {
-      ACTIVE: 'bg-black text-white',
-      PENDING: 'bg-gray-200 text-gray-800',
-      RESOLVED: 'bg-gray-100 text-gray-600',
-      ARCHIVED: 'bg-gray-50 text-gray-400'
+    const statusColors = {
+      ACTIVE: 'text-green-500',
+      PENDING: 'text-yellow-500',
+      BLOCKED: 'text-red-500',
+      COMPLETED: 'text-blue-500'
     };
+
     return (
-      <span className={`px-2 py-0.5 rounded-sm text-xs ${styles[status as keyof typeof styles]}`}>
-        {formatStatus(status)}
+      <span className={`${statusColors[status as keyof typeof statusColors]} text-xs`}>
+        {status}
       </span>
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-4">
-        <h2 className="text-lg font-mono mb-4">{title}</h2>
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="border p-2 rounded">
-              <div className="h-4 bg-gray-100 rounded w-3/4" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (!isValid(date)) {
+        return 'N/A';
+      }
+      return format(date, 'MM.dd.yy HH:mm');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
 
-  if (error) {
+  if (loading) {
     return (
-      <div className="p-4">
-        <h2 className="text-lg font-mono mb-4">{title}</h2>
-        <div className="border border-gray-200 p-3 rounded text-gray-600">
-          {error}
-        </div>
+      <div className="text-sm">
+        <div className="animate-pulse">Loading system data...</div>
       </div>
     );
   }
 
   return (
-    <div className="font-mono">
-      <h2 className="text-lg mb-4 font-bold">{title}</h2>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b-2 border-black">
-              <th className="py-2 px-4 text-left font-medium">Title</th>
-              <th className="py-2 px-4 text-left font-medium w-24">Status</th>
-              <th className="py-2 px-4 text-left font-medium w-32">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents && documents.length > 0 ? (
-              documents.map((doc) => (
-                <React.Fragment key={doc.id}>
-                  <tr 
-                    className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => toggleRowExpansion(doc.id)}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        {renderPriorityIndicator(doc.tasks?.[0]?.priority)}
-                        <span className="font-medium">{formatTitle(doc.title)}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      {doc.tasks?.[0]?.status && renderStatus(doc.tasks[0].status)}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
-                      {format(new Date(doc.updated_at), 'M/d HH:mm')}
-                    </td>
-                  </tr>
-                  {expandedRows.has(doc.id) && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={3} className="py-3 px-4">
-                        <div className="text-sm space-y-2">
-                          {doc.tags.length > 0 && (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-gray-500">Tags:</span>
-                              <div className="flex flex-wrap gap-1">
-                                {doc.tags.map((tag, i) => (
-                                  <span 
-                                    key={i} 
-                                    className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
-                                  >
-                                    #{tag.name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div className="text-gray-600">
-                            Path: <span className="font-medium">{doc.path}</span>
-                          </div>
-                          {doc.tasks?.[0]?.description && (
-                            <div className="text-gray-600 whitespace-pre-line">
-                              {doc.tasks[0].description}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+    <div className="text-sm">
+      {documents.map((doc, index) => (
+        <div 
+          key={doc.id}
+          className="animate-fadeIn"
+          style={{ 
+            animationDelay: `${index * 50}ms`,
+            opacity: 0,
+          }}
+        >
+          <div className="flex group cursor-pointer" onClick={() => toggleRowExpansion(doc.id)}>
+            <span className="mr-1 group-hover:animate-pulse">▶</span>
+            <span className="group-hover:underline">{doc.title}</span>
+            <span className="ml-1 animate-blink">N/A</span>
+          </div>
+          {expandedRows.has(doc.id) && (
+            <div 
+              className="pl-4 animate-slideDown"
+              style={{ animationDelay: '100ms' }}
+            >
+              {doc.tasks?.map((task, taskIndex) => (
+                <div 
+                  key={taskIndex}
+                  className="animate-fadeIn"
+                  style={{ animationDelay: `${taskIndex * 50}ms` }}
+                >
+                  {task.description && (
+                    <div className="text-gray-400 my-1">{task.description}</div>
                   )}
-                </React.Fragment>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={3} className="py-8 text-center text-gray-500">
-                  No tasks found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
-};
-
-const formatStatus = (status: string): string => {
-  if (!status) return '';
-  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 };
 
 export { DocumentList };
