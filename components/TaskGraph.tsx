@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import * as d3 from 'd3';
 
-interface Task {
+interface Task extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   status: 'active' | 'pending' | 'resolved';
@@ -135,7 +135,7 @@ export const TaskGraph: React.FC<TaskGraphProps> = ({ nodes }) => {
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
-      <svg ref={svgRef} className="w-full h-full"></svg>
+      <svg ref={svgRef} className="w-full h-full">
         <defs>
           <filter id="glow">
             <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
