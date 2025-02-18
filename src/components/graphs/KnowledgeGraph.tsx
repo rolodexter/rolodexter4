@@ -293,7 +293,11 @@ export const KnowledgeGraph = () => {
           })
           .attr('stroke', '#ffffff')
           .attr('stroke-width', 1)
-          .style('filter', 'url(#glow)');
+          .style('filter', 'url(#glow)')
+          .style('cursor', 'pointer')
+          .on('click', (event: any, d: any) => {
+            window.open(`/api/document/${d.path}`, '_blank');
+          });
       } else {
         // Tag nodes get hexagons
         const size = (d.tagCount || 1) * 10;
@@ -334,7 +338,13 @@ export const KnowledgeGraph = () => {
       .style('font-size', d => d.type === 'tag' ? `${Math.min(14, 10 + (d.tagCount || 1))}px` : '11px')
       .style('font-family', 'monospace')
       .style('font-weight', d => d.type === 'tag' ? 'bold' : 'normal')
-      .style('opacity', 0.7);
+      .style('opacity', 0.7)
+      .style('cursor', d => d.type === 'document' ? 'pointer' : 'default')
+      .on('click', (event: any, d: any) => {
+        if (d.type === 'document') {
+          window.open(`/api/document/${d.path}`, '_blank');
+        }
+      });
 
     // Add pulsing animation to nodes
     nodeGroup.each(function(d) {
