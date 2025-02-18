@@ -247,8 +247,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-scan {
+  animation: scan 8s linear infinite;
 }
 
 @keyframes borderPulse {
@@ -276,15 +284,6 @@ h1, h2, h3, h4, h5, h6 {
   }
   100% {
     transform: translateX(100%);
-  }
-}
-
-@keyframes stream {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
   }
 }
 
@@ -1198,4 +1197,29 @@ h3 {
   font-weight: 400;
   letter-spacing: 0.02em;
   opacity: 0.9;
+}
+
+/* Cyberpunk Frame Enhancements */
+.cyberpunk-frame {
+  --accent-color: rgba(255, 255, 255, 0.2);
+  --glow-color: rgba(0, 255, 255, 0.1);
+  position: relative;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--accent-color);
+  box-shadow: 
+    0 0 20px var(--glow-color),
+    inset 0 0 20px var(--glow-color);
+}
+
+.cyberpunk-frame::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--accent-color),
+    transparent
+  );
+  opacity: 0.5;
+  z-index: -1;
 }

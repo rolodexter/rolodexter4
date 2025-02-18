@@ -88,12 +88,12 @@ const DocumentList = ({
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <h2 className="text-display text-xl mb-4">{title.toUpperCase()}</h2>
+      <div className="p-4 sm:p-6">
+        <h2 className="text-display text-lg sm:text-xl mb-4">{title.toUpperCase()}</h2>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="hud-panel-secondary p-3 animate-pulse">
-              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+            <div key={i} className="bg-black/30 p-3 rounded animate-pulse">
+              <div className="h-4 bg-gray-700/50 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -103,9 +103,9 @@ const DocumentList = ({
 
   if (error) {
     return (
-      <div className="p-6">
-        <h2 className="text-display text-xl mb-4">{title.toUpperCase()}</h2>
-        <div className="hud-panel-secondary p-3 text-red-500">
+      <div className="p-4 sm:p-6">
+        <h2 className="text-display text-lg sm:text-xl mb-4">{title.toUpperCase()}</h2>
+        <div className="bg-black/30 p-3 rounded text-red-500">
           {error}
         </div>
       </div>
@@ -113,19 +113,11 @@ const DocumentList = ({
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-display text-xl mb-4">{title.toUpperCase()}</h2>
+    <div className="p-4 sm:p-6">
+      <h2 className="text-display text-lg sm:text-xl mb-4">{title.toUpperCase()}</h2>
       <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead>
-            <tr className="text-left text-sm">
-              <th className="pb-2 text-gray-400">TITLE</th>
-              {showType && <th className="pb-2 text-gray-400">TYPE</th>}
-              <th className="pb-2 text-gray-400">TAGS</th>
-              <th className="pb-2 text-gray-400">LAST MODIFIED</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
+        <table className="w-full">
+          <tbody className="divide-y divide-gray-800/30">
             {documents && documents.length > 0 ? (
               documents.map((doc, index) => (
                 <motion.tr
@@ -133,44 +125,48 @@ const DocumentList = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="hover:bg-gray-800/30"
+                  className="group hover:bg-white/5 transition-colors"
                 >
-                  <td className="py-2 pr-4">
-                    <span className="text-hud truncate block max-w-[200px]">
-                      {doc.title}
+                  <td className="py-3 px-2 sm:px-3">
+                    <span className="text-sm sm:text-base text-white/90 font-medium">
+                      {doc.title.length > 25 ? `${doc.title.substring(0, 25)}...` : doc.title}
                     </span>
+                    {doc.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {doc.tags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-1.5 py-0.5 rounded text-[10px] sm:text-xs"
+                            style={{
+                              backgroundColor: tag.color || '#374151',
+                              color: 'white'
+                            }}
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
-                  {showType && (
-                    <td className="py-2 pr-4">
-                      <span className={getTypeColor(doc.type)}>
-                        {doc.type.toUpperCase()}
-                      </span>
-                    </td>
-                  )}
-                  <td className="py-2 pr-4">
-                    <div className="flex gap-1 flex-wrap">
-                      {doc.tags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="px-1.5 py-0.5 rounded text-xs"
-                          style={{
-                            backgroundColor: tag.color || '#374151',
-                            color: 'white'
-                          }}
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="py-2 text-gray-400">
-                    {new Date(doc.updated_at).toLocaleString()}
+                  <td className="py-3 px-2 sm:px-3 text-right">
+                    <span className="text-[10px] sm:text-xs text-white/50">
+                      {new Date(doc.updated_at).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                        formatMatcher: 'basic'
+                      }).replace(',', '')}
+                    </span>
                   </td>
                 </motion.tr>
               ))
             ) : (
               <tr>
-                <td colSpan={showType ? 4 : 3} className="py-4 text-center text-gray-500">
+                <td colSpan={2} className="py-4 text-center text-white/50 text-sm">
                   No documents found
                 </td>
               </tr>

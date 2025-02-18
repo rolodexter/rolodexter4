@@ -12,13 +12,15 @@ import { DocumentList } from '@components/documents/DocumentList';
 
 const RecentTasks = () => {
   return (
-    <DocumentList
-      type="task"
-      status="ACTIVE"
-      limit={7}
-      title="CURRENT TASKS"
-      showType={false}
-    />
+    <div className="task-monitor">
+      <DocumentList
+        type="task"
+        status="ACTIVE"
+        limit={7}
+        title="TASK MONITOR"
+        showType={false}
+      />
+    </div>
   );
 };
 
