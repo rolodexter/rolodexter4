@@ -104,13 +104,19 @@ export const KnowledgeGraph = () => {
     data.documents.forEach(doc => {
       const content = doc.path.toLowerCase();
       
-      // Extract status
-      const status = content.includes('/tasks/') ? 
-        (content.includes('/active/') ? 'active' :
-         content.includes('/pending/') ? 'pending' :
-         content.includes('/resolved/') ? 'resolved' : 'unknown') : null;
+      // Extract status - improved path detection
+      let status = null;
+      if (content.includes('/tasks/')) {
+        if (content.includes('/active-tasks/') || content.includes('/active/')) {
+          status = 'active';
+        } else if (content.includes('/pending-tasks/') || content.includes('/pending/')) {
+          status = 'pending';
+        } else if (content.includes('/resolved-tasks/') || content.includes('/resolved/') || content.includes('/completed/')) {
+          status = 'resolved';
+        }
+      }
       
-      if (status) {
+      if (status) {  // Only count if it's a known status
         statusFrequency.set(status, (statusFrequency.get(status) || 0) + 1);
       }
       
@@ -199,16 +205,26 @@ export const KnowledgeGraph = () => {
     // Create document-status links
     const statusLinks: Link[] = documentNodes.flatMap(doc => {
       const links: Link[] = [];
-      if (doc.path.includes('/tasks/')) {
-        const status = doc.path.includes('/active/') ? 'active' :
-                      doc.path.includes('/pending/') ? 'pending' :
-                      doc.path.includes('/resolved/') ? 'resolved' : 'unknown';
-        links.push({
-          source: doc.id,
-          target: `status:${status}`,
-          confidence: 0.8,
-          type: 'document-tag'
-        });
+      const path = doc.path.toLowerCase();
+      
+      if (path.includes('/tasks/')) {
+        let status = null;
+        if (path.includes('/active-tasks/') || path.includes('/active/')) {
+          status = 'active';
+        } else if (path.includes('/pending-tasks/') || path.includes('/pending/')) {
+          status = 'pending';
+        } else if (path.includes('/resolved-tasks/') || path.includes('/resolved/') || path.includes('/completed/')) {
+          status = 'resolved';
+        }
+
+        if (status) {
+          links.push({
+            source: doc.id,
+            target: `status:${status}`,
+            confidence: 0.8,
+            type: 'document-tag'
+          });
+        }
       }
       return links;
     });
@@ -422,8 +438,9 @@ export const KnowledgeGraph = () => {
             }
           });
       } else if (data.type === 'status') {
-        // Status nodes get squares
-        const size = (data.tagCount || 1) * 15;
+        // Status nodes get squares with adjusted size
+        const baseSize = 20; // Reduced base size
+        const size = Math.min(baseSize + (data.tagCount || 1) * 5, 40); // Cap maximum size at 40px
         node.append('rect')
           .attr('x', -size/2)
           .attr('y', -size/2)
@@ -440,7 +457,9 @@ export const KnowledgeGraph = () => {
           .attr('stroke', '#ffffff')
           .attr('stroke-width', 1 + depth)
           .style('filter', 'url(#glow)')
-          .style('opacity', 0.7 + (0.3 * depth));
+          .style('opacity', 0.7 + (0.3 * depth))
+          .attr('rx', 4) // Add rounded corners
+          .attr('ry', 4);
       } else {
         // Check if it's a date node
         const isDateNode = d.id.startsWith('date:');
