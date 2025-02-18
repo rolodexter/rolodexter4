@@ -180,14 +180,27 @@ export const KnowledgeGraph = () => {
 
     // Create force simulation with adjusted parameters
     const simulation = d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 150 : 250))
-      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -1000 : -2000))
+      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 80 : 120))
+      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -300 : -500))
       .force('center', d3.forceCenter<Node>(width / 2, height / 2))
-      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 10 : 30));
+      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 5 : 20))
+      // Add x and y forces for clustering
+      .force('x', d3.forceX<Node>().strength(0.1).x(d => {
+        if (d.type === 'tag') return width * 0.3;
+        if (d.path.includes('/tasks/')) return width * 0.6;
+        if (d.path.includes('/memories/')) return width * 0.7;
+        return width * 0.5;
+      }))
+      .force('y', d3.forceY<Node>().strength(0.1).y(d => {
+        if (d.type === 'tag') return height * 0.5;
+        if (d.path.includes('/tasks/')) return height * 0.3;
+        if (d.path.includes('/memories/')) return height * 0.7;
+        return height * 0.5;
+      }));
 
-    // Set up zoom behavior
+    // Set up zoom behavior with adjusted scale
     const zoom = d3.zoom()
-      .scaleExtent([0.1, 4])
+      .scaleExtent([0.2, 2]) // Reduced max zoom to keep nodes more compact
       .on('zoom', (event) => {
         container.attr('transform', event.transform);
       });
@@ -196,7 +209,7 @@ export const KnowledgeGraph = () => {
     svg.call(zoom as any)
       .call(zoom.transform as any, d3.zoomIdentity
         .translate(width / 2, height / 2)
-        .scale(0.5)
+        .scale(0.7) // Reduced initial zoom scale
         .translate(-width / 2, -height / 2));
 
     // Create SVG elements for links with different styles
