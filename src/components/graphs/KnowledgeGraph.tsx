@@ -404,21 +404,6 @@ export const KnowledgeGraph = () => {
     // Enhance glow effect based on connections
     const defs = svg.append('defs');
     
-    // Add gradient definitions for 3D effect
-    const radialGradient = defs.append('radialGradient')
-      .attr('id', 'nodeGradient')
-      .attr('cx', '35%')
-      .attr('cy', '35%')
-      .attr('r', '60%');
-    radialGradient.append('stop')
-      .attr('offset', '0%')
-      .attr('stop-color', '#ffffff')
-      .attr('stop-opacity', 0.3);
-    radialGradient.append('stop')
-      .attr('offset', '100%')
-      .attr('stop-color', '#000000')
-      .attr('stop-opacity', 0.1);
-
     // Enhanced shadow effect
     const filter = defs.append('filter')
       .attr('id', 'glow')
@@ -469,26 +454,32 @@ export const KnowledgeGraph = () => {
       const connections = nodeConnections.get(data.id) || 0;
       const depth = Math.min(connections / 5, 1);
 
-      if (data.type === 'document') {
-        // Document nodes get enhanced circles with 3D styling
+      if (data.type === 'document' || data.type === 'status') {
+        // Document and status nodes get circles with consistent styling
         node.append('circle')
           .attr('r', d => {
             const data = d as Node;
             const connections = nodeConnections.get(data.id) || 0;
-            // Increase base size and connection influence
-            return 20 * (1 + connections * 0.2);
+            return 15 * (1 + connections * 0.1);
           })
           .attr('fill', d => {
             const data = d as Node;
-            const path = data.path.toLowerCase();
             const connections = nodeConnections.get(data.id) || 0;
-            // Base colors are lighter, darkness increases with connections
-            let color = '#e0e0e0';  // Lightest base gray
-            if (path.includes('/tasks/')) color = '#d4d4d4';
-            if (path.includes('/memories/')) color = '#c8c8c8';
-            if (path.includes('/documentation/')) color = '#bdbdbd';
-            // More dramatic darkening based on connections
-            const darkenAmount = Math.min(connections / 5, 1);
+            // Use same base color and darkening rules for both document and status nodes
+            let color = '#e6e6e6';  // Very light base gray
+            if (data.type === 'status') {
+              const status = data.title.toLowerCase();
+              if (status === 'active') color = '#dedede';
+              else if (status === 'pending') color = '#d6d6d6';
+              else if (status === 'resolved') color = '#cecece';
+            } else if (data.path.includes('/tasks/')) {
+              color = '#dedede';
+            } else if (data.path.includes('/memories/')) {
+              color = '#d6d6d6';
+            } else if (data.path.includes('/documentation/')) {
+              color = '#cecece';
+            }
+            const darkenAmount = Math.min(connections / 3, 2.0);
             return d3.color(color)?.darker(darkenAmount).toString() || color;
           })
           .attr('stroke', 'none')
@@ -496,7 +487,6 @@ export const KnowledgeGraph = () => {
           .style('filter', 'url(#glow)')
           .style('opacity', 0.9)
           .style('cursor', 'pointer')
-          .style('fill', 'url(#nodeGradient)')
           .on('mouseover', function() {
             d3.select(this)
               .transition()
@@ -515,95 +505,7 @@ export const KnowledgeGraph = () => {
             const data = d as Node;
             if (data.type === 'document') {
               window.open(`/api/document/${data.path}`, '_blank');
-            }
-          });
-
-      } else if (data.type === 'status') {
-        // Status nodes get enhanced squares with 3D styling
-        const baseSize = 20;
-        const size = Math.min(baseSize + (data.tagCount || 1) * 5, 40);
-        
-        // Add shadow/backdrop for depth
-        node.append('rect')
-          .attr('x', -size/2 + 2)
-          .attr('y', -size/2 + 2)
-          .attr('width', size)
-          .attr('height', size)
-          .attr('fill', '#000000')
-          .attr('opacity', 0.2)
-          .attr('rx', 4)
-          .attr('ry', 4);
-
-        // Main status node
-        node.append('rect')
-          .attr('x', -size/2)
-          .attr('y', -size/2)
-          .attr('width', size)
-          .attr('height', size)
-          .attr('fill', d => {
-            const data = d as Node;
-            const status = data.title.toLowerCase();
-            // Lighter base colors for status nodes
-            if (status === 'active') return '#808080';    // Medium gray for active
-            if (status === 'pending') return '#a0a0a0';   // Lighter medium gray for pending
-            if (status === 'resolved') return '#c0c0c0';  // Light gray for resolved
-            return '#b0b0b0';
-          })
-          .attr('stroke', 'none')
-          .attr('stroke-width', 0)
-          .style('filter', 'url(#glow)')
-          .style('opacity', 0.9)
-          .attr('rx', 4)
-          .attr('ry', 4)
-          .style('cursor', 'pointer')
-          .style('fill', function(d) {
-            const data = d as Node;
-            const status = data.title.toLowerCase();
-            // Create unique gradients for each status
-            const gradientId = `gradient-${status}`;
-            
-            // Define gradient for each status
-            const gradient = defs.append('linearGradient')
-              .attr('id', gradientId)
-              .attr('x1', '0%')
-              .attr('y1', '0%')
-              .attr('x2', '100%')
-              .attr('y2', '100%');
-              
-            let baseColor;
-            if (status === 'active') baseColor = '#808080';      // Medium gray
-            else if (status === 'pending') baseColor = '#a0a0a0'; // Lighter medium gray
-            else if (status === 'resolved') baseColor = '#c0c0c0'; // Light gray
-            else baseColor = '#b0b0b0';
-            
-            // Create 3D effect while maintaining grayscale
-            gradient.append('stop')
-              .attr('offset', '0%')
-              .attr('stop-color', d3.color(baseColor)?.brighter(0.7).toString() || baseColor);
-            
-            gradient.append('stop')
-              .attr('offset', '100%')
-              .attr('stop-color', d3.color(baseColor)?.darker(0.3).toString() || baseColor);
-            
-            return `url(#${gradientId})`;
-          })
-          .on('mouseover', function() {
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr('stroke-width', 2 + depth)
-              .style('opacity', 1);
-          })
-          .on('mouseout', function() {
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr('stroke-width', 1 + depth)
-              .style('opacity', 0.9);
-          })
-          .on('click', function(event, d) {
-            const data = d as Node;
-            if (data.type === 'status') {
+            } else if (data.type === 'status') {
               const status = data.title.toLowerCase();
               window.open(`/api/document/list?status=${status}`, '_blank');
             }
@@ -632,7 +534,6 @@ export const KnowledgeGraph = () => {
             .attr('stroke-width', 0)
             .style('filter', 'url(#glow)')
             .style('opacity', 0.9)
-            .style('fill', 'url(#nodeGradient)')
             .on('mouseover', function() {
               d3.select(this)
                 .transition()
@@ -667,7 +568,6 @@ export const KnowledgeGraph = () => {
             .attr('stroke-width', 0)
             .style('filter', 'url(#glow)')
             .style('opacity', 0.9)
-            .style('fill', 'url(#nodeGradient)')
             .on('mouseover', function() {
               d3.select(this)
                 .transition()
@@ -696,18 +596,24 @@ export const KnowledgeGraph = () => {
       })
       .attr('fill', (d: Node) => {
         if (d.type === 'document') return '#333333';
+        if (d.type === 'status') return '#666666';  // Lighter color for status text
         return d.id.startsWith('date:') ? '#4b5563' : '#000000';
       })
       .style('font-size', (d: Node) => {
         if (d.type === 'document') return '11px';
+        if (d.type === 'status') return '10px';  // Smaller font for status
         return d.id.startsWith('date:') ? '10px' : `${Math.min(14, 10 + (d.tagCount || 1))}px`;
       })
       .style('font-family', 'monospace')
       .style('font-weight', (d: Node) => {
         if (d.type === 'document') return 'normal';
+        if (d.type === 'status') return 'normal';  // Normal weight for status
         return d.id.startsWith('date:') ? 'normal' : 'bold';
       })
-      .style('opacity', 0.7)
+      .style('opacity', (d: Node) => {
+        if (d.type === 'status') return 0.6;  // More transparent for status
+        return 0.7;
+      })
       .style('cursor', (d: Node) => d.type === 'document' ? 'pointer' : 'default')
       .on('click', (event: MouseEvent, d: Node) => {
         if (d.type === 'document') {
