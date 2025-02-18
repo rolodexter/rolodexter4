@@ -5,9 +5,8 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "POSTGRES_PRISMA_URL": "@postgres-prisma-url",
-    "POSTGRES_URL_NON_POOLING": "@postgres-url-non-pooling",
-    "BLOB_READ_WRITE_TOKEN": "@blob-read-write-token"
+    "POSTGRES_PRISMA_URL": "postgresql://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?pgbouncer=true&connect_timeout=15&sslmode=require",
+    "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x.us-west-2.aws.neon.tech/neondb?sslmode=require"
   },
   "build": {
     "env": {
