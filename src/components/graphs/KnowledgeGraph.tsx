@@ -103,6 +103,73 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T 
   } as T;
 }
 
+// Add minimal TaskBar component
+const TaskBar: React.FC = () => {
+  return (
+    <div 
+      style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: '32px',
+        width: '384px',
+        height: '48px',
+        transform: 'translateX(-50%)',
+        background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 15%, rgba(255,255,255,0.25) 85%, rgba(255,255,255,0) 100%)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderRadius: '8px',
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          opacity: 0.5,
+          position: 'relative',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <img
+          src="/static/SQUARE_LOGO.jpg"
+          alt="Rolodexter Logo"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          onError={(e) => {
+            console.error('Error loading logo:', e);
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            // Show fallback icon
+            const parent = target.parentElement;
+            if (parent) {
+              const fallback = document.createElement('div');
+              fallback.style.width = '24px';
+              fallback.style.height = '24px';
+              fallback.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E")`;
+              fallback.style.backgroundSize = 'contain';
+              fallback.style.backgroundPosition = 'center';
+              fallback.style.backgroundRepeat = 'no-repeat';
+              parent.appendChild(fallback);
+            }
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
 export const KnowledgeGraph: React.FC = () => {
   const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -115,6 +182,7 @@ export const KnowledgeGraph: React.FC = () => {
     width: typeof window !== 'undefined' ? window.innerWidth : 1000,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
 
   // Handle window resize
   useEffect(() => {
@@ -433,7 +501,6 @@ export const KnowledgeGraph: React.FC = () => {
         transformContainer.attr('transform', currentTransform.toString());
       })
       .on('end', () => {
-        // Resume simulation with a gentle alpha target when zoom ends
         simulation.alpha(0.3).restart();
       });
 
@@ -877,6 +944,34 @@ export const KnowledgeGraph: React.FC = () => {
     };
   }, [data, dimensions, handleDocumentOpen]);
 
+  // Add zoom control handlers
+  const handleZoomIn = useCallback(() => {
+    if (svgRef.current && zoomRef.current) {
+      d3.select(svgRef.current)
+        .transition()
+        .duration(500)
+        .call(zoomRef.current.scaleBy, 1.5);
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (svgRef.current && zoomRef.current) {
+      d3.select(svgRef.current)
+        .transition()
+        .duration(500)
+        .call(zoomRef.current.scaleBy, 0.75);
+    }
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (svgRef.current && zoomRef.current) {
+      d3.select(svgRef.current)
+        .transition()
+        .duration(750)
+        .call(zoomRef.current.transform, d3.zoomIdentity);
+    }
+  }, []);
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -906,8 +1001,23 @@ export const KnowledgeGraph: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full">
-      <svg ref={svgRef} className="w-full h-full" />
+    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <svg 
+          ref={svgRef} 
+          style={{ 
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            zIndex: 1 
+          }} 
+        />
+        <div style={{ position: 'absolute', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
+          <TaskBar />
+        </div>
+      </div>
     </div>
   );
 };
