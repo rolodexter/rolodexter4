@@ -4,6 +4,7 @@ import { TaskList } from './TaskList';
 import { TaskGraph } from './TaskGraph';
 import { motion, AnimatePresence } from 'framer-motion';
 import Draggable from 'react-draggable';
+import * as d3 from 'd3';
 
 interface Task extends d3.SimulationNodeDatum {
   id: string;
