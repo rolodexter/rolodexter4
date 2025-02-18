@@ -178,6 +178,32 @@ export const KnowledgeGraph = () => {
     // Create container for zoom first
     const container = svg.append('g');
 
+    // Create SVG elements for links
+    const link = container.append('g')
+      .selectAll('line')
+      .data(links)
+      .join('line')
+      .attr('stroke', d => d.type === 'document-tag' ? '#999999' : '#666666')
+      .attr('stroke-width', d => d.type === 'document-tag' ? 0.5 : d.confidence)
+      .attr('stroke-opacity', 0.3)
+      .style('stroke-dasharray', d => d.type === 'document-tag' ? '2,2' : '5,5')
+      .style('animation', 'dash 20s linear infinite');
+
+    // Add arrow markers for links
+    svg.append('defs').selectAll('marker')
+      .data(['end'])
+      .join('marker')
+      .attr('id', 'arrow')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 30)
+      .attr('refY', 0)
+      .attr('markerWidth', 4)
+      .attr('markerHeight', 4)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('fill', '#666666')
+      .attr('d', 'M0,-5L10,0L0,5');
+
     // Create force simulation with adjusted stability parameters
     const simulation = d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
@@ -205,125 +231,40 @@ export const KnowledgeGraph = () => {
         return height * 0.5;
       }));
 
-    // Increase stability parameters
-    simulation.alphaDecay(0.02);
-    simulation.velocityDecay(0.4);
-    simulation.alpha(0.3);
-
-    // Let simulation stabilize initially
+    // Run simulation to completion then stop
+    simulation.alpha(1);
     for (let i = 0; i < 300; i++) simulation.tick();
+    simulation.stop();
 
-    // Set up zoom behavior with adjusted scale
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 20])
-      .filter(event => {
-        if (event.type === 'mousedown' && event.button === 2) return false;
-        return true;
-      })
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-        
-        // Store current transform to avoid unnecessary updates
-        const scale = event.transform.k;
-        const prevScale = (container.node() as any)?.__prevScale || scale;
-        const scaleDiff = Math.abs(scale - prevScale);
-        
-        // Only update collision radius on significant zoom changes
-        if (scaleDiff > 1.0) {
-          simulation.force('collision', d3.forceCollide<Node>()
-            .radius((d: Node) => {
-              const baseRadius = d.type === 'tag' ? (d.tagCount || 1) * 30 : 80;
-              return baseRadius / Math.max(1, scale / 4);
-            })
-            .strength(1)
-            .iterations(4));
-
-          // Store the scale for next comparison
-          (container.node() as any).__prevScale = scale;
-          
-          // Very gentle simulation adjustment
-          simulation.alpha(0.05).restart();
-        }
-      });
-
-    // Apply zoom behavior with smooth transition
-    svg.call(zoom as any)
-      .call(zoom.transform as any, d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(0.7)
-        .translate(-width / 2, -height / 2));
-
-    // Prevent mousewheel from scrolling page with debounce
-    let wheelTimeout: NodeJS.Timeout;
-    svg.on('wheel', (event: Event) => {
-      event.preventDefault();
-      clearTimeout(wheelTimeout);
-      wheelTimeout = setTimeout(() => {
-        simulation.alpha(0);
-      }, 150);
+    // Fix node positions after initial layout
+    nodes.forEach(node => {
+      node.fx = node.x;
+      node.fy = node.y;
     });
 
-    // Create SVG elements for links with different styles
-    const link = container.append('g')
-      .selectAll('line')
-      .data(links)
-      .join('line')
-      .attr('stroke', d => d.type === 'document-tag' ? '#999999' : '#666666')
-      .attr('stroke-width', d => d.type === 'document-tag' ? 0.5 : d.confidence)
-      .attr('stroke-opacity', 0.3)
-      .style('stroke-dasharray', d => d.type === 'document-tag' ? '2,2' : '5,5')
-      .style('animation', 'dash 20s linear infinite');
-
-    // Add arrow markers for links
-    svg.append('defs').selectAll('marker')
-      .data(['end'])
-      .join('marker')
-      .attr('id', 'arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 30)
-      .attr('refY', 0)
-      .attr('markerWidth', 4)
-      .attr('markerHeight', 4)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('fill', '#666666')
-      .attr('d', 'M0,-5L10,0L0,5');
-
-    // Create node groups
+    // Create node groups with modified drag behavior
     const nodeGroup = container.append('g')
       .selectAll('g')
       .data(nodes)
       .join('g')
       .call(d3.drag<any, any>()
         .on('start', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart();
+          // Unfix position temporarily for dragging
           d.fx = d.x;
           d.fy = d.y;
         })
         .on('drag', (event, d) => {
+          // Update fixed position during drag
           d.fx = event.x;
           d.fy = event.y;
+          updatePositions(); // Update positions during drag
         })
         .on('end', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0);
-          d.fx = null;
-          d.fy = null;
+          // Keep the position fixed where it was dropped
+          d.fx = event.x;
+          d.fy = event.y;
+          updatePositions(); // Final position update
         }));
-
-    // Add glowing effect filter
-    const defs = svg.append('defs');
-    const filter = defs.append('filter')
-      .attr('id', 'glow');
-    
-    filter.append('feGaussianBlur')
-      .attr('stdDeviation', '2')
-      .attr('result', 'coloredBlur');
-    
-    const feMerge = filter.append('feMerge');
-    feMerge.append('feMergeNode')
-      .attr('in', 'coloredBlur');
-    feMerge.append('feMergeNode')
-      .attr('in', 'SourceGraphic');
 
     // Add different shapes for documents and tags
     nodeGroup.each(function(d) {
@@ -381,21 +322,23 @@ export const KnowledgeGraph = () => {
       }
     });
 
+    // Add CSS animation for dashed lines
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dash {
+        to {
+          stroke-dashoffset: 100;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
     // Add chat bubbles container
     const chatContainer = container.append('g')
       .attr('class', 'chat-container');
 
-    // Function to find node positions
-    const findNodeByType = (type: string) => {
-      return nodes.find(n => {
-        if (type === 'rolodexterGPT') return n.path.toLowerCase().includes('gpt');
-        if (type === 'rolodexterVS') return n.path.toLowerCase().includes('vs');
-        return false;
-      });
-    };
-
-    // Update chat bubbles on simulation tick
-    simulation.on('tick', () => {
+    // Function to update all positions
+    const updatePositions = () => {
       link
         .attr('x1', (d: any) => d.source.x)
         .attr('y1', (d: any) => d.source.y)
@@ -405,22 +348,21 @@ export const KnowledgeGraph = () => {
       nodeGroup
         .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 
-      // Update chat bubbles if showing
       if (showChat) {
         const currentMessage = chatMessages[currentChat];
-        const fromNode = findNodeByType(currentMessage.from);
-        const toNode = findNodeByType(currentMessage.to);
+        const fromNode = nodes.find(n => n.path.toLowerCase().includes(currentMessage.from.toLowerCase()));
+        const toNode = nodes.find(n => n.path.toLowerCase().includes(currentMessage.to.toLowerCase()));
 
         if (fromNode && toNode) {
           // Clear previous chat bubbles
-          chatContainer.selectAll('*').remove();
+          container.selectAll('*').remove();
 
           // Calculate midpoint with slight offset based on message direction
           const midX = ((fromNode.x ?? 0) + (toNode.x ?? 0)) / 2;
           const midY = ((fromNode.y ?? 0) + (toNode.y ?? 0)) / 2 - 30; // Offset upward
 
           // Add new chat bubble
-          const bubble = chatContainer.append('g')
+          const bubble = container.append('g')
             .attr('transform', `translate(${midX},${midY})`);
 
           // Chat bubble background with improved shape
@@ -471,21 +413,35 @@ export const KnowledgeGraph = () => {
             .attr('opacity', 1);
         }
       }
+    };
+
+    // Initial position update
+    updatePositions();
+
+    // Set up zoom behavior with adjusted scale
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 20])
+      .filter(event => {
+        if (event.type === 'mousedown' && event.button === 2) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+      });
+
+    // Apply zoom behavior with smooth transition
+    svg.call(zoom as any)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(0.7)
+        .translate(-width / 2, -height / 2));
+
+    // Prevent mousewheel from scrolling page
+    svg.on('wheel', (event: Event) => {
+      event.preventDefault();
     });
 
-    // Add CSS animation for dashed lines
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes dash {
-        to {
-          stroke-dashoffset: 100;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
     return () => {
-      simulation.stop();
       document.head.removeChild(style);
     };
   }, [data, dimensions, showChat, currentChat]);
