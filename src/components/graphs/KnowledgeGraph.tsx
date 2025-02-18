@@ -11,10 +11,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-interface Node {
+interface Node extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   path: string;
+  x?: number;
+  y?: number;
 }
 
 interface Link {
@@ -30,15 +32,43 @@ interface GraphData {
   };
 }
 
+// Add chat simulation messages
+const chatMessages = [
+  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Analyzing task dependencies...' },
+  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Scanning codebase structure...' },
+  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Optimizing deployment sequence...' },
+  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Validating system architecture...' },
+  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Processing knowledge updates...' },
+  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Syncing memory fragments...' }
+];
+
 export const KnowledgeGraph = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentChat, setCurrentChat] = useState<number>(0);
+  const [showChat, setShowChat] = useState<boolean>(false);
   const [dimensions, setDimensions] = useState({ 
     width: typeof window !== 'undefined' ? window.innerWidth : 1000,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
+
+  // Add chat simulation effect
+  useEffect(() => {
+    const simulateChat = () => {
+      setShowChat(true);
+      setTimeout(() => {
+        setShowChat(false);
+        setTimeout(() => {
+          setCurrentChat((prev) => (prev + 1) % chatMessages.length);
+        }, 500);
+      }, 3000);
+    };
+
+    const interval = setInterval(simulateChat, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Update dimensions when window resizes
   useEffect(() => {
@@ -259,7 +289,16 @@ export const KnowledgeGraph = () => {
       .attr('dur', '3s')
       .attr('repeatCount', 'indefinite');
 
-    // Update positions on each tick with smooth transitions
+    // Add chat bubbles container
+    const chatContainer = container.append('g')
+      .attr('class', 'chat-container');
+
+    // Function to find node positions
+    const findNodeByType = (type: string) => {
+      return nodes.find(n => n.path.toLowerCase().includes(type.toLowerCase()));
+    };
+
+    // Update chat bubbles on simulation tick
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -271,6 +310,49 @@ export const KnowledgeGraph = () => {
         .transition()
         .duration(50)
         .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+
+      // Update chat bubbles if showing
+      if (showChat) {
+        const currentMessage = chatMessages[currentChat];
+        const fromNode = findNodeByType(currentMessage.from);
+        const toNode = findNodeByType(currentMessage.to);
+
+        if (fromNode && toNode) {
+          // Clear previous chat bubbles
+          chatContainer.selectAll('*').remove();
+
+          // Add new chat bubble
+          const bubble = chatContainer.append('g')
+            .attr('transform', `translate(${((fromNode.x ?? 0) + (toNode.x ?? 0)) / 2},${((fromNode.y ?? 0) + (toNode.y ?? 0)) / 2})`);
+
+          // Chat bubble background
+          bubble.append('path')
+            .attr('d', () => {
+              const width = currentMessage.message.length * 8;
+              const height = 30;
+              return `M0,0 L${width},0 L${width},${height} L10,${height} L0,${height + 10} L0,0`;
+            })
+            .attr('fill', '#ffffff')
+            .attr('stroke', '#000000')
+            .attr('stroke-width', '1')
+            .attr('opacity', '0.9');
+
+          // Chat message text
+          bubble.append('text')
+            .attr('x', 10)
+            .attr('y', 20)
+            .attr('fill', '#000000')
+            .attr('font-family', 'monospace')
+            .attr('font-size', '12px')
+            .text(currentMessage.message);
+
+          // Animate bubble appearance
+          bubble.attr('opacity', 0)
+            .transition()
+            .duration(300)
+            .attr('opacity', 1);
+        }
+      }
     });
 
     // Add CSS animation for dashed lines
@@ -288,7 +370,7 @@ export const KnowledgeGraph = () => {
       simulation.stop();
       document.head.removeChild(style);
     };
-  }, [data, dimensions]);
+  }, [data, dimensions, showChat, currentChat]);
 
   if (error) return (
     <div className="fixed top-4 left-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
