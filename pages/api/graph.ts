@@ -1,128 +1,135 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../utils/db';
-import type { Document } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
-interface GraphDocument {
+interface DocumentNode {
   id: string;
   title: string;
   path: string;
   content: string;
-  type: string;
-  created_at: Date;
-  updated_at: Date;
 }
 
-interface GraphReference {
+interface Reference {
   source: string;
   target: string;
-  type: string;
-  weight: number;
+  confidence: number;
 }
 
-interface GraphResponse {
-  nodes: Array<{
-    id: string;
-    title: string;
-    path: string;
-    type: string;
-    created_at: Date;
-  }>;
-  links: GraphReference[];
+interface GraphData {
+  documents: DocumentNode[];
+  references: {
+    [key: string]: Reference[];
+  };
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GraphResponse | { message: string; error?: string }>
-) {
+// Cache the graph data
+let cachedData: GraphData | null = null;
+let lastCacheTime = 0;
+const CACHE_DURATION = 30000; // 30 seconds
+
+function getAllHtmlFiles(dir: string, fileList: string[] = []): string[] {
+  // Only search in specific directories
+  const allowedDirs = ['projects', 'agents', 'tasks', 'memories'];
+  
+  try {
+    const files = fs.readdirSync(dir);
+
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      const relativePath = path.relative(process.cwd(), filePath);
+      const isAllowedDir = allowedDirs.some(allowed => relativePath.startsWith(allowed));
+      
+      if (fs.statSync(filePath).isDirectory() && isAllowedDir) {
+        getAllHtmlFiles(filePath, fileList);
+      } else if (path.extname(file) === '.html' && isAllowedDir) {
+        fileList.push(filePath);
+      }
+    });
+  } catch (error) {
+    console.error(`Error reading directory ${dir}:`, error);
+  }
+
+  return fileList;
+}
+
+function generateDocumentId(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    console.log('Fetching documents from database...');
-    
-    // Fetch all documents using Prisma
-    const documents = await prisma.document.findMany({
-      select: {
-        id: true,
-        title: true,
-        path: true,
-        content: true,
-        type: true,
-        created_at: true,
-        updated_at: true
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
+    // Check cache
+    const now = Date.now();
+    if (cachedData && (now - lastCacheTime < CACHE_DURATION)) {
+      return res.status(200).json(cachedData);
+    }
+
+    // Get all HTML files from specific directories
+    const projectRoot = process.cwd();
+    const htmlFiles = getAllHtmlFiles(projectRoot);
+
+    // Create document nodes
+    const documents: DocumentNode[] = htmlFiles.map(filePath => {
+      const relativePath = path.relative(projectRoot, filePath).replace(/\\/g, '/');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const titleMatch = content.match(/<title>(.*?)<\/title>/);
+      const title = titleMatch ? titleMatch[1] : path.basename(filePath, '.html');
+
+      return {
+        id: generateDocumentId(relativePath),
+        title,
+        path: relativePath,
+        content
+      };
     });
 
-    console.log(`Found ${documents.length} documents`);
-
-    // Generate references between documents based on content and paths
-    const references: GraphReference[] = [];
-
-    // Process documents to find references
-    documents.forEach((doc: GraphDocument) => {
-      documents.forEach((otherDoc: GraphDocument) => {
-        if (doc.id === otherDoc.id) return;
-
-        let weight = 0;
-
-        // Check for title mentions in content (weight: 0.4)
-        if (doc.content?.toLowerCase().includes(otherDoc.title.toLowerCase())) {
-          weight += 0.4;
-        }
-
-        // Check for path references (weight: 0.3)
-        if (doc.content?.includes(otherDoc.path)) {
-          weight += 0.3;
-        }
-
-        // Check for same directory/category (weight: 0.2)
-        const docDirs = doc.path.split('/');
-        const otherDirs = otherDoc.path.split('/');
-        if (docDirs[0] === otherDirs[0] && docDirs[1] === otherDirs[1]) {
-          weight += 0.2;
-        }
-
-        // Check for direct links or references (weight: 0.5)
-        if (doc.content?.includes(`href="${otherDoc.path}"`) || 
-            (doc.content?.includes('Related Tasks:') && doc.content?.includes(otherDoc.path))) {
-          weight += 0.5;
-        }
-
-        // Only add reference if there's a meaningful connection
-        if (weight > 0) {
-          references.push({
-            source: doc.id,
-            target: otherDoc.id,
-            type: 'reference',
-            weight
-          });
-        }
-      });
-    });
-
-    console.log('References generated:', references.length);
-
-    const response: GraphResponse = {
-      nodes: documents.map(doc => ({
-        id: doc.id,
-        title: doc.title,
-        path: doc.path,
-        type: doc.type,
-        created_at: doc.created_at
-      })),
-      links: references
+    // Generate references between documents
+    const references = {
+      link_reference: documents.flatMap(doc => {
+        const links: Reference[] = [];
+        documents.forEach(otherDoc => {
+          if (doc.id !== otherDoc.id) {
+            const relativePath = path.relative(path.dirname(doc.path), otherDoc.path);
+            if (doc.content.includes(relativePath) || doc.content.includes(otherDoc.path)) {
+              links.push({
+                source: doc.id,
+                target: otherDoc.id,
+                confidence: 1.0
+              });
+            }
+          }
+        });
+        return links;
+      }),
+      content_reference: documents.flatMap(doc => {
+        const refs: Reference[] = [];
+        documents.forEach(otherDoc => {
+          if (doc.id !== otherDoc.id && doc.content.toLowerCase().includes(otherDoc.title.toLowerCase())) {
+            refs.push({
+              source: doc.id,
+              target: otherDoc.id,
+              confidence: 0.7
+            });
+          }
+        });
+        return refs;
+      })
     };
 
-    res.status(200).json(response);
+    // Update cache
+    cachedData = { documents, references };
+    lastCacheTime = now;
+
+    res.status(200).json(cachedData);
   } catch (error) {
-    console.error('Error fetching graph data:', error);
+    console.error('Error:', error);
     res.status(500).json({ 
-      message: 'Error fetching graph data', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      message: 'Error fetching graph data',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }

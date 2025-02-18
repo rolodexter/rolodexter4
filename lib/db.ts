@@ -1,11 +1,19 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-declare global {
-  var prisma: PrismaClient | undefined
+let prisma: PrismaClient;
+
+if (!global.prisma) {
+  prisma = new PrismaClient({
+    errorFormat: 'minimal',
+    log: ['error']
+  });
+  // Attempt to connect and catch any errors to prevent crashing
+  prisma.$connect().catch(e => {
+    console.error('Postgres connection error suppressed:', e);
+  });
+  global.prisma = prisma;
+} else {
+  prisma = global.prisma;
 }
 
-const prisma = global.prisma || new PrismaClient()
-
-if (process.env.NODE_ENV !== 'production') global.prisma = prisma
-
-export default prisma
+export default prisma;

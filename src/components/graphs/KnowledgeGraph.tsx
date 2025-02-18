@@ -8,367 +8,242 @@
  * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
  */
 
-import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-interface KnowledgeNode {
+interface Node {
   id: string;
-  label: string;
-  type: 'task' | 'memory' | 'documentation';
+  title: string;
   path: string;
-  category: string;
 }
 
-interface KnowledgeLink {
+interface Link {
   source: string;
   target: string;
-  type: 'title_mention' | 'path_reference' | 'task_reference' | 'memory_reference';
   confidence: number;
 }
 
-interface ReferenceData {
-  source: string;
-  target: string;
-  type: string;
-  confidence: number;
-}
-
-interface GraphApiResponse {
-  documents: any[];
+interface GraphData {
+  documents: Node[];
   references: {
-    [key: string]: ReferenceData[];
+    [key: string]: Link[];
   };
 }
 
-interface KnowledgeGraphData {
-  nodes: KnowledgeNode[];
-  links: KnowledgeLink[];
-}
-
 export const KnowledgeGraph = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [data, setData] = useState<KnowledgeGraphData>({
-    nodes: [],
-    links: []
-  });
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all');
+  const [dimensions, setDimensions] = useState({ 
+    width: typeof window !== 'undefined' ? window.innerWidth : 1000,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800
+  });
 
+  // Update dimensions when window resizes
   useEffect(() => {
-    async function fetchGraphData() {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch data only once on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/graph');
-        if (!response.ok) {
-          throw new Error('Failed to fetch graph data');
+        console.log('Fetching graph data...');
+        const res = await fetch('/api/graph');
+        const newData = await res.json();
+        console.log('Received graph data:', newData);
+        if (isMounted) {
+          setData(newData);
+          setError(null);
         }
-        
-        const rawData = await response.json() as GraphApiResponse;
-        
-        // Transform documents into graph structure
-        const nodes: KnowledgeNode[] = [];
-        const links: KnowledgeLink[] = [];
-        const nodeMap = new Map<string, boolean>();
-
-        // Process documents into nodes
-        rawData.documents.forEach((doc: any) => {
-          if (!nodeMap.has(doc.id)) {
-            // Determine node type based on path
-            let type: KnowledgeNode['type'] = 'documentation';
-            let category = 'other';
-
-            if (doc.path.includes('/tasks/')) {
-              type = 'task';
-              category = doc.path.includes('/active-tasks/') ? 'active' : 
-                        doc.path.includes('/completed-tasks/') ? 'completed' : 'unresolved';
-            } else if (doc.path.includes('/memories/')) {
-              type = 'memory';
-              category = doc.path.split('/memories/')[1].split('/')[0];
-            }
-
-            nodes.push({
-              id: doc.id,
-              label: doc.title,
-              type,
-              path: doc.path,
-              category
-            });
-            nodeMap.set(doc.id, true);
-          }
-        });
-
-        // Process references into links
-        Object.entries(rawData.references).forEach(([type, refs]) => {
-          refs.forEach((ref: ReferenceData) => {
-            links.push({
-              source: ref.source,
-              target: ref.target,
-              type: type as KnowledgeLink['type'],
-              confidence: ref.confidence
-            });
-          });
-        });
-
-        setData({ nodes, links });
-        setLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setLoading(false);
+        console.error('Error fetching graph data:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch graph data');
+        }
       }
-    }
+    };
 
-    fetchGraphData();
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (!svgRef.current || !data.nodes.length) return;
+    if (!data || !svgRef.current || !dimensions.width || !dimensions.height) return;
 
     const svg = d3.select(svgRef.current);
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
+    const { width, height } = dimensions;
 
     // Clear previous content
     svg.selectAll('*').remove();
 
-    // Filter nodes and links based on selection
-    const filteredNodes = filter === 'all' 
-      ? data.nodes 
-      : data.nodes.filter(n => n.type === filter);
-    
-    const filteredLinks = data.links.filter(link => 
-      filteredNodes.some(n => n.id === link.source) && 
-      filteredNodes.some(n => n.id === link.target)
-    );
+    // Create nodes array from documents
+    const nodes = data.documents;
 
-    // Create force simulation
-    const simulation = d3.forceSimulation(filteredNodes as any)
-      .force('link', d3.forceLink(filteredLinks).id((d: any) => d.id))
-      .force('charge', d3.forceManyBody().strength(-150))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(50));
+    // Create links array from all reference types
+    const links = Object.values(data.references).flat();
 
-    // Create container for zoom
+    // Create container for zoom first
     const container = svg.append('g');
 
-    // Add zoom behavior
+    // Create force simulation with adjusted parameters for full screen
+    const simulation = d3.forceSimulation(nodes as any)
+      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(250))
+      .force('charge', d3.forceManyBody().strength(-2000))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(80))
+      .force('x', d3.forceX(width / 2).strength(0.02))
+      .force('y', d3.forceY(height / 2).strength(0.02));
+
+    // Set up zoom behavior
     const zoom = d3.zoom()
-      .scaleExtent([0.5, 2])
+      .scaleExtent([0.1, 4])
       .on('zoom', (event) => {
         container.attr('transform', event.transform);
       });
-    svg.call(zoom as any);
 
-    // Create links
-    const links = container.append('g')
+    // Apply zoom behavior and set initial zoom
+    svg.call(zoom as any)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(0.5)
+        .translate(-width / 2, -height / 2));
+
+    // Create SVG elements
+    const link = container.append('g')
       .selectAll('line')
-      .data(filteredLinks)
+      .data(links)
       .join('line')
-      .attr('class', 'knowledge-connection')
-      .attr('stroke', (d: KnowledgeLink) => {
-        switch (d.type) {
-          case 'title_mention': return 'rgba(255,255,255,0.4)';
-          case 'path_reference': return 'rgba(255,255,255,0.3)';
-          case 'task_reference': return 'rgba(255,255,255,0.6)';
-          case 'memory_reference': return 'rgba(255,255,255,0.5)';
-          default: return 'rgba(255,255,255,0.2)';
-        }
-      })
-      .attr('stroke-width', (d: KnowledgeLink) => d.confidence * 2)
-      .attr('stroke-opacity', (d: KnowledgeLink) => d.confidence);
+      .attr('stroke', '#666666')
+      .attr('stroke-width', (d: any) => d.confidence * 1)
+      .attr('stroke-opacity', 0.3);
 
-    // Create nodes
-    const nodes = container.append('g')
+    // Create node groups
+    const nodeGroup = container.append('g')
       .selectAll('g')
-      .data(filteredNodes)
+      .data(nodes)
       .join('g')
-      .attr('class', 'knowledge-node')
-      .call(d3.drag()
-        .on('start', dragstarted)
-        .on('drag', dragged)
-        .on('end', dragended) as any)
-      .on('click', (event: any, d: KnowledgeNode) => {
-        setSelectedNode(selectedNode === d.id ? null : d.id);
+      .call(d3.drag<any, any>()
+        .on('start', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on('drag', (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on('end', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        }));
+
+    // Add clickable node circles with links
+    const nodeCircles = nodeGroup.append('a')
+      .attr('href', (d: any) => `/${d.path}`)
+      .attr('target', '_blank')
+      .attr('rel', 'noopener noreferrer')
+      .append('circle')
+      .attr('r', 15)
+      .attr('fill', (d: any) => {
+        const path = d.path.toLowerCase();
+        if (path.includes('/tasks/')) return '#404040';
+        if (path.includes('/memories/')) return '#666666';
+        if (path.includes('/documentation/')) return '#808080';
+        return '#999999';
+      })
+      .attr('stroke', '#ffffff')
+      .attr('stroke-width', 1)
+      .style('cursor', 'pointer');
+
+    // Add clickable labels with links
+    const nodeLabels = nodeGroup.append('a')
+      .attr('href', (d: any) => `/${d.path}`)
+      .attr('target', '_blank')
+      .attr('rel', 'noopener noreferrer')
+      .append('text')
+      .text((d: any) => d.title)
+      .attr('text-anchor', 'middle')
+      .attr('dy', 30)
+      .attr('fill', '#333333')
+      .style('font-size', '11px')
+      .style('font-family', 'monospace')
+      .style('cursor', 'pointer')
+      .style('text-decoration', 'none')
+      // Add hover effect
+      .on('mouseover', function() {
+        d3.select(this)
+          .style('text-decoration', 'underline')
+          .attr('fill', '#000000');
+      })
+      .on('mouseout', function() {
+        d3.select(this)
+          .style('text-decoration', 'none')
+          .attr('fill', '#333333');
       });
 
-    // Add circles to nodes
-    nodes.append('circle')
-      .attr('r', 25)
-      .attr('fill', (d: KnowledgeNode) => getNodeColor(d))
-      .attr('stroke', (d: KnowledgeNode) => 
-        selectedNode === d.id ? '#FFFFFF' : 'rgba(255,255,255,0.2)')
-      .attr('stroke-width', (d: KnowledgeNode) => 
-        selectedNode === d.id ? 2 : 1);
-
-    // Add labels to nodes
-    nodes.append('text')
-      .text((d: KnowledgeNode) => d.label)
-      .attr('dy', 35)
-      .attr('text-anchor', 'middle')
-      .attr('class', 'text-xs text-white opacity-70')
-      .style('pointer-events', 'none');
-
-    // Add type indicators
-    nodes.append('text')
-      .text((d: KnowledgeNode) => getNodeIcon(d))
-      .attr('dy', 5)
-      .attr('text-anchor', 'middle')
-      .attr('class', 'text-sm text-white')
-      .style('pointer-events', 'none');
-
-    // Update positions on simulation tick
+    // Update positions on each tick
     simulation.on('tick', () => {
-      links
+      link
         .attr('x1', (d: any) => d.source.x)
         .attr('y1', (d: any) => d.source.y)
         .attr('x2', (d: any) => d.target.x)
         .attr('y2', (d: any) => d.target.y);
 
-      nodes.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+      // Update both circles and labels positions
+      nodeGroup.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     });
-
-    // Drag functions
-    function dragstarted(event: any) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-
-    function dragged(event: any) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-
-    function dragended(event: any) {
-      if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
 
     return () => {
       simulation.stop();
     };
-  }, [data, selectedNode, filter]);
+  }, [data, dimensions]);
 
-  const getNodeColor = (node: KnowledgeNode) => {
-    switch (node.type) {
-      case 'task':
-        switch (node.category) {
-          case 'active': return 'rgba(74, 222, 128, 0.3)';
-          case 'completed': return 'rgba(34, 197, 94, 0.3)';
-          default: return 'rgba(239, 68, 68, 0.3)';
-        }
-      case 'memory':
-        return 'rgba(59, 130, 246, 0.3)';
-      default:
-        return 'rgba(255, 255, 255, 0.2)';
-    }
-  };
-
-  const getNodeIcon = (node: KnowledgeNode) => {
-    switch (node.type) {
-      case 'task': return '⚡';
-      case 'memory': return '💭';
-      default: return '📄';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="knowledge-graph flex items-center justify-center">
-        <span className="text-sm text-white/50">Loading knowledge graph...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="knowledge-graph flex items-center justify-center">
-        <span className="text-sm text-red-500">{error}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="knowledge-graph">
-      <div className="knowledge-graph-header flex justify-between items-center p-4">
-        <h2 className="text-sm font-mono uppercase tracking-wider text-white/70">Knowledge Graph</h2>
-        <div className="flex items-center space-x-4">
-          <select 
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded px-2 py-1 text-sm text-white/70"
-          >
-            <option value="all">All Documents</option>
-            <option value="task">Tasks</option>
-            <option value="memory">Memories</option>
-            <option value="documentation">Documentation</option>
-          </select>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-white/50">{data.nodes.length} Nodes</span>
-            <span className="text-xs text-white/50">{data.links.length} Links</span>
-          </div>
-        </div>
-      </div>
-      
-      <div className="knowledge-graph-content relative flex-1">
-        <svg ref={svgRef} className="w-full h-full">
-          <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-        </svg>
-
-        {selectedNode && (
-          <div className="absolute top-4 right-4 bg-black/80 border border-white/10 rounded p-4 max-w-xs">
-            <h3 className="text-sm font-mono text-white/90 mb-2">
-              {data.nodes.find(n => n.id === selectedNode)?.label}
-            </h3>
-            <p className="text-xs text-white/70">
-              Path: {data.nodes.find(n => n.id === selectedNode)?.path}
-            </p>
-            <p className="text-xs text-white/70">
-              Type: {data.nodes.find(n => n.id === selectedNode)?.type}
-            </p>
-            <p className="text-xs text-white/70">
-              Category: {data.nodes.find(n => n.id === selectedNode)?.category}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="knowledge-graph-footer p-4">
-        <div className="flex items-center justify-center space-x-6 text-xs text-white/50">
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-[rgba(74,222,128,0.3)]"></span>
-            <span>Active Tasks</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-[rgba(34,197,94,0.3)]"></span>
-            <span>Completed Tasks</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-[rgba(239,68,68,0.3)]"></span>
-            <span>Unresolved Tasks</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-[rgba(59,130,246,0.3)]"></span>
-            <span>Memories</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-[rgba(255,255,255,0.2)]"></span>
-            <span>Documentation</span>
-          </div>
-        </div>
-      </div>
+  if (error) return (
+    <div className="fixed top-4 left-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+      Error: {error}
     </div>
   );
-};
-
-export type { KnowledgeNode, KnowledgeLink }; 
+  
+  return (
+    <svg
+      ref={svgRef}
+      width="100vw"
+      height="100vh"
+      style={{ 
+        background: '#f9fafb',
+        display: 'block', // Removes any default spacing
+        position: 'fixed',
+        top: 0,
+        left: 0
+      }}
+    >
+      {!data && (
+        <text 
+          x="50%" 
+          y="50%" 
+          textAnchor="middle" 
+          fill="#666"
+          style={{ fontFamily: 'monospace' }}
+        >
+          Loading knowledge graph...
+        </text>
+      )}
+    </svg>
+  );
+}; 

@@ -35,6 +35,7 @@ interface Document {
     priority: string;
     description?: string;
   }>;
+  key?: number;
 }
 
 interface DocumentListProps {
@@ -54,7 +55,7 @@ const DocumentList = ({
   status, 
   tags, 
   search, 
-  limit = 10,
+  limit = 20,
   title = "Documents",
   showType = true,
   sortBy = 'updated_at',
@@ -62,7 +63,6 @@ const DocumentList = ({
 }: DocumentListProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchDocuments();
@@ -89,32 +89,6 @@ const DocumentList = ({
     }
   };
 
-  const toggleRowExpansion = (id: string) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (expandedRows.has(id)) {
-      newExpandedRows.delete(id);
-    } else {
-      newExpandedRows.add(id);
-    }
-    setExpandedRows(newExpandedRows);
-  };
-
-  const renderPriorityIndicator = (priority?: string) => {
-    if (!priority) return null;
-    
-    const colors = {
-      HIGH: 'text-red-500',
-      MEDIUM: 'text-yellow-500',
-      LOW: 'text-green-500'
-    };
-
-    return (
-      <span className={`${colors[priority as keyof typeof colors]} font-bold`}>
-        [{priority}]
-      </span>
-    );
-  };
-
   const renderStatus = (status: string) => {
     const statusColors = {
       ACTIVE: 'text-green-500',
@@ -130,61 +104,31 @@ const DocumentList = ({
     );
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (!isValid(date)) {
-        return 'N/A';
-      }
-      return format(date, 'MM.dd.yy HH:mm');
-    } catch (error) {
-      return 'N/A';
-    }
-  };
-
   if (loading) {
     return (
       <div className="text-sm">
-        <div className="animate-pulse">Loading system data...</div>
+        Loading...
       </div>
     );
   }
 
   return (
-    <div className="text-sm">
+    <div className="font-mono text-sm whitespace-pre">
+      <div>ID</div>
+      <div>Task</div>
+      <div>Status</div>
+      <div>Priority</div>
       {documents.map((doc, index) => (
-        <div 
-          key={doc.id}
-          className="animate-fadeIn"
-          style={{ 
-            animationDelay: `${index * 50}ms`,
-            opacity: 0,
-          }}
-        >
-          <div className="flex group cursor-pointer" onClick={() => toggleRowExpansion(doc.id)}>
-            <span className="mr-1 group-hover:animate-pulse">▶</span>
-            <span className="group-hover:underline">{doc.title}</span>
-            <span className="ml-1 animate-blink">N/A</span>
-          </div>
-          {expandedRows.has(doc.id) && (
-            <div 
-              className="pl-4 animate-slideDown"
-              style={{ animationDelay: '100ms' }}
-            >
-              {doc.tasks?.map((task, taskIndex) => (
-                <div 
-                  key={taskIndex}
-                  className="animate-fadeIn"
-                  style={{ animationDelay: `${taskIndex * 50}ms` }}
-                >
-                  {task.description && (
-                    <div className="text-gray-400 my-1">{task.description}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <React.Fragment key={doc.id}>
+          {(index + 1).toString().padStart(2, '0')}
+          {'\n'}
+          {doc.title}
+          {'\n'}
+          {doc.tasks?.[0]?.status || '-'}
+          {'\n'}
+          {doc.tasks?.[0]?.priority || '-'}
+          {'\n'}
+        </React.Fragment>
       ))}
     </div>
   );
