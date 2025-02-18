@@ -35,43 +35,15 @@ interface GraphData {
   };
 }
 
-// Add chat simulation messages
-const chatMessages = [
-  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Analyzing task dependencies...' },
-  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Scanning codebase structure...' },
-  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Optimizing deployment sequence...' },
-  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Validating system architecture...' },
-  { from: 'rolodexterGPT', to: 'rolodexterVS', message: 'Processing knowledge updates...' },
-  { from: 'rolodexterVS', to: 'rolodexterGPT', message: 'Syncing memory fragments...' }
-];
-
 export const KnowledgeGraph = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentChat, setCurrentChat] = useState<number>(0);
-  const [showChat, setShowChat] = useState<boolean>(false);
   const [dimensions, setDimensions] = useState({ 
     width: typeof window !== 'undefined' ? window.innerWidth : 1000,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
-
-  // Add chat simulation effect
-  useEffect(() => {
-    const simulateChat = () => {
-      setShowChat(true);
-      setTimeout(() => {
-        setShowChat(false);
-        setTimeout(() => {
-          setCurrentChat((prev) => (prev + 1) % chatMessages.length);
-        }, 500);
-      }, 3000);
-    };
-
-    const interval = setInterval(simulateChat, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Update dimensions when window resizes
   useEffect(() => {
@@ -231,16 +203,24 @@ export const KnowledgeGraph = () => {
         return height * 0.5;
       }));
 
-    // Run simulation to completion then stop
+    // Run simulation once to get initial layout
     simulation.alpha(1);
     for (let i = 0; i < 300; i++) simulation.tick();
     simulation.stop();
 
-    // Fix node positions after initial layout
-    nodes.forEach(node => {
-      node.fx = node.x;
-      node.fy = node.y;
-    });
+    // Store initial positions
+    const initialPositions = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
+
+    // Set up zoom behavior with adjusted scale
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 20])
+      .filter(event => {
+        if (event.type === 'mousedown' && event.button === 2) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+      });
 
     // Create node groups with modified drag behavior
     const nodeGroup = container.append('g')
@@ -249,22 +229,53 @@ export const KnowledgeGraph = () => {
       .join('g')
       .call(d3.drag<any, any>()
         .on('start', (event, d) => {
-          // Unfix position temporarily for dragging
+          // Just store current position
           d.fx = d.x;
           d.fy = d.y;
         })
         .on('drag', (event, d) => {
-          // Update fixed position during drag
+          // Update position during drag
           d.fx = event.x;
           d.fy = event.y;
-          updatePositions(); // Update positions during drag
+          updatePositions();
         })
         .on('end', (event, d) => {
-          // Keep the position fixed where it was dropped
+          // Keep final position
           d.fx = event.x;
           d.fy = event.y;
-          updatePositions(); // Final position update
+          updatePositions();
         }));
+
+    // Function to update positions
+    const updatePositions = () => {
+      link
+        .attr('x1', (d: any) => d.source.x ?? initialPositions.get(d.source.id)?.x)
+        .attr('y1', (d: any) => d.source.y ?? initialPositions.get(d.source.id)?.y)
+        .attr('x2', (d: any) => d.target.x ?? initialPositions.get(d.target.id)?.x)
+        .attr('y2', (d: any) => d.target.y ?? initialPositions.get(d.target.id)?.y);
+
+      nodeGroup
+        .attr('transform', (d: any) => {
+          const x = d.x ?? initialPositions.get(d.id)?.x;
+          const y = d.y ?? initialPositions.get(d.id)?.y;
+          return `translate(${x},${y})`;
+        });
+    };
+
+    // Initial position update
+    updatePositions();
+
+    // Apply zoom behavior with smooth transition
+    svg.call(zoom as any)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(0.7)
+        .translate(-width / 2, -height / 2));
+
+    // Prevent mousewheel from scrolling page
+    svg.on('wheel', (event: Event) => {
+      event.preventDefault();
+    });
 
     // Add different shapes for documents and tags
     nodeGroup.each(function(d) {
@@ -299,6 +310,21 @@ export const KnowledgeGraph = () => {
       }
     });
 
+    // Add glowing effect filter
+    const defs = svg.append('defs');
+    const filter = defs.append('filter')
+      .attr('id', 'glow');
+    
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '2')
+      .attr('result', 'coloredBlur');
+    
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode')
+      .attr('in', 'coloredBlur');
+    feMerge.append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
     // Add labels with different styles for documents and tags
     nodeGroup.append('text')
       .text(d => d.title)
@@ -323,128 +349,22 @@ export const KnowledgeGraph = () => {
     });
 
     // Add CSS animation for dashed lines
-    const style = document.createElement('style');
-    style.textContent = `
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
       @keyframes dash {
         to {
           stroke-dashoffset: 100;
         }
       }
     `;
-    document.head.appendChild(style);
-
-    // Add chat bubbles container
-    const chatContainer = container.append('g')
-      .attr('class', 'chat-container');
-
-    // Function to update all positions
-    const updatePositions = () => {
-      link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
-
-      nodeGroup
-        .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
-
-      if (showChat) {
-        const currentMessage = chatMessages[currentChat];
-        const fromNode = nodes.find(n => n.path.toLowerCase().includes(currentMessage.from.toLowerCase()));
-        const toNode = nodes.find(n => n.path.toLowerCase().includes(currentMessage.to.toLowerCase()));
-
-        if (fromNode && toNode) {
-          // Clear previous chat bubbles
-          container.selectAll('*').remove();
-
-          // Calculate midpoint with slight offset based on message direction
-          const midX = ((fromNode.x ?? 0) + (toNode.x ?? 0)) / 2;
-          const midY = ((fromNode.y ?? 0) + (toNode.y ?? 0)) / 2 - 30; // Offset upward
-
-          // Add new chat bubble
-          const bubble = container.append('g')
-            .attr('transform', `translate(${midX},${midY})`);
-
-          // Chat bubble background with improved shape
-          const padding = 10;
-          const messageWidth = currentMessage.message.length * 6;
-          const bubbleWidth = messageWidth + (padding * 2);
-          const bubbleHeight = 30;
-          
-          // Create bubble path with arrow pointing to source
-          const isFromLeft = (fromNode.x ?? 0) < (toNode.x ?? 0);
-          const arrowX = isFromLeft ? 0 : bubbleWidth;
-          const bubblePath = `
-            M${padding},0
-            L${bubbleWidth - padding},0
-            Q${bubbleWidth},0 ${bubbleWidth},${padding}
-            L${bubbleWidth},${bubbleHeight - padding}
-            Q${bubbleWidth},${bubbleHeight} ${bubbleWidth - padding},${bubbleHeight}
-            L${arrowX + (isFromLeft ? padding : -padding)},${bubbleHeight}
-            L${arrowX},${bubbleHeight + 10}
-            L${arrowX + (isFromLeft ? -padding : padding)},${bubbleHeight}
-            L${padding},${bubbleHeight}
-            Q0,${bubbleHeight} 0,${bubbleHeight - padding}
-            L0,${padding}
-            Q0,0 ${padding},0
-          `;
-
-          bubble.append('path')
-            .attr('d', bubblePath)
-            .attr('fill', '#ffffff')
-            .attr('stroke', '#000000')
-            .attr('stroke-width', '1')
-            .attr('opacity', '0.9');
-
-          // Chat message text
-          bubble.append('text')
-            .attr('x', padding)
-            .attr('y', bubbleHeight/2)
-            .attr('dy', '0.35em')
-            .attr('fill', '#000000')
-            .attr('font-family', 'monospace')
-            .attr('font-size', '12px')
-            .text(currentMessage.message);
-
-          // Animate bubble appearance
-          bubble.attr('opacity', 0)
-            .transition()
-            .duration(300)
-            .attr('opacity', 1);
-        }
-      }
-    };
-
-    // Initial position update
-    updatePositions();
-
-    // Set up zoom behavior with adjusted scale
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 20])
-      .filter(event => {
-        if (event.type === 'mousedown' && event.button === 2) return false;
-        return true;
-      })
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-      });
-
-    // Apply zoom behavior with smooth transition
-    svg.call(zoom as any)
-      .call(zoom.transform as any, d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(0.7)
-        .translate(-width / 2, -height / 2));
-
-    // Prevent mousewheel from scrolling page
-    svg.on('wheel', (event: Event) => {
-      event.preventDefault();
-    });
+    document.head.appendChild(styleElement);
 
     return () => {
-      document.head.removeChild(style);
+      if (styleElement && styleElement.parentNode) {
+        styleElement.parentNode.removeChild(styleElement);
+      }
     };
-  }, [data, dimensions, showChat, currentChat]);
+  }, [data, dimensions]);
 
   if (error) return (
     <div className="fixed top-4 left-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
