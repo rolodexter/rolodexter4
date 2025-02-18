@@ -131,7 +131,7 @@ const TaskBar: React.FC = () => {
           height: '60px',
           borderRadius: '50%',
           overflow: 'hidden',
-          opacity: 0.5,
+          opacity: 1,
           position: 'relative',
           backgroundColor: 'rgba(255, 255, 255, 0.1)',
           display: 'flex',
