@@ -401,7 +401,68 @@ export const KnowledgeGraph = () => {
       event.preventDefault();
     });
 
-    // Modify node appearance based on connections
+    // Enhance glow effect based on connections
+    const defs = svg.append('defs');
+    
+    // Add gradient definitions for 3D effect
+    const radialGradient = defs.append('radialGradient')
+      .attr('id', 'nodeGradient')
+      .attr('cx', '35%')
+      .attr('cy', '35%')
+      .attr('r', '60%');
+    radialGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#ffffff')
+      .attr('stop-opacity', 0.3);
+    radialGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#000000')
+      .attr('stop-opacity', 0.1);
+
+    // Enhanced shadow effect
+    const filter = defs.append('filter')
+      .attr('id', 'glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%');
+
+    // Gaussian blur for soft shadow
+    filter.append('feGaussianBlur')
+      .attr('in', 'SourceAlpha')
+      .attr('stdDeviation', '3')
+      .attr('result', 'blur');
+
+    // Offset the shadow
+    filter.append('feOffset')
+      .attr('in', 'blur')
+      .attr('dx', '2')
+      .attr('dy', '2')
+      .attr('result', 'offsetBlur');
+
+    // Create lighting effect
+    filter.append('feSpecularLighting')
+      .attr('in', 'blur')
+      .attr('surfaceScale', '5')
+      .attr('specularConstant', '1')
+      .attr('specularExponent', '20')
+      .attr('lighting-color', '#ffffff')
+      .attr('result', 'specOut')
+      .append('fePointLight')
+      .attr('x', '-5000')
+      .attr('y', '-10000')
+      .attr('z', '20000');
+
+    // Combine effects
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode')
+      .attr('in', 'offsetBlur');
+    feMerge.append('feMergeNode')
+      .attr('in', 'specOut');
+    feMerge.append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
+    // Modify node appearance with enhanced 3D effects
     nodeGroup.each(function(d) {
       const node = d3.select(this);
       const data = d as Node;
@@ -409,38 +470,71 @@ export const KnowledgeGraph = () => {
       const depth = Math.min(connections / 5, 1);
 
       if (data.type === 'document') {
-        // Document nodes get circles with depth-based styling
+        // Document nodes get enhanced circles with 3D styling
         node.append('circle')
           .attr('r', d => {
             const data = d as Node;
             const connections = nodeConnections.get(data.id) || 0;
-            return 15 * (1 + connections * 0.15);
+            // Increase base size and connection influence
+            return 20 * (1 + connections * 0.2);
           })
           .attr('fill', d => {
             const data = d as Node;
             const path = data.path.toLowerCase();
-            let color = '#b3b3b3'; // Lighter base gray
-            if (path.includes('/tasks/')) color = '#808080'; // Lighter task gray
-            if (path.includes('/memories/')) color = '#999999'; // Lighter memory gray
-            if (path.includes('/documentation/')) color = '#a6a6a6'; // Lighter documentation gray
-            const brightnessAdjustment = 0.5 * (1 - Math.min(connections / 10, 1));
-            return d3.color(color)?.brighter(brightnessAdjustment).toString() || color;
+            const connections = nodeConnections.get(data.id) || 0;
+            // Base colors are lighter, darkness increases with connections
+            let color = '#e0e0e0';  // Lightest base gray
+            if (path.includes('/tasks/')) color = '#d4d4d4';
+            if (path.includes('/memories/')) color = '#c8c8c8';
+            if (path.includes('/documentation/')) color = '#bdbdbd';
+            // More dramatic darkening based on connections
+            const darkenAmount = Math.min(connections / 5, 1);
+            return d3.color(color)?.darker(darkenAmount).toString() || color;
           })
-          .attr('stroke', '#ffffff')
-          .attr('stroke-width', 1 + depth)
+          .attr('stroke', 'none')
+          .attr('stroke-width', 0)
           .style('filter', 'url(#glow)')
-          .style('opacity', 0.7 + (0.3 * depth))
+          .style('opacity', 0.9)
           .style('cursor', 'pointer')
+          .style('fill', 'url(#nodeGradient)')
+          .on('mouseover', function() {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('stroke-width', 2 + depth)
+              .style('opacity', 1);
+          })
+          .on('mouseout', function() {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('stroke-width', 1 + depth)
+              .style('opacity', 0.9);
+          })
           .on('click', function(event, d) {
             const data = d as Node;
             if (data.type === 'document') {
               window.open(`/api/document/${data.path}`, '_blank');
             }
           });
+
       } else if (data.type === 'status') {
-        // Status nodes get squares with adjusted size
-        const baseSize = 20; // Reduced base size
-        const size = Math.min(baseSize + (data.tagCount || 1) * 5, 40); // Cap maximum size at 40px
+        // Status nodes get enhanced squares with 3D styling
+        const baseSize = 20;
+        const size = Math.min(baseSize + (data.tagCount || 1) * 5, 40);
+        
+        // Add shadow/backdrop for depth
+        node.append('rect')
+          .attr('x', -size/2 + 2)
+          .attr('y', -size/2 + 2)
+          .attr('width', size)
+          .attr('height', size)
+          .attr('fill', '#000000')
+          .attr('opacity', 0.2)
+          .attr('rx', 4)
+          .attr('ry', 4);
+
+        // Main status node
         node.append('rect')
           .attr('x', -size/2)
           .attr('y', -size/2)
@@ -449,71 +543,148 @@ export const KnowledgeGraph = () => {
           .attr('fill', d => {
             const data = d as Node;
             const status = data.title.toLowerCase();
-            if (status === 'active') return '#4CAF50';
-            if (status === 'pending') return '#FFC107';
-            if (status === 'resolved') return '#2196F3';
-            return '#9E9E9E';
+            // Lighter base colors for status nodes
+            if (status === 'active') return '#808080';    // Medium gray for active
+            if (status === 'pending') return '#a0a0a0';   // Lighter medium gray for pending
+            if (status === 'resolved') return '#c0c0c0';  // Light gray for resolved
+            return '#b0b0b0';
           })
-          .attr('stroke', '#ffffff')
-          .attr('stroke-width', 1 + depth)
+          .attr('stroke', 'none')
+          .attr('stroke-width', 0)
           .style('filter', 'url(#glow)')
-          .style('opacity', 0.7 + (0.3 * depth))
-          .attr('rx', 4) // Add rounded corners
-          .attr('ry', 4);
+          .style('opacity', 0.9)
+          .attr('rx', 4)
+          .attr('ry', 4)
+          .style('cursor', 'pointer')
+          .style('fill', function(d) {
+            const data = d as Node;
+            const status = data.title.toLowerCase();
+            // Create unique gradients for each status
+            const gradientId = `gradient-${status}`;
+            
+            // Define gradient for each status
+            const gradient = defs.append('linearGradient')
+              .attr('id', gradientId)
+              .attr('x1', '0%')
+              .attr('y1', '0%')
+              .attr('x2', '100%')
+              .attr('y2', '100%');
+              
+            let baseColor;
+            if (status === 'active') baseColor = '#808080';      // Medium gray
+            else if (status === 'pending') baseColor = '#a0a0a0'; // Lighter medium gray
+            else if (status === 'resolved') baseColor = '#c0c0c0'; // Light gray
+            else baseColor = '#b0b0b0';
+            
+            // Create 3D effect while maintaining grayscale
+            gradient.append('stop')
+              .attr('offset', '0%')
+              .attr('stop-color', d3.color(baseColor)?.brighter(0.7).toString() || baseColor);
+            
+            gradient.append('stop')
+              .attr('offset', '100%')
+              .attr('stop-color', d3.color(baseColor)?.darker(0.3).toString() || baseColor);
+            
+            return `url(#${gradientId})`;
+          })
+          .on('mouseover', function() {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('stroke-width', 2 + depth)
+              .style('opacity', 1);
+          })
+          .on('mouseout', function() {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('stroke-width', 1 + depth)
+              .style('opacity', 0.9);
+          })
+          .on('click', function(event, d) {
+            const data = d as Node;
+            if (data.type === 'status') {
+              const status = data.title.toLowerCase();
+              window.open(`/api/document/list?status=${status}`, '_blank');
+            }
+          });
+
       } else {
-        // Check if it's a date node
         const isDateNode = d.id.startsWith('date:');
         const baseSize = isDateNode ? 8 : 10;
         const size = (d.tagCount || 1) * baseSize * (1 + connections * 0.1);
         
         if (isDateNode) {
-          // Date nodes get diamonds
+          // Enhanced diamond nodes
           const diamondPath = d3.line()([[0, -size], [size, 0], [0, size], [-size, 0], [0, -size]]);
+          
+          // Add shadow/backdrop for depth
           node.append('path')
             .attr('d', diamondPath)
-            .attr('fill', '#e5e7eb') // Light gray fill
-            .attr('stroke', '#4b5563') // Darker gray stroke
-            .attr('stroke-width', 1 + depth)
+            .attr('transform', 'translate(2, 2)')
+            .attr('fill', '#000000')
+            .style('opacity', 0.2);
+
+          node.append('path')
+            .attr('d', diamondPath)
+            .attr('fill', '#e5e7eb')
+            .attr('stroke', 'none')
+            .attr('stroke-width', 0)
             .style('filter', 'url(#glow)')
-            .style('opacity', 0.7 + (0.3 * depth));
+            .style('opacity', 0.9)
+            .style('fill', 'url(#nodeGradient)')
+            .on('mouseover', function() {
+              d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('stroke-width', 2 + depth)
+                .style('opacity', 1);
+            })
+            .on('mouseout', function() {
+              d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('stroke-width', 1 + depth)
+                .style('opacity', 0.9);
+            });
         } else {
-          // Tag nodes get hexagons
+          // Enhanced hexagon nodes
           const hexagonPath = d3.line()([[0, -size], [size * 0.866, -size/2], 
             [size * 0.866, size/2], [0, size], [-size * 0.866, size/2], 
             [-size * 0.866, -size/2], [0, -size]]);
           
+          // Add shadow/backdrop for depth
+          node.append('path')
+            .attr('d', hexagonPath)
+            .attr('transform', 'translate(2, 2)')
+            .attr('fill', '#000000')
+            .style('opacity', 0.2);
+
           node.append('path')
             .attr('d', hexagonPath)
             .attr('fill', '#ffffff')
-            .attr('stroke', '#000000')
-            .attr('stroke-width', 1 + depth)
+            .attr('stroke', 'none')
+            .attr('stroke-width', 0)
             .style('filter', 'url(#glow)')
-            .style('opacity', 0.7 + (0.3 * depth));
+            .style('opacity', 0.9)
+            .style('fill', 'url(#nodeGradient)')
+            .on('mouseover', function() {
+              d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('stroke-width', 2 + depth)
+                .style('opacity', 1);
+            })
+            .on('mouseout', function() {
+              d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('stroke-width', 1 + depth)
+                .style('opacity', 0.9);
+            });
         }
       }
     });
-
-    // Enhance glow effect based on connections
-    const defs = svg.append('defs');
-    const filter = defs.append('filter')
-      .attr('id', 'glow');
-    
-    filter.append('feGaussianBlur')
-      .attr('stdDeviation', '3')
-      .attr('result', 'coloredBlur');
-    
-    filter.append('feComposite')
-      .attr('in', 'coloredBlur')
-      .attr('in2', 'SourceGraphic')
-      .attr('operator', 'arithmetic')
-      .attr('k2', '1')
-      .attr('k3', '0.5');
-    
-    const feMerge = filter.append('feMerge');
-    feMerge.append('feMergeNode')
-      .attr('in', 'coloredBlur');
-    feMerge.append('feMergeNode')
-      .attr('in', 'SourceGraphic');
 
     // Add labels with different styles for documents and tags
     nodeGroup.append('text')

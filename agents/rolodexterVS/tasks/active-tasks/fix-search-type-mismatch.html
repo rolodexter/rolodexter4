@@ -1,47 +1,73 @@
-# Fix Search API Type Mismatch (DEPLOYMENT BLOCKER)
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fix Search API Type Mismatch</title>
+<meta charset="UTF-8">
+<style>
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; }
+    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+    code { font-family: monospace; }
+    .status { color: #2563eb; font-weight: bold; }
+    .priority { color: #dc2626; font-weight: bold; }
+</style>
+</head>
+<body>
 
-## Status: ACTIVE
-## Priority: CRITICAL
-## Created: 2025-02-18
-## Last Updated: 2025-02-18 00:23:17 UTC
-## Owner: rolodexterGPT
-## Dependencies: None (Immediate fix required)
+<h1>Fix Search API Type Mismatch (DEPLOYMENT BLOCKER)</h1>
 
-## Description
-🚨 **DEPLOYMENT BLOCKER**: Vercel deployment is failing due to TypeScript type mismatches in `pages/api/search.ts`. Immediate fix required to unblock deployment.
+<p><span class="status">Status: ACTIVE</span><br>
+<span class="priority">Priority: CRITICAL</span><br>
+Created: 2025-02-18<br>
+Last Updated: 2025-02-18 00:23:17 UTC<br>
+Owner: rolodexterGPT<br>
+Dependencies: None (Immediate fix required)</p>
 
-## Current Issues
-1. Type mismatch between `Document` and `RawSearchResult` types
-2. Build failing on Vercel deployment
-3. Search functionality potentially broken
+<h2>Description</h2>
+<p>🚨 <strong>DEPLOYMENT BLOCKER</strong>: Vercel deployment is failing due to TypeScript type mismatches in <code>pages/api/search.ts</code>. Immediate fix required to unblock deployment.</p>
 
-## Action Items (IMMEDIATE)
+<h2>Current Issues</h2>
+<ol>
+    <li>Type mismatch between <code>Document</code> and <code>RawSearchResult</code> types</li>
+    <li>Build failing on Vercel deployment</li>
+    <li>Search functionality potentially broken</li>
+</ol>
 
-1. [ ] Apply Quick Fix to `pages/api/search.ts`
-   ```typescript
-   const formattedResults: SearchResult[] = (results as RawSearchResult[]).map((doc) => ({
-     title: doc.title,
-     path: doc.path,
-     excerpt: doc.excerpt ?? "",  // Ensure field exists
-     rank: doc.rank ?? 0
-   }));
-   ```
+<h2>Action Items (IMMEDIATE)</h2>
 
-2. [ ] Deploy Fix
-   ```sh
-   git add pages/api/search.ts
-   git commit -m "Quick fix for search type mismatch"
-   git push origin main
-   ```
+<ol>
+    <li>
+        <p>Apply Quick Fix to <code>pages/api/search.ts</code></p>
+        <pre><code class="language-typescript">const formattedResults: SearchResult[] = (results as RawSearchResult[]).map((doc) => ({
+  title: doc.title,
+  path: doc.path,
+  excerpt: doc.excerpt ?? "",  // Ensure field exists
+  rank: doc.rank ?? 0
+}));</code></pre>
+    </li>
 
-3. [ ] Verify Schema (While Deploying)
-   ```sh
-   npx prisma format
-   npx prisma validate
-   npx prisma generate
-   ```
+    <li>
+        <p>Deploy Fix</p>
+        <pre><code class="language-sh">git add pages/api/search.ts
+git commit -m "Quick fix for search type mismatch"
+git push origin main</code></pre>
+    </li>
 
-4. [ ] Monitor Deployment
-   - [ ] Watch Vercel build logs
-   - [ ] Verify search functionality
-   - [ ] Check for runtime errors 
+    <li>
+        <p>Verify Schema (While Deploying)</p>
+        <pre><code class="language-sh">npx prisma format
+npx prisma validate
+npx prisma generate</code></pre>
+    </li>
+
+    <li>
+        <p>Monitor Deployment</p>
+        <ul>
+            <li>Watch Vercel build logs</li>
+            <li>Verify search functionality</li>
+            <li>Check for runtime errors</li>
+        </ul>
+    </li>
+</ol>
+
+</body>
+</html> 
