@@ -178,47 +178,6 @@ export const KnowledgeGraph = () => {
     // Create container for zoom first
     const container = svg.append('g');
 
-    // Set up zoom behavior with adjusted scale
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 20])
-      .filter(event => {
-        // Only prevent right-click from triggering zoom
-        if (event.type === 'mousedown' && event.button === 2) return false;
-        return true;
-      })
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-        
-        // Only adjust collision radius on significant zoom changes
-        const scale = event.transform.k;
-        const prevScale = (event as any).previousScale || scale;
-        const scaleDiff = Math.abs(scale - prevScale);
-        
-        // Only update simulation if zoom change is significant
-        if (scaleDiff > 0.5) {
-          simulation.force('collision', d3.forceCollide<Node>()
-            .radius((d: Node) => (d.type === 'tag' ? (d.tagCount || 1) * 30 : 80) / Math.max(1, scale / 4))
-            .strength(1)
-            .iterations(4));
-            
-          // Gently restart simulation
-          simulation.alpha(0.1).restart();
-          (event as any).previousScale = scale;
-        }
-      });
-
-    // Apply zoom behavior with smooth transition
-    svg.call(zoom as any)
-      .call(zoom.transform as any, d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(0.7)
-        .translate(-width / 2, -height / 2));
-
-    // Prevent mousewheel from scrolling page
-    svg.on('wheel', (event: Event) => {
-      event.preventDefault();
-    });
-
     // Create force simulation with adjusted stability parameters
     const simulation = d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
@@ -247,9 +206,62 @@ export const KnowledgeGraph = () => {
       }));
 
     // Increase stability parameters
-    simulation.alphaDecay(0.008);
-    simulation.velocityDecay(0.3);
+    simulation.alphaDecay(0.02);
+    simulation.velocityDecay(0.4);
     simulation.alpha(0.3);
+
+    // Let simulation stabilize initially
+    for (let i = 0; i < 300; i++) simulation.tick();
+
+    // Set up zoom behavior with adjusted scale
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 20])
+      .filter(event => {
+        if (event.type === 'mousedown' && event.button === 2) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+        
+        // Store current transform to avoid unnecessary updates
+        const scale = event.transform.k;
+        const prevScale = (container.node() as any)?.__prevScale || scale;
+        const scaleDiff = Math.abs(scale - prevScale);
+        
+        // Only update collision radius on significant zoom changes
+        if (scaleDiff > 1.0) {
+          simulation.force('collision', d3.forceCollide<Node>()
+            .radius((d: Node) => {
+              const baseRadius = d.type === 'tag' ? (d.tagCount || 1) * 30 : 80;
+              return baseRadius / Math.max(1, scale / 4);
+            })
+            .strength(1)
+            .iterations(4));
+
+          // Store the scale for next comparison
+          (container.node() as any).__prevScale = scale;
+          
+          // Very gentle simulation adjustment
+          simulation.alpha(0.05).restart();
+        }
+      });
+
+    // Apply zoom behavior with smooth transition
+    svg.call(zoom as any)
+      .call(zoom.transform as any, d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(0.7)
+        .translate(-width / 2, -height / 2));
+
+    // Prevent mousewheel from scrolling page with debounce
+    let wheelTimeout: NodeJS.Timeout;
+    svg.on('wheel', (event: Event) => {
+      event.preventDefault();
+      clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => {
+        simulation.alpha(0);
+      }, 150);
+    });
 
     // Create SVG elements for links with different styles
     const link = container.append('g')
