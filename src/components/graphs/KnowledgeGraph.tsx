@@ -8,22 +8,22 @@
  * - Codebase Restructure: agents/rolodexterVS/tasks/active-tasks/codebase-restructure.html
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   path: string;
-  type: 'document' | 'tag';
+  type: 'document' | 'tag' | 'status';
   tagCount?: number;
+  status?: string;
   x?: number;
   y?: number;
 }
 
-interface Link {
-  source: string;
-  target: string;
+interface Link extends d3.SimulationLinkDatum<Node> {
   confidence: number;
   type: 'document-document' | 'document-tag';
 }
@@ -96,17 +96,47 @@ export const KnowledgeGraph = () => {
     // Clear previous content
     svg.selectAll('*').remove();
 
-    // Process tags from documents
+    // Process tags, dates, and statuses from documents
     const tagFrequency = new Map<string, number>();
+    const dateFrequency = new Map<string, number>();
+    const statusFrequency = new Map<string, number>();
+    
     data.documents.forEach(doc => {
       const content = doc.path.toLowerCase();
+      
+      // Extract status
+      const status = content.includes('/tasks/') ? 
+        (content.includes('/active/') ? 'active' :
+         content.includes('/pending/') ? 'pending' :
+         content.includes('/resolved/') ? 'resolved' : 'unknown') : null;
+      
+      if (status) {
+        statusFrequency.set(status, (statusFrequency.get(status) || 0) + 1);
+      }
+      
+      // Extract tags
       const tags = content.match(/graph-tags content="([^"]+)"/);
       if (tags) {
         tags[1].split(',').map(tag => tag.trim()).forEach(tag => {
           tagFrequency.set(tag, (tagFrequency.get(tag) || 0) + 1);
         });
       }
+      
+      // Extract dates
+      const dateMatches = doc.path.match(/\d{4}-\d{2}-\d{2}/g) || [];
+      dateMatches.forEach(date => {
+        dateFrequency.set(date, (dateFrequency.get(date) || 0) + 1);
+      });
     });
+
+    // Create status nodes
+    const statusNodes: Node[] = Array.from(statusFrequency.entries()).map(([status, count]) => ({
+      id: `status:${status}`,
+      title: status.toUpperCase(),
+      path: '',
+      type: 'status',
+      tagCount: count
+    }));
 
     // Create tag nodes
     const tagNodes: Node[] = Array.from(tagFrequency.entries()).map(([tag, count]) => ({
@@ -117,6 +147,15 @@ export const KnowledgeGraph = () => {
       tagCount: count
     }));
 
+    // Create date nodes
+    const dateNodes: Node[] = Array.from(dateFrequency.entries()).map(([date, count]) => ({
+      id: `date:${date}`,
+      title: date,
+      path: '',
+      type: 'tag', // Using tag type for similar visual treatment
+      tagCount: count
+    }));
+
     // Create document nodes with type
     const documentNodes: Node[] = data.documents.map(doc => ({
       ...doc,
@@ -124,20 +163,54 @@ export const KnowledgeGraph = () => {
     }));
 
     // Combine all nodes
-    const nodes = [...documentNodes, ...tagNodes];
+    const nodes = [...documentNodes, ...tagNodes, ...dateNodes, ...statusNodes];
 
-    // Create document-tag links
-    const tagLinks: Link[] = documentNodes.flatMap(doc => {
-      const content = doc.path.toLowerCase();
-      const tags = content.match(/graph-tags content="([^"]+)"/);
-      if (!tags) return [];
+    // Create document-tag and document-date links
+    const metadataLinks: Link[] = documentNodes.flatMap(doc => {
+      const links: Link[] = [];
       
-      return tags[1].split(',').map(tag => tag.trim()).map(tag => ({
-        source: doc.id,
-        target: `tag:${tag}`,
-        confidence: 0.5,
-        type: 'document-tag'
-      }));
+      // Add tag links
+      const tags = doc.path.toLowerCase().match(/graph-tags content="([^"]+)"/);
+      if (tags) {
+        tags[1].split(',').map(tag => tag.trim()).forEach(tag => {
+          links.push({
+            source: doc.id,
+            target: `tag:${tag}`,
+            confidence: 0.5,
+            type: 'document-tag'
+          });
+        });
+      }
+      
+      // Add date links
+      const dateMatches = doc.path.match(/\d{4}-\d{2}-\d{2}/g) || [];
+      dateMatches.forEach(date => {
+        links.push({
+          source: doc.id,
+          target: `date:${date}`,
+          confidence: 0.5,
+          type: 'document-tag'
+        });
+      });
+      
+      return links;
+    });
+
+    // Create document-status links
+    const statusLinks: Link[] = documentNodes.flatMap(doc => {
+      const links: Link[] = [];
+      if (doc.path.includes('/tasks/')) {
+        const status = doc.path.includes('/active/') ? 'active' :
+                      doc.path.includes('/pending/') ? 'pending' :
+                      doc.path.includes('/resolved/') ? 'resolved' : 'unknown';
+        links.push({
+          source: doc.id,
+          target: `status:${status}`,
+          confidence: 0.8,
+          type: 'document-tag'
+        });
+      }
+      return links;
     });
 
     // Combine all links
@@ -145,7 +218,18 @@ export const KnowledgeGraph = () => {
       ...link,
       type: 'document-document'
     }));
-    const links = [...documentLinks, ...tagLinks];
+    const links = [...documentLinks, ...metadataLinks, ...statusLinks];
+
+    // Calculate node connections for depth effect
+    const nodeConnections = new Map<string, number>();
+    links.forEach(link => {
+      const source = link.source as (Node | string);
+      const target = link.target as (Node | string);
+      const sourceId = typeof source === 'object' ? source.id : source;
+      const targetId = typeof target === 'object' ? target.id : target;
+      nodeConnections.set(sourceId, (nodeConnections.get(sourceId) || 0) + 1);
+      nodeConnections.set(targetId, (nodeConnections.get(targetId) || 0) + 1);
+    });
 
     // Create container for zoom first
     const container = svg.append('g');
@@ -219,28 +303,49 @@ export const KnowledgeGraph = () => {
     // Create force simulation with adjusted stability parameters
     const simulation = d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
-        .distance((d: Link) => d.type === 'document-tag' ? 400 : 600)
+        .distance((d: Link) => {
+          const source = d.source as (Node | string);
+          const target = d.target as (Node | string);
+          const sourceId = typeof source === 'object' ? source.id : source;
+          const targetId = typeof target === 'object' ? target.id : target;
+          const sourceConn = nodeConnections.get(sourceId) || 0;
+          const targetConn = nodeConnections.get(targetId) || 0;
+          return (d.type === 'document-tag' ? 400 : 600) * (1 + 1 / Math.max(sourceConn, targetConn));
+        })
         .strength(0.5))
       .force('charge', d3.forceManyBody<Node>()
-        .strength((d: Node) => d.type === 'tag' ? -2000 : -3000)
+        .strength((d: Node) => {
+          const connections = nodeConnections.get(d.id) || 0;
+          return d.type === 'tag' ? -2000 : -3000 * (1 + connections / 5);
+        })
         .distanceMax(1000)
         .theta(0.9))
       .force('center', d3.forceCenter<Node>(width / 2, height / 2).strength(0.05))
       .force('collision', d3.forceCollide<Node>()
-        .radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 30 : 80)
+        .radius((d: Node) => {
+          const connections = nodeConnections.get(d.id) || 0;
+          const baseRadius = d.type === 'tag' ? (d.tagCount || 1) * 30 : 80;
+          return baseRadius * (1 + connections / 10);
+        })
         .strength(1)
         .iterations(4))
       .force('x', d3.forceX<Node>().strength(0.01).x(d => {
-        if (d.type === 'tag') return width * 0.3;
-        if (d.path.includes('/tasks/')) return width * 0.6;
-        if (d.path.includes('/memories/')) return width * 0.7;
-        return width * 0.5;
+        const connections = nodeConnections.get(d.id) || 0;
+        // More connected nodes tend towards center horizontally
+        const offset = 1 - Math.min(connections / 5, 1);
+        if (d.type === 'tag') return width * (0.3 + offset * 0.2);
+        if (d.path.includes('/tasks/')) return width * (0.6 + offset * 0.2);
+        if (d.path.includes('/memories/')) return width * (0.7 + offset * 0.2);
+        return width * (0.5 + offset * 0.2);
       }))
       .force('y', d3.forceY<Node>().strength(0.01).y(d => {
-        if (d.type === 'tag') return height * 0.5;
-        if (d.path.includes('/tasks/')) return height * 0.3;
-        if (d.path.includes('/memories/')) return height * 0.7;
-        return height * 0.5;
+        const connections = nodeConnections.get(d.id) || 0;
+        // More connected nodes tend towards center vertically
+        const offset = 1 - Math.min(connections / 5, 1);
+        if (d.type === 'tag') return height * (0.5 + offset * 0.2);
+        if (d.path.includes('/tasks/')) return height * (0.3 + offset * 0.2);
+        if (d.path.includes('/memories/')) return height * (0.7 + offset * 0.2);
+        return height * (0.5 + offset * 0.2);
       }));
 
     // Run simulation once to get initial layout
@@ -280,51 +385,110 @@ export const KnowledgeGraph = () => {
       event.preventDefault();
     });
 
-    // Add different shapes for documents and tags
+    // Modify node appearance based on connections
     nodeGroup.each(function(d) {
       const node = d3.select(this);
-      if (d.type === 'document') {
-        // Document nodes get circles
+      const data = d as Node;
+      const connections = nodeConnections.get(data.id) || 0;
+      const depth = Math.min(connections / 5, 1);
+
+      if (data.type === 'document') {
+        // Document nodes get circles with depth-based styling
         node.append('circle')
-          .attr('r', 15)
-          .attr('fill', (d: any) => {
-            const path = d.path.toLowerCase();
-            if (path.includes('/tasks/')) return '#404040';
-            if (path.includes('/memories/')) return '#666666';
-            if (path.includes('/documentation/')) return '#808080';
-            return '#999999';
+          .attr('r', d => {
+            const data = d as Node;
+            const connections = nodeConnections.get(data.id) || 0;
+            return 15 * (1 + connections * 0.15);
+          })
+          .attr('fill', d => {
+            const data = d as Node;
+            const path = data.path.toLowerCase();
+            let color = '#b3b3b3'; // Lighter base gray
+            if (path.includes('/tasks/')) color = '#808080'; // Lighter task gray
+            if (path.includes('/memories/')) color = '#999999'; // Lighter memory gray
+            if (path.includes('/documentation/')) color = '#a6a6a6'; // Lighter documentation gray
+            const brightnessAdjustment = 0.5 * (1 - Math.min(connections / 10, 1));
+            return d3.color(color)?.brighter(brightnessAdjustment).toString() || color;
           })
           .attr('stroke', '#ffffff')
-          .attr('stroke-width', 1)
+          .attr('stroke-width', 1 + depth)
           .style('filter', 'url(#glow)')
+          .style('opacity', 0.7 + (0.3 * depth))
           .style('cursor', 'pointer')
-          .on('click', (event: any, d: any) => {
-            window.open(`/api/document/${d.path}`, '_blank');
+          .on('click', function(event, d) {
+            const data = d as Node;
+            if (data.type === 'document') {
+              window.open(`/api/document/${data.path}`, '_blank');
+            }
           });
+      } else if (data.type === 'status') {
+        // Status nodes get squares
+        const size = (data.tagCount || 1) * 15;
+        node.append('rect')
+          .attr('x', -size/2)
+          .attr('y', -size/2)
+          .attr('width', size)
+          .attr('height', size)
+          .attr('fill', d => {
+            const data = d as Node;
+            const status = data.title.toLowerCase();
+            if (status === 'active') return '#4CAF50';
+            if (status === 'pending') return '#FFC107';
+            if (status === 'resolved') return '#2196F3';
+            return '#9E9E9E';
+          })
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 1 + depth)
+          .style('filter', 'url(#glow)')
+          .style('opacity', 0.7 + (0.3 * depth));
       } else {
-        // Tag nodes get hexagons
-        const size = (d.tagCount || 1) * 10;
-        const hexagonPath = d3.line()([[0, -size], [size * 0.866, -size/2], 
-          [size * 0.866, size/2], [0, size], [-size * 0.866, size/2], 
-          [-size * 0.866, -size/2], [0, -size]]);
+        // Check if it's a date node
+        const isDateNode = d.id.startsWith('date:');
+        const baseSize = isDateNode ? 8 : 10;
+        const size = (d.tagCount || 1) * baseSize * (1 + connections * 0.1);
         
-        node.append('path')
-          .attr('d', hexagonPath)
-          .attr('fill', '#ffffff')
-          .attr('stroke', '#000000')
-          .attr('stroke-width', 1)
-          .style('filter', 'url(#glow)');
+        if (isDateNode) {
+          // Date nodes get diamonds
+          const diamondPath = d3.line()([[0, -size], [size, 0], [0, size], [-size, 0], [0, -size]]);
+          node.append('path')
+            .attr('d', diamondPath)
+            .attr('fill', '#e5e7eb') // Light gray fill
+            .attr('stroke', '#4b5563') // Darker gray stroke
+            .attr('stroke-width', 1 + depth)
+            .style('filter', 'url(#glow)')
+            .style('opacity', 0.7 + (0.3 * depth));
+        } else {
+          // Tag nodes get hexagons
+          const hexagonPath = d3.line()([[0, -size], [size * 0.866, -size/2], 
+            [size * 0.866, size/2], [0, size], [-size * 0.866, size/2], 
+            [-size * 0.866, -size/2], [0, -size]]);
+          
+          node.append('path')
+            .attr('d', hexagonPath)
+            .attr('fill', '#ffffff')
+            .attr('stroke', '#000000')
+            .attr('stroke-width', 1 + depth)
+            .style('filter', 'url(#glow)')
+            .style('opacity', 0.7 + (0.3 * depth));
+        }
       }
     });
 
-    // Add glowing effect filter
+    // Enhance glow effect based on connections
     const defs = svg.append('defs');
     const filter = defs.append('filter')
       .attr('id', 'glow');
     
     filter.append('feGaussianBlur')
-      .attr('stdDeviation', '2')
+      .attr('stdDeviation', '3')
       .attr('result', 'coloredBlur');
+    
+    filter.append('feComposite')
+      .attr('in', 'coloredBlur')
+      .attr('in2', 'SourceGraphic')
+      .attr('operator', 'arithmetic')
+      .attr('k2', '1')
+      .attr('k3', '0.5');
     
     const feMerge = filter.append('feMerge');
     feMerge.append('feMergeNode')
@@ -334,16 +498,28 @@ export const KnowledgeGraph = () => {
 
     // Add labels with different styles for documents and tags
     nodeGroup.append('text')
-      .text(d => d.title)
+      .text((d: Node) => d.title)
       .attr('text-anchor', 'middle')
-      .attr('dy', d => d.type === 'tag' ? '0.35em' : '30')
-      .attr('fill', d => d.type === 'tag' ? '#000000' : '#333333')
-      .style('font-size', d => d.type === 'tag' ? `${Math.min(14, 10 + (d.tagCount || 1))}px` : '11px')
+      .attr('dy', (d: Node) => {
+        if (d.type === 'document') return '30';
+        return d.id.startsWith('date:') ? '0.35em' : '0.35em';
+      })
+      .attr('fill', (d: Node) => {
+        if (d.type === 'document') return '#333333';
+        return d.id.startsWith('date:') ? '#4b5563' : '#000000';
+      })
+      .style('font-size', (d: Node) => {
+        if (d.type === 'document') return '11px';
+        return d.id.startsWith('date:') ? '10px' : `${Math.min(14, 10 + (d.tagCount || 1))}px`;
+      })
       .style('font-family', 'monospace')
-      .style('font-weight', d => d.type === 'tag' ? 'bold' : 'normal')
+      .style('font-weight', (d: Node) => {
+        if (d.type === 'document') return 'normal';
+        return d.id.startsWith('date:') ? 'normal' : 'bold';
+      })
       .style('opacity', 0.7)
-      .style('cursor', d => d.type === 'document' ? 'pointer' : 'default')
-      .on('click', (event: any, d: any) => {
+      .style('cursor', (d: Node) => d.type === 'document' ? 'pointer' : 'default')
+      .on('click', (event: MouseEvent, d: Node) => {
         if (d.type === 'document') {
           window.open(`/api/document/${d.path}`, '_blank');
         }
