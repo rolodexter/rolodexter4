@@ -18,8 +18,9 @@
  * - Session Log (2025-02-18): agents/memories/session-logs/2025/02/18.html
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
+import { useRouter } from 'next/router';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
@@ -100,11 +101,13 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T 
 }
 
 export const KnowledgeGraph: React.FC = () => {
+  const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const [data, setData] = useState<GraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const wheelTimeoutRef = useRef<NodeJS.Timeout>();
+  const isDragging = useRef(false);
   const [dimensions, setDimensions] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1000,
     height: typeof window !== 'undefined' ? window.innerHeight : 800
@@ -122,6 +125,67 @@ export const KnowledgeGraph: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Handle document opening
+  const handleDocumentOpen = useCallback((path: string) => {
+    console.log('Attempting to open document:', path);
+    
+    const documentPath = `/api/document/${encodeURIComponent(path.replace(/^\//, ''))}`;
+    console.log('Formatted path:', documentPath);
+
+    // Try multiple methods to open the document
+    const methods = [
+      // Method 1: Router push with window open
+      () => {
+        console.log('Trying method 1: Router push with window open');
+        router.push(documentPath).then(() => {
+          window.open(documentPath, '_blank', 'noopener,noreferrer');
+        });
+      },
+      // Method 2: Direct window open
+      () => {
+        console.log('Trying method 2: Direct window open');
+        const newWindow = window.open(documentPath, '_blank', 'noopener,noreferrer');
+        if (!newWindow) throw new Error('Popup blocked');
+      },
+      // Method 3: Create and click link
+      () => {
+        console.log('Trying method 3: Create and click link');
+        const link = document.createElement('a');
+        link.href = documentPath;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+      // Method 4: Fetch then open
+      async () => {
+        console.log('Trying method 4: Fetch then open');
+        const response = await fetch(documentPath);
+        if (!response.ok) throw new Error('Failed to fetch');
+        window.open(documentPath, '_blank', 'noopener,noreferrer');
+      }
+    ];
+
+    // Try each method in sequence until one works
+    const tryNextMethod = async (index = 0) => {
+      if (index >= methods.length) {
+        console.error('All methods failed');
+        alert('Could not open the document. Please try again or check your popup blocker.');
+        return;
+      }
+
+      try {
+        await Promise.resolve(methods[index]());
+      } catch (error) {
+        console.warn(`Method ${index + 1} failed:`, error);
+        tryNextMethod(index + 1);
+      }
+    };
+
+    tryNextMethod();
+  }, [router]);
 
   // Fetch data
   useEffect(() => {
@@ -310,23 +374,27 @@ export const KnowledgeGraph: React.FC = () => {
     // Create nodes with improved drag behavior
     const drag = d3.drag<SVGCircleElement, Node>()
       .on('start', (event, d) => {
+        isDragging.current = true;
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = (event.x - currentTransform.x) / currentTransform.k;
         d.fy = (event.y - currentTransform.y) / currentTransform.k;
         d3.select(event.sourceEvent.target).style('cursor', 'grabbing');
-        event.sourceEvent.stopPropagation(); // Stop event from bubbling
+        event.sourceEvent.stopPropagation();
       })
       .on('drag', (event, d) => {
         d.fx = (event.x - currentTransform.x) / currentTransform.k;
         d.fy = (event.y - currentTransform.y) / currentTransform.k;
-        event.sourceEvent.stopPropagation(); // Stop event from bubbling
+        event.sourceEvent.stopPropagation();
       })
       .on('end', (event, d) => {
+        setTimeout(() => {
+          isDragging.current = false;
+        }, 0);
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
-        d3.select(event.sourceEvent.target).style('cursor', 'pointer'); // Change cursor back to pointer
-        event.sourceEvent.stopPropagation(); // Stop event from bubbling
+        d3.select(event.sourceEvent.target).style('cursor', 'pointer');
+        event.sourceEvent.stopPropagation();
       });
 
     // Create the link elements
@@ -339,52 +407,25 @@ export const KnowledgeGraph: React.FC = () => {
       .attr('stroke-width', d => Math.sqrt(d.confidence || 1) * 0.5);
 
     // Create the node elements with drag behavior
-    const node = nodesGroup
-      .selectAll('circle')
+    const nodeGroup = nodesGroup
+      .selectAll('g')
       .data(data.documents)
-      .join('circle')
+      .join('g');
+
+    // Add clickable links
+    nodeGroup
+      .append('a')
+      .attr('href', d => `/api/document/${encodeURIComponent(d.path.replace(/^\//, ''))}`)
+      .attr('target', '_blank')
+      .attr('rel', 'noopener noreferrer')
+      .append('circle')
       .attr('r', d => getNodeSize(d.id))
       .attr('fill', d => getNodeColor(d.id))
       .style('cursor', 'pointer')
       .style('stroke', '#fff')
       .style('stroke-width', '0.5px')
       .style('stroke-opacity', 0.3)
-      .call(drag as any)
-      .on('mousedown', (event: MouseEvent) => {
-        // Prevent mousedown from triggering other events
-        event.stopPropagation();
-      })
-      .on('click', function(event: MouseEvent, d: Node) {
-        // Prevent click from triggering if we're dragging
-        if (event.defaultPrevented) return;
-        
-        // Stop event propagation
-        event.preventDefault();
-        event.stopPropagation();
-        
-        // Log node data for debugging
-        console.log('Node clicked:', d);
-        console.log('Node path:', d.path);
-        
-        try {
-          // Create an anchor element
-          const link = document.createElement('a');
-          link.href = `/api/document/${encodeURIComponent(d.path.replace(/^\//, ''))}`;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          
-          // Log the URL for debugging
-          console.log('Opening URL:', link.href);
-          
-          // Programmatically click the link
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } catch (error) {
-          console.error('Error opening document:', error);
-          alert('Could not open the document. Please try again.');
-        }
-      });
+      .call(drag as any);
 
     // Add labels with improved styling
     const labels = labelsGroup
@@ -452,9 +493,8 @@ export const KnowledgeGraph: React.FC = () => {
         .attr('x2', d => (typeof d.target === 'object' ? d.target.x || 0 : 0))
         .attr('y2', d => (typeof d.target === 'object' ? d.target.y || 0 : 0));
 
-      node
-        .attr('cx', d => d.x || 0)
-        .attr('cy', d => d.y || 0);
+      nodeGroup
+        .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
 
       labels
         .attr('transform', d => {
@@ -470,7 +510,7 @@ export const KnowledgeGraph: React.FC = () => {
     return () => {
       simulation.stop();
     };
-  }, [data, dimensions]);
+  }, [data, dimensions, handleDocumentOpen]);
 
   if (error) {
     return (
