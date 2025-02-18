@@ -665,9 +665,7 @@ export const KnowledgeGraph: React.FC = () => {
       .attr('r', d => getNodeSize(d))
       .attr('fill', d => getNodeColor(d))
       .style('cursor', 'pointer')
-      .style('stroke', d => d.type === 'mission' ? '#fff' : '#fff')
-      .style('stroke-width', d => d.type === 'mission' ? '2px' : '0.5px')
-      .style('stroke-opacity', d => d.type === 'mission' ? 0.8 : 0.3)
+      .style('stroke', 'none')
       .style('pointer-events', 'none')
       .style('transition', 'all 0.3s ease');
 
@@ -709,9 +707,7 @@ export const KnowledgeGraph: React.FC = () => {
           .duration(300)
           .attr('r', function(d: any) { return getNodeSize(d) * 1.3; })
           .style('filter', 'url(#glow)')
-          .style('stroke', '#fff')  // White highlight for consistency
-          .style('stroke-width', d.type === 'mission' ? '3px' : '2px')
-          .style('stroke-opacity', 0.8);
+          .style('stroke', 'none');
 
         // Highlight connected nodes and links
         const nodeId = d.id;
@@ -774,9 +770,7 @@ export const KnowledgeGraph: React.FC = () => {
           .duration(300)
           .attr('r', function(d: any) { return getNodeSize(d); })
           .style('filter', null)
-          .style('stroke', '#fff')
-          .style('stroke-width', '0.5px')
-          .style('stroke-opacity', 0.3);
+          .style('stroke', 'none');
 
         // Reset all links
         link.transition()
