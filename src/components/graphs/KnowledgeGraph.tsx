@@ -15,6 +15,8 @@ interface Node extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   path: string;
+  type: 'document' | 'tag';
+  tagCount?: number;
   x?: number;
   y?: number;
 }
@@ -23,6 +25,7 @@ interface Link {
   source: string;
   target: string;
   confidence: number;
+  type: 'document-document' | 'document-tag';
 }
 
 interface GraphData {
@@ -121,23 +124,66 @@ export const KnowledgeGraph = () => {
     // Clear previous content
     svg.selectAll('*').remove();
 
-    // Create nodes array from documents
-    const nodes = data.documents;
+    // Process tags from documents
+    const tagFrequency = new Map<string, number>();
+    data.documents.forEach(doc => {
+      const content = doc.path.toLowerCase();
+      const tags = content.match(/graph-tags content="([^"]+)"/);
+      if (tags) {
+        tags[1].split(',').map(tag => tag.trim()).forEach(tag => {
+          tagFrequency.set(tag, (tagFrequency.get(tag) || 0) + 1);
+        });
+      }
+    });
 
-    // Create links array from all reference types
-    const links = Object.values(data.references).flat();
+    // Create tag nodes
+    const tagNodes: Node[] = Array.from(tagFrequency.entries()).map(([tag, count]) => ({
+      id: `tag:${tag}`,
+      title: tag,
+      path: '',
+      type: 'tag',
+      tagCount: count
+    }));
+
+    // Create document nodes with type
+    const documentNodes: Node[] = data.documents.map(doc => ({
+      ...doc,
+      type: 'document'
+    }));
+
+    // Combine all nodes
+    const nodes = [...documentNodes, ...tagNodes];
+
+    // Create document-tag links
+    const tagLinks: Link[] = documentNodes.flatMap(doc => {
+      const content = doc.path.toLowerCase();
+      const tags = content.match(/graph-tags content="([^"]+)"/);
+      if (!tags) return [];
+      
+      return tags[1].split(',').map(tag => tag.trim()).map(tag => ({
+        source: doc.id,
+        target: `tag:${tag}`,
+        confidence: 0.5,
+        type: 'document-tag'
+      }));
+    });
+
+    // Combine all links
+    const documentLinks: Link[] = Object.values(data.references).flat().map(link => ({
+      ...link,
+      type: 'document-document'
+    }));
+    const links = [...documentLinks, ...tagLinks];
 
     // Create container for zoom first
     const container = svg.append('g');
 
-    // Create force simulation with adjusted parameters for full screen
-    const simulation = d3.forceSimulation(nodes as any)
-      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(250))
-      .force('charge', d3.forceManyBody().strength(-2000))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(80))
-      .force('x', d3.forceX(width / 2).strength(0.02))
-      .force('y', d3.forceY(height / 2).strength(0.02));
+    // Create force simulation with adjusted parameters
+    const simulation = d3.forceSimulation<Node>(nodes)
+      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id).distance((d: Link) => d.type === 'document-tag' ? 150 : 250))
+      .force('charge', d3.forceManyBody<Node>().strength((d: Node) => d.type === 'tag' ? -1000 : -2000))
+      .force('center', d3.forceCenter<Node>(width / 2, height / 2))
+      .force('collision', d3.forceCollide<Node>().radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 10 : 30));
 
     // Set up zoom behavior
     const zoom = d3.zoom()
@@ -153,15 +199,15 @@ export const KnowledgeGraph = () => {
         .scale(0.5)
         .translate(-width / 2, -height / 2));
 
-    // Create SVG elements
+    // Create SVG elements for links with different styles
     const link = container.append('g')
       .selectAll('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#666666')
-      .attr('stroke-width', (d: any) => d.confidence * 1)
+      .attr('stroke', d => d.type === 'document-tag' ? '#999999' : '#666666')
+      .attr('stroke-width', d => d.type === 'document-tag' ? 0.5 : d.confidence)
       .attr('stroke-opacity', 0.3)
-      .style('stroke-dasharray', '5,5')
+      .style('stroke-dasharray', d => d.type === 'document-tag' ? '2,2' : '5,5')
       .style('animation', 'dash 20s linear infinite');
 
     // Add arrow markers for links
@@ -179,7 +225,7 @@ export const KnowledgeGraph = () => {
       .attr('fill', '#666666')
       .attr('d', 'M0,-5L10,0L0,5');
 
-    // Create node groups with enhanced transitions
+    // Create node groups
     const nodeGroup = container.append('g')
       .selectAll('g')
       .data(nodes)
@@ -215,79 +261,61 @@ export const KnowledgeGraph = () => {
     feMerge.append('feMergeNode')
       .attr('in', 'SourceGraphic');
 
-    // Add clickable node circles with enhanced styling
-    const nodeCircles = nodeGroup.append('a')
-      .attr('href', (d: any) => `/api/document/${d.path}`)
-      .attr('target', '_blank')
-      .attr('rel', 'noopener noreferrer')
-      .append('circle')
-      .attr('r', 15)
-      .attr('fill', (d: any) => {
-        const path = d.path.toLowerCase();
-        if (path.includes('/tasks/')) return '#404040';
-        if (path.includes('/memories/')) return '#666666';
-        if (path.includes('/documentation/')) return '#808080';
-        return '#999999';
-      })
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', 1)
-      .style('cursor', 'pointer')
-      .style('filter', 'url(#glow)')
-      .style('transition', 'all 0.3s ease')
-      .on('mouseover', function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .attr('r', 20)
-          .attr('stroke-width', 2);
-      })
-      .on('mouseout', function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(300)
+    // Add different shapes for documents and tags
+    nodeGroup.each(function(d) {
+      const node = d3.select(this);
+      if (d.type === 'document') {
+        // Document nodes get circles
+        node.append('circle')
           .attr('r', 15)
-          .attr('stroke-width', 1);
-      });
+          .attr('fill', (d: any) => {
+            const path = d.path.toLowerCase();
+            if (path.includes('/tasks/')) return '#404040';
+            if (path.includes('/memories/')) return '#666666';
+            if (path.includes('/documentation/')) return '#808080';
+            return '#999999';
+          })
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 1)
+          .style('filter', 'url(#glow)');
+      } else {
+        // Tag nodes get hexagons
+        const size = (d.tagCount || 1) * 10;
+        const hexagonPath = d3.line()([[0, -size], [size * 0.866, -size/2], 
+          [size * 0.866, size/2], [0, size], [-size * 0.866, size/2], 
+          [-size * 0.866, -size/2], [0, -size]]);
+        
+        node.append('path')
+          .attr('d', hexagonPath)
+          .attr('fill', '#ffffff')
+          .attr('stroke', '#000000')
+          .attr('stroke-width', 1)
+          .style('filter', 'url(#glow)');
+      }
+    });
 
-    // Add clickable labels with enhanced styling
-    const nodeLabels = nodeGroup.append('a')
-      .attr('href', (d: any) => `/api/document/${d.path}`)
-      .attr('target', '_blank')
-      .attr('rel', 'noopener noreferrer')
-      .append('text')
-      .text((d: any) => d.title)
+    // Add labels with different styles for documents and tags
+    nodeGroup.append('text')
+      .text(d => d.title)
       .attr('text-anchor', 'middle')
-      .attr('dy', 30)
-      .attr('fill', '#333333')
-      .style('font-size', '11px')
+      .attr('dy', d => d.type === 'tag' ? '0.35em' : '30')
+      .attr('fill', d => d.type === 'tag' ? '#000000' : '#333333')
+      .style('font-size', d => d.type === 'tag' ? `${Math.min(14, 10 + (d.tagCount || 1))}px` : '11px')
       .style('font-family', 'monospace')
-      .style('cursor', 'pointer')
-      .style('text-decoration', 'none')
-      .style('transition', 'all 0.3s ease')
-      .style('opacity', 0.7)
-      .on('mouseover', function() {
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .style('font-size', '13px')
-          .style('opacity', 1)
-          .attr('fill', '#000000');
-      })
-      .on('mouseout', function() {
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .style('font-size', '11px')
-          .style('opacity', 0.7)
-          .attr('fill', '#333333');
-      });
+      .style('font-weight', d => d.type === 'tag' ? 'bold' : 'normal')
+      .style('opacity', 0.7);
 
     // Add pulsing animation to nodes
-    nodeCircles.append('animate')
-      .attr('attributeName', 'r')
-      .attr('values', '15;17;15')
-      .attr('dur', '3s')
-      .attr('repeatCount', 'indefinite');
+    nodeGroup.each(function(d) {
+      const node = d3.select(this);
+      if (d.type === 'document') {
+        node.append('animate')
+          .attr('attributeName', 'r')
+          .attr('values', '15;17;15')
+          .attr('dur', '3s')
+          .attr('repeatCount', 'indefinite');
+      }
+    });
 
     // Add chat bubbles container
     const chatContainer = container.append('g')
