@@ -176,52 +176,6 @@ export const KnowledgeGraph = () => {
       .attr('fill', '#666666')
       .attr('d', 'M0,-5L10,0L0,5');
 
-    // Create force simulation with adjusted stability parameters
-    const simulation = d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
-        .distance((d: Link) => d.type === 'document-tag' ? 400 : 600)
-        .strength(0.5))
-      .force('charge', d3.forceManyBody<Node>()
-        .strength((d: Node) => d.type === 'tag' ? -2000 : -3000)
-        .distanceMax(1000)
-        .theta(0.9))
-      .force('center', d3.forceCenter<Node>(width / 2, height / 2).strength(0.05))
-      .force('collision', d3.forceCollide<Node>()
-        .radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 30 : 80)
-        .strength(1)
-        .iterations(4))
-      .force('x', d3.forceX<Node>().strength(0.01).x(d => {
-        if (d.type === 'tag') return width * 0.3;
-        if (d.path.includes('/tasks/')) return width * 0.6;
-        if (d.path.includes('/memories/')) return width * 0.7;
-        return width * 0.5;
-      }))
-      .force('y', d3.forceY<Node>().strength(0.01).y(d => {
-        if (d.type === 'tag') return height * 0.5;
-        if (d.path.includes('/tasks/')) return height * 0.3;
-        if (d.path.includes('/memories/')) return height * 0.7;
-        return height * 0.5;
-      }));
-
-    // Run simulation once to get initial layout
-    simulation.alpha(1);
-    for (let i = 0; i < 300; i++) simulation.tick();
-    simulation.stop();
-
-    // Store initial positions
-    const initialPositions = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
-
-    // Set up zoom behavior with adjusted scale
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 20])
-      .filter(event => {
-        if (event.type === 'mousedown' && event.button === 2) return false;
-        return true;
-      })
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-      });
-
     // Create node groups with modified drag behavior
     const nodeGroup = container.append('g')
       .selectAll('g')
@@ -262,8 +216,57 @@ export const KnowledgeGraph = () => {
         });
     };
 
-    // Initial position update
-    updatePositions();
+    // Create force simulation with adjusted stability parameters
+    const simulation = d3.forceSimulation<Node>(nodes)
+      .force('link', d3.forceLink<Node, Link>(links).id(d => d.id)
+        .distance((d: Link) => d.type === 'document-tag' ? 400 : 600)
+        .strength(0.5))
+      .force('charge', d3.forceManyBody<Node>()
+        .strength((d: Node) => d.type === 'tag' ? -2000 : -3000)
+        .distanceMax(1000)
+        .theta(0.9))
+      .force('center', d3.forceCenter<Node>(width / 2, height / 2).strength(0.05))
+      .force('collision', d3.forceCollide<Node>()
+        .radius((d: Node) => d.type === 'tag' ? (d.tagCount || 1) * 30 : 80)
+        .strength(1)
+        .iterations(4))
+      .force('x', d3.forceX<Node>().strength(0.01).x(d => {
+        if (d.type === 'tag') return width * 0.3;
+        if (d.path.includes('/tasks/')) return width * 0.6;
+        if (d.path.includes('/memories/')) return width * 0.7;
+        return width * 0.5;
+      }))
+      .force('y', d3.forceY<Node>().strength(0.01).y(d => {
+        if (d.type === 'tag') return height * 0.5;
+        if (d.path.includes('/tasks/')) return height * 0.3;
+        if (d.path.includes('/memories/')) return height * 0.7;
+        return height * 0.5;
+      }));
+
+    // Run simulation once to get initial layout
+    simulation.alpha(1);
+    for (let i = 0; i < 300; i++) simulation.tick();
+    
+    // Instead of stopping, reduce the simulation intensity and let it continue
+    simulation
+      .alpha(0.1) // Reduce the simulation intensity
+      .alphaDecay(0.001) // Make it decay very slowly
+      .velocityDecay(0.3) // Add some damping to prevent wild movements
+      .on('tick', updatePositions); // Update positions on each tick
+
+    // Store initial positions
+    const initialPositions = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
+
+    // Set up zoom behavior with adjusted scale
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 20])
+      .filter(event => {
+        if (event.type === 'mousedown' && event.button === 2) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+      });
 
     // Apply zoom behavior with smooth transition
     svg.call(zoom as any)
