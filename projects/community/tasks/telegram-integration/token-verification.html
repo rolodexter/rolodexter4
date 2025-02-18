@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rolodexter4 token verification system</title>
+    <meta name="task-category" content="security">
+    <meta name="priority" content="critical">
+    <meta name="status" content="planning">
+    <meta name="parent-task" content="telegram-integration/main.html">
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .log-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .log-entry {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--accent-green);
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        .success { color: var(--accent-green); }
+        .warning { color: #fbbf24; }
+        .critical { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="log-container">
+        <h1>rolodexter4 token verification system</h1>
+
+        <div class="log-entry">
+            <h2>Overview</h2>
+            <p>Implement a secure token verification system to gate access to rolodexter4's telegram bot features based on $rolodexter token holdings.</p>
+        </div>
+
+        <div class="log-entry">
+            <h2>System Components</h2>
+            <h3>Smart Contract Integration</h3>
+            <ul>
+                <li>Token contract interface</li>
+                <li>Balance checking functions</li>
+                <li>Event listeners for transfers</li>
+            </ul>
+
+            <h3>Wallet Connection</h3>
+            <ul>
+                <li>Web3 provider integration</li>
+                <li>Signature verification</li>
+                <li>Address validation</li>
+            </ul>
+
+            <h3>Database Schema</h3>
+            <ul>
+                <li>User records
+                    <ul>
+                        <li>Telegram ID</li>
+                        <li>Wallet address</li>
+                        <li>Verification timestamp</li>
+                        <li>Token balance</li>
+                        <li>Access level</li>
+                    </ul>
+                </li>
+                <li>Verification records
+                    <ul>
+                        <li>Transaction hashes</li>
+                        <li>Verification proofs</li>
+                        <li>Audit logs</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="log-entry">
+            <h2>Verification Flow</h2>
+            <ol>
+                <li>User initiates verification in Telegram</li>
+                <li>Bot provides unique verification code</li>
+                <li>User signs message with wallet</li>
+                <li>System verifies signature and checks token balance</li>
+                <li>Access granted if minimum balance met</li>
+                <li>Periodic re-verification of balances</li>
+            </ol>
+        </div>
+
+        <div class="log-entry">
+            <h2>Security Measures</h2>
+            <ul>
+                <li class="critical">Prevent signature replay attacks</li>
+                <li class="critical">Secure storage of verification data</li>
+                <li class="critical">Rate limiting on verification attempts</li>
+                <li class="warning">Timeout for verification process</li>
+                <li class="warning">Monitoring for suspicious patterns</li>
+            </ul>
+        </div>
+
+        <div class="log-entry">
+            <h2>Technical Implementation</h2>
+            <h3>Required APIs</h3>
+            <ul>
+                <li>Blockchain RPC endpoint</li>
+                <li>Token contract methods</li>
+                <li>Telegram Bot API</li>
+                <li>Database operations</li>
+            </ul>
+
+            <h3>Key Functions</h3>
+            <pre><code>// Verification endpoint
+POST /api/verify
+{
+    telegramId: string,
+    walletAddress: string,
+    signature: string,
+    timestamp: number,
+    nonce: string
+}
+
+// Balance check
+GET /api/balance/{walletAddress}
+
+// Access check
+GET /api/access/{telegramId}</code></pre>
+        </div>
+
+        <div class="log-entry">
+            <h2>Error Handling</h2>
+            <ul>
+                <li>Invalid signatures</li>
+                <li>Insufficient balance</li>
+                <li>Network issues</li>
+                <li>Timeout scenarios</li>
+                <li>Database failures</li>
+            </ul>
+        </div>
+
+        <footer style="margin-top: 2rem; opacity: 0.8;">
+            <p>Created: 2025-02-18</p>
+            <p>Status: Planning</p>
+        </footer>
+    </div>
+</body>
+</html> 
