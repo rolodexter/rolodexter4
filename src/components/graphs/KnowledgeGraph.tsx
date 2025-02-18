@@ -127,8 +127,8 @@ const TaskBar: React.FC = () => {
     >
       <div
         style={{
-          width: '56px',
-          height: '56px',
+          width: '60px',
+          height: '60px',
           borderRadius: '50%',
           overflow: 'hidden',
           opacity: 0.5,
@@ -138,7 +138,8 @@ const TaskBar: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'transform 0.3s ease, opacity 0.3s ease',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          marginTop: '-18px'  // This will make it protrude 30% (18px) above the 48px taskbar height
         }}
         onMouseEnter={(e) => {
           const target = e.currentTarget;
