@@ -26,16 +26,19 @@ interface Node extends d3.SimulationNodeDatum {
   id: string;
   title: string;
   path: string;
-  type: 'document' | 'tag' | 'status';
+  type: 'document' | 'tag' | 'status' | 'mission';
   x?: number;
   y?: number;
+  category?: string;
+  priority?: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
   source: string | Node;
   target: string | Node;
   confidence: number;
-  type: 'document-document' | 'document-tag';
+  type: 'document-document' | 'document-tag' | 'mission-mission' | 'mission-document';
+  relationship?: string;
 }
 
 interface GraphData {
@@ -198,7 +201,77 @@ export const KnowledgeGraph: React.FC = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const jsonData = await response.json();
-        setData(jsonData);
+
+        // Add mission nodes and their relationships
+        const missionNodes: Node[] = [
+          {
+            id: 'mission-1m',
+            title: 'Mission: Grow to 1 Million Humans',
+            path: '/missions/growth',
+            type: 'mission',
+            category: 'growth',
+            priority: 1
+          },
+          {
+            id: 'mission-1k',
+            title: 'Mission: Grow to 1,000 Autonomous Agents',
+            path: '/missions/agents',
+            type: 'mission',
+            category: 'growth',
+            priority: 2
+          },
+          {
+            id: 'mission-transparency',
+            title: 'Mission: Full Transparency',
+            path: '/missions/transparency',
+            type: 'mission',
+            category: 'ethics',
+            priority: 2
+          }
+        ];
+
+        // Add mission relationships
+        const missionLinks: Link[] = [
+          {
+            source: 'mission-1m',
+            target: 'mission-1k',
+            confidence: 1,
+            type: 'mission-mission',
+            relationship: 'enables'
+          },
+          {
+            source: 'mission-1k',
+            target: 'mission-transparency',
+            confidence: 1,
+            type: 'mission-mission',
+            relationship: 'requires'
+          }
+        ];
+
+        // Connect missions to relevant documents
+        const documentLinks = jsonData.documents
+          .filter((doc: Node) => doc.path.includes('mission') || doc.path.includes('growth') || doc.path.includes('transparency'))
+          .map((doc: Node) => ({
+            source: missionNodes.find(m => 
+              (m.category === 'growth' && doc.path.includes('growth')) ||
+              (m.category === 'ethics' && doc.path.includes('transparency'))
+            )?.id || missionNodes[0].id,
+            target: doc.id,
+            confidence: 0.8,
+            type: 'mission-document',
+            relationship: 'implements'
+          }));
+
+        // Combine all nodes and links
+        const enhancedData = {
+          documents: [...jsonData.documents, ...missionNodes],
+          references: {
+            ...jsonData.references,
+            missions: [...missionLinks, ...documentLinks]
+          }
+        };
+
+        setData(enhancedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch graph data');
         console.error('Error fetching graph data:', err);
@@ -232,46 +305,56 @@ export const KnowledgeGraph: React.FC = () => {
       });
 
     // Node styling functions
-    const getNodeSize = (nodeId: string) => {
-      const connectionCount = connections.get(nodeId) || 0;
-      const baseSize = 8;  // Reduced from 15
+    const getNodeSize = (node: Node) => {
+      if (node.type === 'mission') {
+        return 12;  // Larger size for mission nodes
+      }
+
+      const connectionCount = connections.get(node.id) || 0;
+      const baseSize = 8;
       
-      // Find the 80th percentile threshold
       const allConnections = Array.from(connections.values());
       const sortedConnections = [...allConnections].sort((a, b) => a - b);
       const threshold = sortedConnections[Math.floor(sortedConnections.length * 0.8)];
       
-      // Apply more moderate scaling for highly connected nodes
       if (connectionCount > threshold) {
-        const scaleFactor = 1 + Math.pow((connectionCount - threshold) / threshold, 0.6); // Reduced power from 1.5 to 0.6
-        return baseSize * (1.2 + scaleFactor * 0.3); // Reduced multipliers
+        const scaleFactor = 1 + Math.pow((connectionCount - threshold) / threshold, 0.6);
+        return baseSize * (1.2 + scaleFactor * 0.3);
       }
       
-      // Linear scaling for less connected nodes
-      return baseSize * (1 + (connectionCount / threshold) * 0.2); // Reduced from 0.5 to 0.2
+      return baseSize * (1 + (connectionCount / threshold) * 0.2);
     };
 
-    const getNodeColor = (nodeId: string) => {
-      const connectionCount = connections.get(nodeId) || 0;
-      
-      // Find the 80th percentile threshold
+    const getNodeColor = (node: Node) => {
+      if (node.type === 'mission') {
+        // Use darker grays for mission nodes based on priority
+        switch (node.priority) {
+          case 1:
+            return '#1a1a1a';  // Darkest gray for highest priority
+          case 2:
+            return '#404040';  // Dark gray for medium priority
+          default:
+            return '#666666';  // Medium gray for lower priority
+        }
+      }
+
+      // Original color logic for other nodes
+      const connectionCount = connections.get(node.id) || 0;
       const allConnections = Array.from(connections.values());
       const sortedConnections = [...allConnections].sort((a, b) => a - b);
       const threshold = sortedConnections[Math.floor(sortedConnections.length * 0.8)];
       
-      const baseValue = 220; // Light gray
+      const baseValue = 220;
       let darkenAmount;
       
       if (connectionCount > threshold) {
-        // Exponential darkening for highly connected nodes
         const ratio = (connectionCount - threshold) / threshold;
         darkenAmount = Math.min(160, 80 + Math.pow(ratio, 1.5) * 80);
       } else {
-        // Linear darkening for less connected nodes
         darkenAmount = Math.min(80, (connectionCount / threshold) * 80);
       }
       
-      const intensity = Math.max(baseValue - darkenAmount, 60); // Allow darker grays down to 60
+      const intensity = Math.max(baseValue - darkenAmount, 60);
       return `rgb(${intensity}, ${intensity}, ${intensity})`;
     };
 
@@ -333,7 +416,7 @@ export const KnowledgeGraph: React.FC = () => {
         })
         .distanceMax(width * 0.5))
       .force('collision', d3.forceCollide<Node>()
-        .radius(d => getNodeSize(d.id) * 3)
+        .radius(d => getNodeSize(d) * 3)
         .strength(1))
       .force('center', d3.forceCenter(0, 0).strength(0.1))
       .velocityDecay(0.6)
@@ -374,37 +457,174 @@ export const KnowledgeGraph: React.FC = () => {
     // Create nodes with improved drag behavior
     const drag = d3.drag<SVGCircleElement, Node>()
       .on('start', (event, d) => {
-        isDragging.current = true;
         if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = (event.x - currentTransform.x) / currentTransform.k;
-        d.fy = (event.y - currentTransform.y) / currentTransform.k;
-        d3.select(event.sourceEvent.target).style('cursor', 'grabbing');
-        event.sourceEvent.stopPropagation();
+        d.fx = d.x;
+        d.fy = d.y;
+        isDragging.current = true;
       })
       .on('drag', (event, d) => {
         d.fx = (event.x - currentTransform.x) / currentTransform.k;
         d.fy = (event.y - currentTransform.y) / currentTransform.k;
-        event.sourceEvent.stopPropagation();
       })
       .on('end', (event, d) => {
-        setTimeout(() => {
-          isDragging.current = false;
-        }, 0);
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
-        d3.select(event.sourceEvent.target).style('cursor', 'pointer');
-        event.sourceEvent.stopPropagation();
+        // Reset dragging state immediately
+        isDragging.current = false;
       });
 
-    // Create the link elements
+    // Create the link elements with hover effects
     const link = linksGroup
-      .selectAll('line')
+      .selectAll<SVGLineElement, Link>('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.3)
-      .attr('stroke-width', d => Math.sqrt(d.confidence || 1) * 0.5);
+      .attr('class', 'relationship-line')
+      .attr('stroke', (d: Link) => {
+        if (d.type === 'mission-mission' || d.type === 'mission-document') {
+          return '#404040';  // Darker gray for mission links
+        }
+        return '#999';  // Original color for other links
+      })
+      .attr('stroke-opacity', (d: Link) => {
+        if (d.type === 'mission-mission') {
+          return 0.6;  // More visible for mission-to-mission links
+        }
+        return 0.3;  // Original opacity for other links
+      })
+      .attr('stroke-width', (d: Link) => {
+        if (d.type === 'mission-mission') {
+          return Math.sqrt(d.confidence || 1) * 1;  // Thicker for mission links
+        }
+        return Math.sqrt(d.confidence || 1) * 0.5;  // Original width for other links
+      })
+      .attr('stroke-dasharray', (d: Link) => {
+        if (d.type === 'mission-document') {
+          return '3,3';  // Dashed lines for mission-to-document connections
+        }
+        return null;  // Solid lines for other connections
+      })
+      .style('transition', 'all 0.3s ease')
+      .on('mouseover', function(event: MouseEvent, d: Link) {
+        const line = d3.select(this);
+        
+        // Enhance the hovered line
+        line.transition()
+          .duration(300)
+          .attr('stroke', '#666')  // Darker gray on hover
+          .attr('stroke-opacity', 0.8)
+          .attr('stroke-width', function(this: SVGLineElement) { 
+            const d = d3.select(this).datum() as Link;
+            return Math.sqrt(d.confidence || 1) * 2; 
+          });
+
+        // Highlight connected nodes
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        nodeGroup.each(function(n: Node) {
+          if (n.id === sourceId || n.id === targetId) {
+            const node = d3.select(this);
+            node.select('.node-circle')
+              .transition()
+              .duration(300)
+              .style('filter', 'url(#glow)')
+              .style('stroke', '#666')
+              .style('stroke-width', '2px')
+              .style('stroke-opacity', 0.8);
+
+            // Highlight connected node labels
+            labels.filter(label => label.id === n.id)
+              .transition()
+              .duration(300)
+              .style('opacity', 1)
+              .style('font-weight', 'bold');
+          }
+        });
+
+        // Show relationship tooltip if available
+        if (d.relationship) {
+          const [x, y] = [event.pageX, event.pageY];
+          const tooltip = d3.select('body')
+            .append('div')
+            .attr('class', 'relationship-tooltip')
+            .style('position', 'absolute')
+            .style('left', `${x + 10}px`)
+            .style('top', `${y - 10}px`)
+            .style('background-color', 'rgba(0, 0, 0, 0.8)')
+            .style('color', 'white')
+            .style('padding', '4px 8px')
+            .style('border-radius', '4px')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none')
+            .style('z-index', '1000')
+            .style('opacity', '0')
+            .text(d.relationship);
+
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', '1');
+        }
+      })
+      .on('mouseout', function(event: MouseEvent, d: Link) {
+        const line = d3.select(this);
+        
+        // Reset line appearance
+        line.transition()
+          .duration(300)
+          .attr('stroke', function(this: SVGLineElement) {
+            const d = d3.select(this).datum() as Link;
+            if (d.type === 'mission-mission' || d.type === 'mission-document') {
+              return '#404040';
+            }
+            return '#999';
+          })
+          .attr('stroke-opacity', function(this: SVGLineElement) {
+            const d = d3.select(this).datum() as Link;
+            if (d.type === 'mission-mission') {
+              return 0.6;
+            }
+            return 0.3;
+          })
+          .attr('stroke-width', function(this: SVGLineElement) {
+            const d = d3.select(this).datum() as Link;
+            if (d.type === 'mission-mission') {
+              return Math.sqrt(d.confidence || 1) * 1;
+            }
+            return Math.sqrt(d.confidence || 1) * 0.5;
+          });
+
+        // Reset connected nodes
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+
+        nodeGroup.each(function(n: Node) {
+          if (n.id === sourceId || n.id === targetId) {
+            const node = d3.select(this);
+            node.select('.node-circle')
+              .transition()
+              .duration(300)
+              .style('filter', null)
+              .style('stroke', '#fff')
+              .style('stroke-width', n.type === 'mission' ? '2px' : '0.5px')
+              .style('stroke-opacity', n.type === 'mission' ? 0.8 : 0.3);
+
+            // Reset connected node labels
+            labels.filter(label => label.id === n.id)
+              .transition()
+              .duration(300)
+              .style('opacity', 0.7)
+              .style('font-weight', 'normal');
+          }
+        });
+
+        // Remove relationship tooltip
+        d3.selectAll('.relationship-tooltip')
+          .transition()
+          .duration(200)
+          .style('opacity', '0')
+          .remove();
+      });
 
     // Create the node elements with drag behavior
     const nodeGroup = nodesGroup
@@ -412,20 +632,170 @@ export const KnowledgeGraph: React.FC = () => {
       .data(data.documents)
       .join('g');
 
-    // Add clickable links
+    // Add click handlers directly to the node group
+    nodeGroup.on('click', (event: MouseEvent, d: Node) => {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Calculate total movement during the click
+      const dx = event.movementX;
+      const dy = event.movementY;
+      const totalMovement = Math.sqrt(dx * dx + dy * dy);
+      
+      // Only open if there was minimal movement (not a drag)
+      if (totalMovement < 5) {
+        const path = d.path;
+        const url = `/api/document/${encodeURIComponent(path.replace(/^\//, ''))}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    });
+
+    // Add invisible larger circle for better click target
     nodeGroup
-      .append('a')
-      .attr('href', d => `/api/document/${encodeURIComponent(d.path.replace(/^\//, ''))}`)
-      .attr('target', '_blank')
-      .attr('rel', 'noopener noreferrer')
       .append('circle')
-      .attr('r', d => getNodeSize(d.id))
-      .attr('fill', d => getNodeColor(d.id))
+      .attr('r', d => getNodeSize(d) * 1.5)
+      .attr('fill', 'transparent')
       .style('cursor', 'pointer')
-      .style('stroke', '#fff')
-      .style('stroke-width', '0.5px')
-      .style('stroke-opacity', 0.3)
       .call(drag as any);
+
+    // Add visible circle for nodes with hover effects
+    nodeGroup
+      .append('circle')
+      .attr('class', 'node-circle')
+      .attr('r', d => getNodeSize(d))
+      .attr('fill', d => getNodeColor(d))
+      .style('cursor', 'pointer')
+      .style('stroke', d => d.type === 'mission' ? '#fff' : '#fff')
+      .style('stroke-width', d => d.type === 'mission' ? '2px' : '0.5px')
+      .style('stroke-opacity', d => d.type === 'mission' ? 0.8 : 0.3)
+      .style('pointer-events', 'none')
+      .style('transition', 'all 0.3s ease');
+
+    // Add hover glow filter
+    const defs = svg.append('defs');
+    
+    // Create glow effect
+    const glowFilter = defs.append('filter')
+      .attr('id', 'glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%');
+
+    glowFilter.append('feGaussianBlur')
+      .attr('stdDeviation', '2')
+      .attr('result', 'coloredBlur');
+
+    const glowMerge = glowFilter.append('feMerge');
+    glowMerge.append('feMergeNode')
+      .attr('in', 'coloredBlur');
+    glowMerge.append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
+    // Add hover effects to node groups
+    nodeGroup
+      .on('mouseover', function(event: MouseEvent, d: Node) {
+        const group = d3.select(this);
+        
+        // Scale up the invisible click target
+        group.select('circle:first-child')
+          .transition()
+          .duration(300)
+          .attr('r', function(d: any) { return getNodeSize(d) * 2; });
+
+        // Enhance the visible node
+        group.select('.node-circle')
+          .transition()
+          .duration(300)
+          .attr('r', function(d: any) { return getNodeSize(d) * 1.3; })
+          .style('filter', 'url(#glow)')
+          .style('stroke', '#fff')  // White highlight for consistency
+          .style('stroke-width', d.type === 'mission' ? '3px' : '2px')
+          .style('stroke-opacity', 0.8);
+
+        // Highlight connected nodes and links
+        const nodeId = d.id;
+        const connectedNodes = new Set();
+        
+        link.each(function(l: Link) {
+          const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+          const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+          
+          if (sourceId === nodeId || targetId === nodeId) {
+            connectedNodes.add(sourceId);
+            connectedNodes.add(targetId);
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .attr('stroke', '#4299e1')
+              .attr('stroke-opacity', 0.6)
+              .attr('stroke-width', function(d: any) { return Math.sqrt(d.confidence || 1) * 1.5; });
+          }
+        });
+
+        // Dim unconnected nodes
+        nodeGroup.each(function(n: Node) {
+          if (!connectedNodes.has(n.id) && n.id !== nodeId) {
+            d3.select(this).select('.node-circle')
+              .transition()
+              .duration(300)
+              .style('opacity', 0.3);
+          }
+        });
+
+        // Enhance connected node labels
+        labels.each(function(n: Node) {
+          if (connectedNodes.has(n.id) || n.id === nodeId) {
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .style('opacity', 1)
+              .style('font-weight', 'bold');
+          } else {
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .style('opacity', 0.3);
+          }
+        });
+      })
+      .on('mouseout', function(event: MouseEvent, d: Node) {
+        const group = d3.select(this);
+        
+        // Reset click target size
+        group.select('circle:first-child')
+          .transition()
+          .duration(300)
+          .attr('r', function(d: any) { return getNodeSize(d) * 1.5; });
+
+        // Reset node appearance
+        group.select('.node-circle')
+          .transition()
+          .duration(300)
+          .attr('r', function(d: any) { return getNodeSize(d); })
+          .style('filter', null)
+          .style('stroke', '#fff')
+          .style('stroke-width', '0.5px')
+          .style('stroke-opacity', 0.3);
+
+        // Reset all links
+        link.transition()
+          .duration(300)
+          .attr('stroke', '#999')
+          .attr('stroke-opacity', 0.3)
+          .attr('stroke-width', d => Math.sqrt(d.confidence || 1) * 0.5);
+
+        // Reset all nodes and labels
+        nodeGroup.selectAll('.node-circle')
+          .transition()
+          .duration(300)
+          .style('opacity', 1);
+
+        labels.transition()
+          .duration(300)
+          .style('opacity', 0.7)
+          .style('font-weight', 'normal');
+      });
 
     // Add labels with improved styling
     const labels = labelsGroup
@@ -500,13 +870,14 @@ export const KnowledgeGraph: React.FC = () => {
         .attr('transform', d => {
           const x = d.x || 0;
           const y = d.y || 0;
-          return `translate(${x}, ${y - getNodeSize(d.id) - 12})`;
+          return `translate(${x}, ${y - getNodeSize(d) - 12})`;
         });
     };
 
     // Update simulation tick function
     simulation.on('tick', updateVisuals);
 
+    // Cleanup function
     return () => {
       simulation.stop();
     };
