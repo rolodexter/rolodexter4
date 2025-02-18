@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="task-category" content="ui-enhancement">
+    <meta name="priority" content="high">
+    <meta name="status" content="planning">
+    <meta name="related-files" content="pages/search.tsx,src/components/graphs/KnowledgeGraph.tsx">
+    <title>Search Results TaskBar Integration</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--accent-green);
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <h1>🎯 Search Results TaskBar Integration</h1>
+
+        <div class="section">
+            <h2>Overview</h2>
+            <p>Integrate the TaskBar component into the search results page to maintain consistent UI and navigation across the application.</p>
+        </div>
+
+        <div class="section">
+            <h2>Requirements</h2>
+            <h3>1. Component Extraction</h3>
+            <ul>
+                <li>Extract TaskBar from KnowledgeGraph into standalone component</li>
+                <li>Make TaskBar styling and behavior configurable</li>
+                <li>Create shared types and interfaces</li>
+            </ul>
+
+            <h3>2. Search Results Integration</h3>
+            <ul>
+                <li>Add TaskBar to search results layout</li>
+                <li>Maintain search query state between pages</li>
+                <li>Implement proper z-index layering</li>
+                <li>Ensure responsive behavior</li>
+            </ul>
+
+            <h3>3. Navigation Features</h3>
+            <ul>
+                <li>Add back button to return to knowledge graph</li>
+                <li>Implement search history navigation</li>
+                <li>Add quick filters access in TaskBar</li>
+                <li>Include view toggle options</li>
+            </ul>
+
+            <h3>4. Visual Consistency</h3>
+            <ul>
+                <li>Match styling with knowledge graph TaskBar</li>
+                <li>Implement smooth transitions</li>
+                <li>Add loading states and animations</li>
+                <li>Ensure proper contrast and accessibility</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Implementation Steps</h2>
+            <ol>
+                <li>Create new <code>components/common/TaskBar</code> component</li>
+                <li>Move existing TaskBar logic and styles</li>
+                <li>Add configuration options for different contexts</li>
+                <li>Integrate with search results page</li>
+                <li>Add navigation and state management</li>
+                <li>Implement visual enhancements</li>
+                <li>Add tests and documentation</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>Technical Considerations</h2>
+            <ul>
+                <li>State management between pages</li>
+                <li>Route handling and history</li>
+                <li>Component reusability</li>
+                <li>Performance optimization</li>
+                <li>Mobile responsiveness</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Related Tasks</h2>
+            <ul>
+                <li><a href="search-results-enhancement.html">Search Results Enhancement</a></li>
+                <li><a href="knowledge-graph-taskbar.html">Knowledge Graph TaskBar</a></li>
+            </ul>
+        </div>
+
+        <footer style="margin-top: 2rem; opacity: 0.8;">
+            <p>Created: 2025-02-18</p>
+            <p>Status: Planning</p>
+        </footer>
+    </div>
+</body>
+</html> 
