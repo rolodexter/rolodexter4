@@ -130,9 +130,26 @@ export const KnowledgeGraph = () => {
       .join('line')
       .attr('stroke', '#666666')
       .attr('stroke-width', (d: any) => d.confidence * 1)
-      .attr('stroke-opacity', 0.3);
+      .attr('stroke-opacity', 0.3)
+      .style('stroke-dasharray', '5,5')
+      .style('animation', 'dash 20s linear infinite');
 
-    // Create node groups
+    // Add arrow markers for links
+    svg.append('defs').selectAll('marker')
+      .data(['end'])
+      .join('marker')
+      .attr('id', 'arrow')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 30)
+      .attr('refY', 0)
+      .attr('markerWidth', 4)
+      .attr('markerHeight', 4)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('fill', '#666666')
+      .attr('d', 'M0,-5L10,0L0,5');
+
+    // Create node groups with enhanced transitions
     const nodeGroup = container.append('g')
       .selectAll('g')
       .data(nodes)
@@ -153,7 +170,22 @@ export const KnowledgeGraph = () => {
           d.fy = null;
         }));
 
-    // Add clickable node circles with links
+    // Add glowing effect filter
+    const defs = svg.append('defs');
+    const filter = defs.append('filter')
+      .attr('id', 'glow');
+    
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '2')
+      .attr('result', 'coloredBlur');
+    
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode')
+      .attr('in', 'coloredBlur');
+    feMerge.append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
+    // Add clickable node circles with enhanced styling
     const nodeCircles = nodeGroup.append('a')
       .attr('href', (d: any) => `/${d.path}`)
       .attr('target', '_blank')
@@ -169,9 +201,25 @@ export const KnowledgeGraph = () => {
       })
       .attr('stroke', '#ffffff')
       .attr('stroke-width', 1)
-      .style('cursor', 'pointer');
+      .style('cursor', 'pointer')
+      .style('filter', 'url(#glow)')
+      .style('transition', 'all 0.3s ease')
+      .on('mouseover', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .attr('r', 20)
+          .attr('stroke-width', 2);
+      })
+      .on('mouseout', function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .attr('r', 15)
+          .attr('stroke-width', 1);
+      });
 
-    // Add clickable labels with links
+    // Add clickable labels with enhanced styling
     const nodeLabels = nodeGroup.append('a')
       .attr('href', (d: any) => `/${d.path}`)
       .attr('target', '_blank')
@@ -185,19 +233,33 @@ export const KnowledgeGraph = () => {
       .style('font-family', 'monospace')
       .style('cursor', 'pointer')
       .style('text-decoration', 'none')
-      // Add hover effect
+      .style('transition', 'all 0.3s ease')
+      .style('opacity', 0.7)
       .on('mouseover', function() {
         d3.select(this)
-          .style('text-decoration', 'underline')
+          .transition()
+          .duration(300)
+          .style('font-size', '13px')
+          .style('opacity', 1)
           .attr('fill', '#000000');
       })
       .on('mouseout', function() {
         d3.select(this)
-          .style('text-decoration', 'none')
+          .transition()
+          .duration(300)
+          .style('font-size', '11px')
+          .style('opacity', 0.7)
           .attr('fill', '#333333');
       });
 
-    // Update positions on each tick
+    // Add pulsing animation to nodes
+    nodeCircles.append('animate')
+      .attr('attributeName', 'r')
+      .attr('values', '15;17;15')
+      .attr('dur', '3s')
+      .attr('repeatCount', 'indefinite');
+
+    // Update positions on each tick with smooth transitions
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -205,12 +267,26 @@ export const KnowledgeGraph = () => {
         .attr('x2', (d: any) => d.target.x)
         .attr('y2', (d: any) => d.target.y);
 
-      // Update both circles and labels positions
-      nodeGroup.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+      nodeGroup
+        .transition()
+        .duration(50)
+        .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     });
+
+    // Add CSS animation for dashed lines
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dash {
+        to {
+          stroke-dashoffset: 100;
+        }
+      }
+    `;
+    document.head.appendChild(style);
 
     return () => {
       simulation.stop();
+      document.head.removeChild(style);
     };
   }, [data, dimensions]);
 
