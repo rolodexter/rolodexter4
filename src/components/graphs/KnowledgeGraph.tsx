@@ -110,7 +110,7 @@ const TaskBar: React.FC = () => {
       style={{
         position: 'absolute',
         left: '50%',
-        bottom: '32px',
+        bottom: '48px',
         width: '384px',
         height: '48px',
         transform: 'translateX(-50%)',
