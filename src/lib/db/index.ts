@@ -20,18 +20,39 @@
 import { PrismaClient } from '@prisma/client';
 import { createPool } from '@vercel/postgres';
 
+// Get the database URL with proper fallback order
+const getDatabaseUrl = () => {
+  // Log available environment variables (without sensitive values)
+  console.log('Available database environment variables:', {
+    DATABASE_URL: !!process.env.DATABASE_URL,
+    POSTGRES_PRISMA_URL: !!process.env.POSTGRES_PRISMA_URL,
+    NODE_ENV: process.env.NODE_ENV
+  });
+
+  // Prioritize Vercel's environment variables
+  const url = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
+  
+  if (!url) {
+    console.error('No database URL found in environment variables');
+    throw new Error('Database URL not configured');
+  }
+  
+  return url;
+};
+
 // Initialize Prisma Client with connection pooling
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
+      url: getDatabaseUrl()
     }
-  }
+  },
+  log: ['error', 'warn']
 });
 
 // Initialize Vercel Postgres Pool for raw SQL operations
 const sql = createPool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
+  connectionString: getDatabaseUrl()
 });
 
 // Basic interfaces for our data types
