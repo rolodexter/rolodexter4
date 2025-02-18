@@ -105,16 +105,43 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T 
 
 // Add minimal TaskBar component
 const TaskBar: React.FC = () => {
+  const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      const query = (event.target as HTMLInputElement).value;
+      if (!query.trim()) return;
+
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Search failed');
+        }
+
+        // Open search results in a new tab
+        const searchUrl = `/search?q=${encodeURIComponent(query)}`;
+        window.open(searchUrl, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        console.error('Search error:', error);
+      }
+    }
+  };
+
   return (
     <div 
       style={{
-        position: 'absolute',
+        position: 'fixed',
         left: '50%',
         bottom: '48px',
         width: '384px',
         height: '48px',
         transform: 'translateX(-50%)',
-        background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 15%, rgba(255,255,255,0.25) 85%, rgba(255,255,255,0) 100%)',
+        background: 'rgba(255, 255, 255, 0.25)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         borderRadius: '8px',
@@ -125,68 +152,101 @@ const TaskBar: React.FC = () => {
         justifyContent: 'center'
       }}
     >
-      <div
-        style={{
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          overflow: 'hidden',
-          opacity: 1,
-          position: 'relative',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'transform 0.3s ease, opacity 0.3s ease',
-          cursor: 'pointer',
-          marginTop: '-18px'  // This will make it protrude 30% (18px) above the 48px taskbar height
-        }}
-        onMouseEnter={(e) => {
-          const target = e.currentTarget;
-          target.style.transform = 'scale(1.1)';
-          target.style.opacity = '0.8';
-        }}
-        onMouseLeave={(e) => {
-          const target = e.currentTarget;
-          target.style.transform = 'scale(1)';
-          target.style.opacity = '0.5';
-        }}
-      >
-        <img
-          src="/static/SQUARE_LOGO.jpg"
-          alt="Rolodexter Logo"
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        pointerEvents: 'auto'
+      }}>
+        <div
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transition: 'filter 0.3s ease'
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            opacity: 1,
+            position: 'relative',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.3s ease',
+            cursor: 'pointer',
+            marginTop: '-18px',
+            pointerEvents: 'auto',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
           }}
           onMouseEnter={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.filter = 'brightness(1.2)';
+            const target = e.currentTarget;
+            target.style.transform = 'scale(1.1)';
           }}
           onMouseLeave={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.filter = 'none';
+            const target = e.currentTarget;
+            target.style.transform = 'scale(1)';
           }}
-          onError={(e) => {
-            console.error('Error loading logo:', e);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            // Show fallback icon
-            const parent = target.parentElement;
-            if (parent) {
-              const fallback = document.createElement('div');
-              fallback.style.width = '24px';
-              fallback.style.height = '24px';
-              fallback.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3C/svg%3E")`;
-              fallback.style.backgroundSize = 'contain';
-              fallback.style.backgroundPosition = 'center';
-              fallback.style.backgroundRepeat = 'no-repeat';
-              parent.appendChild(fallback);
+        >
+          <img
+            src="/static/SQUARE_LOGO.jpg"
+            alt="Rolodexter Logo"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: 'filter 0.3s ease',
+              opacity: 1
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.filter = 'brightness(1.2)';
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.filter = 'none';
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            position: 'relative',
+            width: '200px',
+            height: '32px',
+            pointerEvents: 'auto',
+            zIndex: 10000
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Search"
+            onKeyDown={handleSearch}
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '16px',
+              padding: '0 16px',
+              color: '#000000',
+              fontSize: '14px',
+              fontWeight: '500',
+              outline: 'none',
+              transition: 'all 0.3s ease',
+              pointerEvents: 'auto',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)'
+            }}
+            onFocus={(e) => {
+              e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+            }}
+            onBlur={(e) => {
+              e.target.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.1)';
+            }}
+          />
+          <style jsx global>{`
+            input::placeholder {
+              color: rgba(0, 0, 0, 0.5);
             }
-          }}
-        />
+          `}</style>
+        </div>
       </div>
     </div>
   );
@@ -1024,22 +1084,19 @@ export const KnowledgeGraph: React.FC = () => {
 
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <svg 
-          ref={svgRef} 
-          style={{ 
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            display: 'block',
-            zIndex: 1 
-          }} 
-        />
-        <div style={{ position: 'absolute', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
-          <TaskBar />
-        </div>
-      </div>
+      <svg 
+        ref={svgRef} 
+        style={{ 
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          zIndex: 1,
+          pointerEvents: 'auto'
+        }} 
+      />
+      <TaskBar />
     </div>
   );
 };

@@ -14,14 +14,14 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { createClient } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
-// Initialize Vercel Postgres Client for raw SQL operations
-const sql = createClient({
-  connectionString: process.env.POSTGRES_URL
+// Initialize Vercel Postgres Pool for raw SQL operations
+const sql = createPool({
+  connectionString: process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL
 });
 
 // Basic interfaces for our data types
@@ -53,13 +53,15 @@ export interface Document {
   references?: Reference[];
 }
 
+interface SearchRow extends Document {
+  rank: number;
+}
+
 // Initialize the database with required tables
 export async function initializeDatabase() {
   try {
-    await sql.connect();
-    
     // Create full-text search index
-    await sql.sql`
+    await sql.query(`
       CREATE EXTENSION IF NOT EXISTS pg_trgm;
       CREATE EXTENSION IF NOT EXISTS vector;
       
@@ -76,20 +78,38 @@ export async function initializeDatabase() {
       -- Create index for vector similarity search
       CREATE INDEX IF NOT EXISTS idx_memories_embedding ON "Memory" USING ivfflat (embedding vector_cosine_ops)
       WITH (lists = 100);
-    `;
+    `);
     
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;
-  } finally {
-    await sql.end();
   }
 }
 
 // Search documents with full-text search
 export async function searchDocuments(query: string): Promise<Document[]> {
   try {
+    // First try full-text search using ts_document
+    const tsQuery = query.trim().replace(/\s+/g, ' & ');
+    const { rows } = await sql.query(
+      'SELECT d.*, ts_rank(ts_document, to_tsquery($1, $2)) as rank FROM "Document" d WHERE ts_document @@ to_tsquery($1, $2) ORDER BY rank DESC, created_at DESC LIMIT 10',
+      ['english', tsQuery]
+    );
+
+    if (rows && rows.length > 0) {
+      // Convert raw results to Document type
+      return rows.map((row: SearchRow) => ({
+        ...row,
+        metadata: {
+          ...row.metadata,
+          rank: row.rank,
+          excerpt: extractExcerpt(row.content, query)
+        }
+      }));
+    }
+
+    // Fallback to basic search if no full-text results
     return await prisma.document.findMany({
       where: {
         OR: [
@@ -112,8 +132,61 @@ export async function searchDocuments(query: string): Promise<Document[]> {
     });
   } catch (error) {
     console.error('Search failed:', error);
-    throw error;
+    // Fallback to basic search if full-text search fails
+    return await prisma.document.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { content: { contains: query, mode: 'insensitive' } }
+        ]
+      },
+      include: {
+        tags: true,
+        references: {
+          include: {
+            target: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      },
+      take: 10
+    });
   }
+}
+
+// Helper function to extract relevant excerpt from content
+function extractExcerpt(content: string, query: string): string {
+  if (!content) return '';
+  
+  const words = query.toLowerCase().split(/\s+/);
+  const contentLower = content.toLowerCase();
+  let bestPosition = 0;
+  let bestMatchCount = 0;
+
+  // Find the best matching position in the content
+  for (let i = 0; i < content.length; i++) {
+    let matchCount = 0;
+    words.forEach(word => {
+      if (contentLower.slice(i).startsWith(word)) matchCount++;
+    });
+    if (matchCount > bestMatchCount) {
+      bestMatchCount = matchCount;
+      bestPosition = i;
+    }
+  }
+
+  // Extract surrounding context (about 200 characters)
+  const start = Math.max(0, bestPosition - 100);
+  const end = Math.min(content.length, bestPosition + 100);
+  let excerpt = content.slice(start, end);
+
+  // Add ellipsis if needed
+  if (start > 0) excerpt = '...' + excerpt;
+  if (end < content.length) excerpt = excerpt + '...';
+
+  return excerpt;
 }
 
 // Create or update a document
@@ -151,15 +224,12 @@ export async function upsertDocument(doc: {
 // Test database connection
 export async function testConnection() {
   try {
-    await sql.connect();
-    await sql.sql`SELECT 1`;
+    await sql.query('SELECT 1');
     await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch (error) {
     console.error('Database connection test failed:', error);
     return false;
-  } finally {
-    await sql.end();
   }
 }
 

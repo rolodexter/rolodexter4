@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Security check: ensure the file is within allowed directories
     const relativePath = path.relative(process.cwd(), filePath);
-    const allowedDirs = ['projects', 'agents', 'tasks', 'memories'];
+    const allowedDirs = ['projects', 'agents', 'tasks', 'memories', 'missions'];
     const isAllowedPath = allowedDirs.some(dir => relativePath.startsWith(dir));
     
     if (!isAllowedPath) {
