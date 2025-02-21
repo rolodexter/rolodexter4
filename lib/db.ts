@@ -50,7 +50,14 @@ const dbUrl = formatDatabaseUrl(
 console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
 
 // Create a connection pool
-const pool = new Pool({ connectionString: dbUrl });
+const pool = new Pool({ 
+  connectionString: dbUrl,
+  max: 1,
+  ssl: {
+    rejectUnauthorized: true
+  },
+  connectionTimeoutMillis: 10000
+});
 
 // Initialize Prisma client with direct database URL
 const prisma = new PrismaClient({
@@ -63,25 +70,6 @@ const prisma = new PrismaClient({
   log: ['error', 'warn', 'info', 'query']
 });
 
-// Attempt to connect and catch any errors to prevent crashing
-async function testConnection() {
-  try {
-    const client = await pool.connect();
-    console.log('Successfully connected to the database');
-    await client.release();
-  } catch (e) {
-    console.error('Postgres connection error:', {
-      message: e.message,
-      code: e.code,
-      clientVersion: e.clientVersion,
-      meta: e.meta,
-      stack: e.stack
-    });
-  }
-}
-
-testConnection();
-
 // Add global type for Prisma
 declare global {
   var prisma: PrismaClient | undefined;
@@ -92,99 +80,6 @@ declare global {
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
   global.pool = pool;
-}
-
-export { prisma, pool };
-
-/**
- * Test database connection
- */
-export async function testConnection() {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('Database connection successful');
-    return true;
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    return false;
-  }
-}
-
-/**
- * Search for documents based on a query string.
- * Uses full-text search and relevance ranking.
- */
-export async function searchDocuments(query: string): Promise<SearchResult[]> {
-  try {
-    console.log('Starting search with query:', query);
-
-    // First, check if we have any documents at all
-    const totalDocs = await prisma.document.count();
-    console.log('Total documents in database:', totalDocs);
-
-    // Create search conditions
-    const searchConditions = createSearchConditions(query);
-    console.log('Search conditions:', JSON.stringify(searchConditions, null, 2));
-
-    // Execute search query
-    const results = await prisma.document.findMany({
-      where: searchConditions,
-      orderBy: {
-        updated_at: 'desc'
-      },
-      take: 20,
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        path: true,
-        type: true,
-        created_at: true,
-        updated_at: true
-      }
-    });
-
-    console.log('Raw results:', results);
-
-    // Format results with proper type handling
-    const formattedResults: SearchResult[] = results.map(doc => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      path: doc.path,
-      type: doc.type,
-      created_at: doc.created_at.toISOString(),
-      updated_at: doc.updated_at.toISOString(),
-      metadata: {
-        excerpt: doc.content?.substring(0, 200) || '',
-        rank: 1
-      }
-    }));
-
-    console.log('Total results:', formattedResults.length);
-    return formattedResults;
-
-  } catch (error) {
-    console.error('Search failed:', error);
-    throw error;
-  }
-}
-
-/**
- * Create search conditions for the query
- */
-function createSearchConditions(query: string): Prisma.DocumentWhereInput {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  
-  return {
-    OR: words.map(word => ({
-      OR: [
-        { title: { contains: word, mode: 'insensitive' } },
-        { content: { contains: word, mode: 'insensitive' } },
-        { path: { contains: word, mode: 'insensitive' } }
-      ]
-    }))
-  };
 }
 
 export interface SearchResult {
@@ -200,3 +95,5 @@ export interface SearchResult {
   created_at: string;
   updated_at: string;
 }
+
+export { prisma, pool };
