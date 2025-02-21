@@ -101,17 +101,17 @@ export default async function handler(
           documentCount: totalDocs,
           sampleDocuments: sampleResult.rows
         });
-      } catch (queryError) {
-        console.error('Query error:', queryError);
-        throw new Error(`Database query failed: ${queryError.message}`);
+      } catch (error) {
+        console.error('Query error:', error);
+        throw new Error(`Database query failed: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         console.log('Releasing client...');
         await client.release();
         console.log('Client released');
       }
-    } catch (connectionError) {
-      console.error('Connection error:', connectionError);
-      throw new Error(`Database connection failed: ${connectionError.message}`);
+    } catch (error) {
+      console.error('Connection error:', error);
+      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   } catch (error) {
     console.error('Database test failed:', error);
