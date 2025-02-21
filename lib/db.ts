@@ -74,6 +74,20 @@ export async function searchDocuments(query: string) {
   }
 }
 
+export interface SearchResult {
+  id: number;
+  title: string;
+  content: string;
+  path: string;
+  type: string;
+  metadata: {
+    excerpt: string;
+    rank: number;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
 export const testConnection = async () => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -83,5 +97,7 @@ export const testConnection = async () => {
     throw error;
   }
 };
+
+export { searchDocuments, testConnection, SearchResult };
 
 export default prisma;

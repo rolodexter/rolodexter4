@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { searchDocuments, testConnection, SearchResult } from '@/lib/db';
+import { searchDocuments, testConnection, type SearchResult } from '../../lib/db';
 
 export default async function handler(
   req: NextApiRequest,
