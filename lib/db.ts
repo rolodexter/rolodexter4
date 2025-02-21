@@ -30,13 +30,18 @@ function formatDatabaseUrl(url: string): string {
     url = url.replace('.tech/', '.tech/neondb/');
   }
 
+  // Add sslmode=require if not present
+  if (!url.includes('sslmode=')) {
+    url += url.includes('?') ? '&sslmode=require' : '?sslmode=require';
+  }
+
   return url;
 }
 
-// Initialize Prisma client with formatted database URL
+// Get the appropriate database URL
 const dbUrl = formatDatabaseUrl(
-  process.env.POSTGRES_PRISMA_URL || 
   process.env.POSTGRES_URL_NON_POOLING || 
+  process.env.POSTGRES_PRISMA_URL || 
   process.env.DATABASE_URL || 
   ''
 );
