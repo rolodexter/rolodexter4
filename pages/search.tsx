@@ -2,20 +2,18 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SearchResult } from '@/types';
 
-interface SearchResult {
-  title: string;
-  path: string;
-  excerpt: string;
-  rank: number;
+interface Props {
+  // Add any props if needed
 }
 
-export default function SearchResults() {
+export default function SearchResults(props: Props) {
   const router = useRouter();
   const { q: query } = router.query;
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [visibleResults, setVisibleResults] = useState<boolean[]>([]);
 
   useEffect(() => {
@@ -24,17 +22,17 @@ export default function SearchResults() {
     const fetchResults = async () => {
       try {
         setLoading(true);
-        setError('');
+        setError(null);
         
         const response = await fetch(`/api/search?q=${encodeURIComponent(query.toString())}`);
         if (!response.ok) throw new Error('Search failed');
         
-        const data = await response.json();
+        const data: SearchResult[] = await response.json();
         setResults(data);
         setVisibleResults(new Array(data.length).fill(false));
         
         // Animate results in sequence
-        data.forEach((_, index) => {
+        data.forEach((_: SearchResult, index: number) => {
           setTimeout(() => {
             setVisibleResults(prev => {
               const newState = [...prev];
@@ -44,7 +42,7 @@ export default function SearchResults() {
           }, index * 100); // 100ms delay between each result
         });
       } catch (err) {
-        setError('Failed to fetch search results');
+        setError(err instanceof Error ? err.message : 'An error occurred');
         console.error('Search error:', err);
       } finally {
         setLoading(false);
