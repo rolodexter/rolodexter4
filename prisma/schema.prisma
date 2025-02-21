@@ -7,8 +7,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // Uses connection pooling
-  directUrl = env("DATABASE_URL_UNPOOLED") // Uses a direct connection for migrations/db push
+  url = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 model Document {

@@ -1,16 +1,27 @@
 {
   "version": 2,
-  "buildCommand": "next build",
+  "buildCommand": "echo \"DATABASE_URL=$DATABASE_URL\nDATABASE_URL_UNPOOLED=$DATABASE_URL_UNPOOLED\" > .env && npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
+    "DATABASE_URL": "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require",
+    "DATABASE_URL_UNPOOLED": "postgresql://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x.us-west-2.aws.neon.tech/neondb?sslmode=require",
+    "POSTGRES_URL": "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require",
     "POSTGRES_PRISMA_URL": "postgresql://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?pgbouncer=true&connect_timeout=15&sslmode=require",
-    "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x.us-west-2.aws.neon.tech/neondb?sslmode=require"
+    "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x.us-west-2.aws.neon.tech/neondb?sslmode=require",
+    "POSTGRES_HOST": "ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech",
+    "POSTGRES_PASSWORD": "npg_5CzhuMceAg3H",
+    "POSTGRES_DATABASE": "neondb",
+    "POSTGRES_USER": "neondb_owner",
+    "BLOB_READ_WRITE_TOKEN": "vercel_blob_rw_ULMkCZocf3mMLt2T_njhj5e84YcTvawWdsJc4bUEy0Fu2Ow",
+    "BLOB_STORE_NAME": "rolodexter4-documents",
+    "BLOB_STORE_ID": "store_ULMkCZocf3mMLt2T",
+    "BLOB_PUBLIC_URL": "https://ulmkczocf3mmlt2t.public.blob.vercel-storage.com"
   },
   "build": {
     "env": {
       "NEXT_PUBLIC_VERCEL_ENV": "production"
     }
   }
-} 
+}

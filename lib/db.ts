@@ -1,14 +1,24 @@
 import { PrismaClient, Document, Prisma } from '@prisma/client';
+import { Pool } from '@neondatabase/serverless';
 
-// Initialize Prisma client
+// Initialize Prisma client with direct database URL
 const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
+    }
+  },
   errorFormat: 'minimal',
-  log: ['error']
+  log: ['error', 'warn', 'info']
 });
+
+// Log the database URL being used (without sensitive info)
+const dbUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || '';
+console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
 
 // Attempt to connect and catch any errors to prevent crashing
 prisma.$connect().catch(e => {
-  console.error('Postgres connection error suppressed:', e);
+  console.error('Postgres connection error:', e);
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -58,6 +68,10 @@ export async function searchDocuments(query: string): Promise<SearchResult[]> {
   try {
     console.log('Starting search with query:', query);
 
+    // First, check if we have any documents at all
+    const totalDocs = await prisma.document.count();
+    console.log('Total documents in database:', totalDocs);
+
     // Create search conditions
     const searchConditions = createSearchConditions(query);
     console.log('Search conditions:', JSON.stringify(searchConditions, null, 2));
@@ -79,6 +93,8 @@ export async function searchDocuments(query: string): Promise<SearchResult[]> {
         updated_at: true
       }
     });
+
+    console.log('Raw results:', results);
 
     // Format results with proper type handling
     const formattedResults: SearchResult[] = results.map(doc => ({
