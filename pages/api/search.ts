@@ -9,6 +9,12 @@ interface SearchResult {
   rank: number;
 }
 
+interface DocumentMetadata {
+  excerpt?: string;
+  rank?: number;
+  [key: string]: any;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SearchResult[] | { message: string }>
@@ -38,11 +44,11 @@ export default async function handler(
     console.log('Search results count:', results.length);
     
     // Format results with proper type handling
-    const formattedResults: SearchResult[] = results.map((doc: Document) => ({
+    const formattedResults: SearchResult[] = results.map((doc: Document & { metadata: DocumentMetadata }) => ({
       title: doc.title || "",
       path: doc.path || "",
-      excerpt: typeof doc.metadata?.excerpt === 'string' ? doc.metadata.excerpt : "",
-      rank: typeof doc.metadata?.rank === 'number' ? doc.metadata.rank : 0
+      excerpt: doc.metadata?.excerpt || "",
+      rank: doc.metadata?.rank || 0
     }));
 
     return res.status(200).json(formattedResults);
