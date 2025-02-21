@@ -2,9 +2,12 @@ import { PrismaClient } from '@prisma/client';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 
-// Configure Neon to use WebSocket
+// Configure Neon to use WebSocket only on the server side
 if (typeof window === 'undefined') {
   neonConfig.webSocketConstructor = ws;
+  neonConfig.useSecureWebSocket = true; // Force secure WebSocket
+  neonConfig.pipelineTLS = true; // Enable TLS pipeline
+  neonConfig.pipelineConnect = true; // Enable connection pipelining
 }
 
 // Log environment variables (without sensitive info)
@@ -64,7 +67,7 @@ if (!process.env.POSTGRES_PRISMA_URL && dbUrl) {
 // Log the database URL being used (without sensitive info)
 console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
 
-// Create a connection pool
+// Create a connection pool with Neon-specific settings
 const pool = new Pool({ 
   connectionString: dbUrl,
   max: 1,
@@ -74,7 +77,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000
 });
 
-// Initialize Prisma client with direct database URL
+// Initialize Prisma client with pooled connection URL
 const prisma = new PrismaClient({
   datasources: {
     db: {
