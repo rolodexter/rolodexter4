@@ -1,6 +1,14 @@
 import { PrismaClient, Document, Prisma } from '@prisma/client';
 import { Pool } from '@neondatabase/serverless';
 
+// Log environment variables (without sensitive info)
+console.log('Environment variables:', {
+  POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? '[SET]' : '[NOT SET]',
+  POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? '[SET]' : '[NOT SET]',
+  DATABASE_URL: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
+  NODE_ENV: process.env.NODE_ENV
+});
+
 // Initialize Prisma client with direct database URL
 const prisma = new PrismaClient({
   datasources: {
@@ -9,7 +17,7 @@ const prisma = new PrismaClient({
     }
   },
   errorFormat: 'minimal',
-  log: ['error', 'warn', 'info']
+  log: ['error', 'warn', 'info', 'query']
 });
 
 // Log the database URL being used (without sensitive info)
@@ -17,9 +25,18 @@ const dbUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || '';
 console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
 
 // Attempt to connect and catch any errors to prevent crashing
-prisma.$connect().catch(e => {
-  console.error('Postgres connection error:', e);
-});
+prisma.$connect()
+  .then(() => {
+    console.log('Successfully connected to the database');
+  })
+  .catch(e => {
+    console.error('Postgres connection error:', {
+      message: e.message,
+      code: e.code,
+      clientVersion: e.clientVersion,
+      meta: e.meta
+    });
+  });
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
