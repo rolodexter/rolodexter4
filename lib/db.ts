@@ -39,7 +39,7 @@ function createSearchConditions(query: string): Prisma.DocumentWhereInput {
 }
 
 // Search documents with full-text search
-export async function searchDocuments(query: string) {
+export async function searchDocuments(query: string): Promise<SearchResult[]> {
   try {
     console.log('Starting search with query:', query);
     
@@ -97,7 +97,5 @@ export const testConnection = async () => {
     throw error;
   }
 };
-
-export { searchDocuments, testConnection, SearchResult };
 
 export default prisma;
