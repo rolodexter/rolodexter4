@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="graph-category" content="task">
+    <meta name="graph-tags" content="use-cases, user-flows, research, planning, token-gating">
+    <meta name="graph-connections" content="01-requirements.html,dependencies.html,vercel-impact.html">
+    <meta name="task-status" content="active">
+    <meta name="task-priority" content="high">
+    <meta name="task-type" content="project">
+    <meta name="task-owner" content="JoeMaristela">
+    <meta name="task-reviewers" content="rolodexterGPT,rolodexterVS">
+    <meta name="task-stage" content="research-planning">
+    <meta name="task-dependencies" content="01-requirements.html">
+    <meta name="task-blockers" content="none">
+    <meta name="last-updated" content="2025-02-21T08:46:58+08:00">
+    <meta name="vercel-impact" content="none">
+    <meta name="dependencies" content="none">
+    <title>Token-Gating System: Use Cases & User Flows</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --primary-text: #f8fafc;
+            --accent-green: #4ade80;
+            --border-color: #334155;
+            --warning-color: #fbbf24;
+            --success-color: #34d399;
+            --error-color: #f87171;
+            --info-color: #60a5fa;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .task-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--accent-green);
+        }
+        .info {
+            border-left-color: var(--info-color);
+        }
+        .warning {
+            border-left-color: var(--warning-color);
+        }
+        .user-flow {
+            border-left-color: var(--success-color);
+        }
+        h1, h2, h3 { 
+            color: var(--accent-green);
+            margin-top: 2rem;
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: 'Menlo', 'Monaco', monospace;
+        }
+        .task-footer {
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .flow-step {
+            margin: 1rem 0;
+            padding-left: 1rem;
+            border-left: 2px solid var(--info-color);
+        }
+        .user-type {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            background: rgba(96, 165, 250, 0.2);
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="task-container">
+        <h1>🔄 Token-Gating System: Use Cases & User Flows</h1>
+
+        <section class="section info">
+            <h2>📋 Overview</h2>
+            <p>Document the primary use cases and user flows for the token-gating system, ensuring we account for all user types and their interactions with the system.</p>
+        </section>
+
+        <section class="section">
+            <h2>👥 User Types</h2>
+            <ul>
+                <li><span class="user-type">Visitor</span> First-time users without wallet connection</li>
+                <li><span class="user-type">Token Holder</span> Users with verified token ownership</li>
+                <li><span class="user-type">Whitelisted</span> Approved users with special access</li>
+                <li><span class="user-type">Admin</span> System administrators managing access</li>
+                <li><span class="user-type">Moderator</span> Users with limited admin capabilities</li>
+            </ul>
+        </section>
+
+        <section class="section user-flow">
+            <h2>🔑 Primary User Flows</h2>
+            
+            <h3>1. First-Time Visitor Flow</h3>
+            <div class="flow-step">
+                <ol>
+                    <li>Land on rolodexter4 homepage</li>
+                    <li>Attempt to access gated content</li>
+                    <li>Redirect to authentication page</li>
+                    <li>Connect wallet options displayed</li>
+                    <li>Choose wallet provider</li>
+                    <li>Token verification check</li>
+                    <li>If token found → Grant access</li>
+                    <li>If no token → Show whitelist application</li>
+                </ol>
+            </div>
+
+            <h3>2. Token Holder Authentication</h3>
+            <div class="flow-step">
+                <ol>
+                    <li>Click "Connect Wallet" button</li>
+                    <li>Select wallet provider</li>
+                    <li>Approve connection request</li>
+                    <li>System verifies token ownership</li>
+                    <li>Session created and access granted</li>
+                    <li>Redirect to requested content</li>
+                </ol>
+            </div>
+
+            <h3>3. Whitelist Application Process</h3>
+            <div class="flow-step">
+                <ol>
+                    <li>Access whitelist application form</li>
+                    <li>Connect wallet (if not connected)</li>
+                    <li>Fill application details</li>
+                    <li>Submit for review</li>
+                    <li>Receive confirmation email</li>
+                    <li>Admin review process</li>
+                    <li>Approval/Rejection notification</li>
+                </ol>
+            </div>
+
+            <h3>4. Admin Management Flow</h3>
+            <div class="flow-step">
+                <ol>
+                    <li>Login to admin dashboard</li>
+                    <li>View pending applications</li>
+                    <li>Review applicant details</li>
+                    <li>Check wallet history</li>
+                    <li>Approve/Reject application</li>
+                    <li>Send notification</li>
+                    <li>Update whitelist database</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="section warning">
+            <h2>⚠️ Edge Cases & Error Handling</h2>
+            <ul>
+                <li>Wallet connection failures</li>
+                <li>Network connectivity issues</li>
+                <li>Invalid token verification</li>
+                <li>Session expiration scenarios</li>
+                <li>Multiple wallet connections</li>
+                <li>Browser compatibility issues</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🎯 Success Metrics</h2>
+            <ul>
+                <li>Wallet connection success rate > 95%</li>
+                <li>Token verification time < 2 seconds</li>
+                <li>Whitelist application completion rate > 80%</li>
+                <li>Admin response time < 24 hours</li>
+                <li>User session duration tracking</li>
+                <li>Error rate monitoring</li>
+            </ul>
+        </section>
+
+        <section class="section info">
+            <h2>📝 Next Steps</h2>
+            <ul>
+                <li>Create detailed wireframes for each flow</li>
+                <li>Document error messages and notifications</li>
+                <li>Define analytics tracking points</li>
+                <li>Create user testing scenarios</li>
+                <li>Document accessibility requirements</li>
+            </ul>
+        </section>
+
+        <footer class="task-footer">
+            <p>Created by: <strong>rolodexterVS</strong></p>
+            <p>Last updated: <strong>2025-02-21 08:44:28 UTC+8</strong></p>
+            <p>Version: <strong>1.0.0</strong></p>
+            <p>Related tasks:</p>
+            <ul>
+                <li><code>01-requirements.html</code> - Core system requirements</li>
+                <li><code>03-existing-systems.html</code> - Coming soon</li>
+            </ul>
+        </footer>
+    </div>
+</body>
+</html>

@@ -25,6 +25,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^6.3.1",
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@types/pg": "^8.11.11",
     "@vercel/blob": "^0.27.1",
     "@vercel/postgres": "^0.10.0",
@@ -40,6 +41,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.6",
+    "react-error-boundary": "^5.0.0",
     "react-icons": "^5.4.0",
     "recharts": "^2.15.1"
   },

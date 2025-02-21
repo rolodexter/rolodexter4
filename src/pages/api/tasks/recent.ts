@@ -6,14 +6,15 @@ interface TaskResponse {
   id: string;
   title: string;
   file_path: string;
+  type: 'AGENT' | 'PROJECT';
   createdAt: Date;
   updatedAt: Date;
   status: string;
+  priority: string;
   tags: Array<{
     name: string;
     color: string | null;
   }>;
-  priority: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -21,14 +22,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  const { type = 'all', status = 'active' } = req.query;
+
   try {
+    const whereClause: any = {};
+
+    // Filter by type if specified
+    if (type !== 'all') {
+      whereClause.type = type.toString().toUpperCase();
+    }
+
+    // Filter by status
+    if (status === 'active') {
+      whereClause.OR = [
+        { status: 'ACTIVE' },
+        { status: 'PENDING' }
+      ];
+    } else if (status !== 'all') {
+      whereClause.status = status.toString().toUpperCase();
+    }
+
     const recentTasks = await prisma.task.findMany({
-      where: {
-        OR: [
-          { status: 'ACTIVE' },
-          { status: 'PENDING' }
-        ]
-      },
+      where: whereClause,
       include: {
         tags: {
           select: {
@@ -37,29 +52,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         }
       },
-      orderBy: {
-        updated_at: 'desc'
-      },
-      take: 10
+      orderBy: [
+        { priority: 'desc' },
+        { updated_at: 'desc' }
+      ],
+      take: 20
     });
 
     const formattedTasks: TaskResponse[] = recentTasks.map(task => ({
       id: task.id,
       title: task.title,
       file_path: task.filePath,
+      type: task.type as 'AGENT' | 'PROJECT',
       createdAt: task.created_at,
       updatedAt: task.updated_at,
-      status: task.status.toLowerCase(),
+      status: task.status,
       priority: task.priority,
       tags: task.tags
     }));
 
-    res.status(200).json(formattedTasks);
-  } catch (error) {
-    console.error('Error fetching recent tasks:', error);
-    res.status(500).json({ 
-      message: 'Error fetching recent tasks',
-      error: error instanceof Error ? error.message : 'Unknown error'
+    return res.status(200).json({
+      tasks: formattedTasks,
+      count: formattedTasks.length
     });
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
-} 
+}

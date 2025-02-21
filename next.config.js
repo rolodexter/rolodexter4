@@ -16,6 +16,10 @@ const __dirname = dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  
+  // Allow serving static HTML files
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js', 'html'],
+  
   // Enhanced webpack configuration
   webpack: (config, { isServer, dev }) => {
     // Optimize file watching
@@ -70,13 +74,49 @@ const nextConfig = {
       }));
     }
 
+    // Make assets directory accessible
+    config.module.rules.push({
+      test: /\.(png|jpg|gif|svg)$/i,
+      type: 'asset/resource'
+    });
+
     return config
   },
   // Environment configuration
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
     BLOB_STORE_NAME: 'rolodexter4-documents'
-  }
-}
+  },
+
+  // Configure static file serving
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/projects/:path*',
+          destination: '/api/static/:path*',
+        },
+      ],
+    };
+  },
+
+  // Configure headers for static files
+  async headers() {
+    return [
+      {
+        source: '/projects/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+  images: {
+    domains: [],
+  },
+};
 
 export default nextConfig;

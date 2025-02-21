@@ -37,9 +37,10 @@ model Task {
   title        String
   description  String?    @db.Text
   status       TaskStatus
+  type         TaskType   @default(AGENT)
   priority     Priority   @default(MEDIUM)
   assignee     String?
-  filePath     String     @unique // Add unique file path field
+  filePath     String     @unique
   due_date     DateTime?
   completed_at DateTime?
   metadata     Json       @default("{}")
@@ -49,11 +50,12 @@ model Task {
   document     Document?  @relation(fields: [document_id], references: [id])
   document_id  String?
   subtasks     Task[]     @relation("TaskHierarchy")
-  parent_task  Task?      @relation("TaskHierarchy", fields: [parent_id], references: [id])
+  parent       Task?      @relation("TaskHierarchy", fields: [parent_id], references: [id])
   tags         Tag[]
 
-  @@index([status, due_date])
-  @@index([assignee])
+  @@index([status, type])
+  @@index([created_at, updated_at])
+  @@index([filePath])
 }
 
 model Memory {
@@ -128,6 +130,11 @@ model Interaction {
   @@index([integration_id])
 }
 
+enum TaskType {
+  AGENT
+  PROJECT
+}
+
 enum TaskStatus {
   ACTIVE
   PENDING
@@ -136,10 +143,10 @@ enum TaskStatus {
 }
 
 enum Priority {
-  LOW
-  MEDIUM
-  HIGH
   URGENT
+  HIGH
+  MEDIUM
+  LOW
 }
 
 enum MemoryType {

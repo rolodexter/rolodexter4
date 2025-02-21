@@ -105,30 +105,14 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T 
 
 // Add minimal TaskBar component
 const TaskBar: React.FC = () => {
-  const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       const query = (event.target as HTMLInputElement).value;
       if (!query.trim()) return;
 
-      try {
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Search failed');
-        }
-
-        // Open search results in a new tab
-        const searchUrl = `/search?q=${encodeURIComponent(query)}`;
-        window.open(searchUrl, '_blank', 'noopener,noreferrer');
-      } catch (error) {
-        console.error('Search error:', error);
-      }
+      // Open search results in a new tab
+      const searchUrl = `/search?q=${encodeURIComponent(query)}`;
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
     }
   };
 

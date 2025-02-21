@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface SearchResult {
   title: string;
@@ -14,30 +15,34 @@ export default function SearchResults() {
   const { q: query } = router.query;
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [visibleResults, setVisibleResults] = useState<boolean[]>([]);
 
   useEffect(() => {
-    const fetchResults = async () => {
-      if (!query) return;
+    if (!query) return;
 
+    const fetchResults = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Search failed');
-        }
-
+        setError('');
+        
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query.toString())}`);
+        if (!response.ok) throw new Error('Search failed');
+        
         const data = await response.json();
         setResults(data);
+        setVisibleResults(new Array(data.length).fill(false));
+        
+        // Animate results in sequence
+        data.forEach((_, index) => {
+          setTimeout(() => {
+            setVisibleResults(prev => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+          }, index * 100); // 100ms delay between each result
+        });
       } catch (err) {
         setError('Failed to fetch search results');
         console.error('Search error:', err);
@@ -50,62 +55,86 @@ export default function SearchResults() {
   }, [query]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Search Results for "{query}"
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Found {results.length} results
+    <main className="search-results bg-[#111111] relative">
+      <div 
+        className="fixed inset-0 opacity-[0.02] pointer-events-none" 
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '32px 32px'
+        }}
+      />
+      
+      <div className="w-full max-w-3xl mx-auto px-8 md:px-12 py-12">
+        <div className="space-y-2 text-center mb-12">
+          <p className="text-sm font-extralight text-gray-400 tracking-wide">
+            {results.length} results for
           </p>
+          <h1 className="text-2xl font-extralight text-gray-300">
+            "{query}"
+          </h1>
         </div>
-
-        {loading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        
+        {!query ? (
+          <div className="text-center">
+            <p className="text-lg font-extralight text-gray-500">Enter your search query</p>
           </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-8">
-            <p className="text-red-600">{error}</p>
+        ) : loading ? (
+          <div className="w-full animate-pulse space-y-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-gray-800/20 h-16 rounded-lg" />
+            ))}
           </div>
-        )}
-
-        {!loading && !error && results.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No results found for your search.</p>
+        ) : error ? (
+          <div className="text-center">
+            <p className="text-lg font-extralight text-gray-500">{error}</p>
           </div>
-        )}
-
-        <div className="space-y-6">
-          {results.map((result, index) => (
-            <div
-              key={index}
-              className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow"
-            >
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                <Link
-                  href={`/api/document/${encodeURIComponent(result.path.replace(/^\//, ''))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-600"
+        ) : results.length === 0 ? (
+          <div className="text-center">
+            <p className="text-lg font-extralight text-gray-500">No results found</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {results.map((result, idx) => (
+              <Link
+                key={idx}
+                href={result.path}
+                className={`block terminal-line ${visibleResults[idx] ? 'visible' : ''}`}
+              >
+                <article 
+                  className="px-8 py-6 -mx-8 rounded-lg transition-all duration-200 hover:bg-white/[0.01] text-left"
                 >
-                  {result.title}
-                </Link>
-              </h2>
-              <p className="text-gray-600 text-sm mb-2">{result.path}</p>
-              {result.excerpt && (
-                <p className="text-gray-700 mt-2">{result.excerpt}</p>
-              )}
-              <div className="mt-4 text-sm text-gray-500">
-                Relevance score: {Math.round(result.rank * 100)}%
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div 
+                    className="text-xl font-extralight text-gray-300 group-hover:text-gray-200"
+                  >
+                    {result.title}
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Logo */}
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
+        <Link href="/" className="block cursor-pointer">
+          <div className="logo-container w-16 h-16">
+            <div>
+              <Image
+                src="/assets/branding/logos/SQUARE_LOGO.jpg"
+                alt="Rolodexter Logo"
+                width={100}
+                height={100}
+                className="object-cover w-full h-full"
+                priority
+              />
+            </div>
+          </div>
+        </Link>
+      </div>
+    </main>
   );
-} 
+}

@@ -118,72 +118,127 @@ export async function initializeDatabase() {
   }
 }
 
+// Convert Windows path to web URL path
+function normalizeFilePath(path: string): string {
+  // Remove the base directory path and ensure correct project path
+  const basePath = 'C:\\rolodexter4\\';
+  let normalizedPath = path;
+  
+  if (normalizedPath.startsWith(basePath)) {
+    normalizedPath = normalizedPath.substring(basePath.length);
+  }
+  
+  // Convert backslashes to forward slashes
+  normalizedPath = normalizedPath.replace(/\\/g, '/');
+  
+  // Remove any leading slash
+  normalizedPath = normalizedPath.replace(/^\//, '');
+
+  // If the path doesn't start with 'projects/', add it
+  if (!normalizedPath.startsWith('projects/')) {
+    normalizedPath = `projects/${normalizedPath}`;
+  }
+
+  // Log the path transformation
+  console.log('Path transformation:', {
+    original: path,
+    normalized: normalizedPath,
+    final: `/${normalizedPath}`
+  });
+  
+  // Add leading slash
+  return `/${normalizedPath}`;
+}
+
 // Search documents with full-text search
 export async function searchDocuments(query: string): Promise<Document[]> {
   try {
-    // First try full-text search using ts_document
-    const tsQuery = query.trim().replace(/\s+/g, ' & ');
-    const { rows } = await sql.query(
-      'SELECT d.*, ts_rank(ts_document, to_tsquery($1, $2)) as rank FROM "Document" d WHERE ts_document @@ to_tsquery($1, $2) ORDER BY rank DESC, created_at DESC LIMIT 10',
-      ['english', tsQuery]
-    );
-
-    if (rows && rows.length > 0) {
-      // Convert raw results to Document type
-      return rows.map((row: SearchRow) => ({
-        ...row,
-        metadata: {
-          ...row.metadata,
-          rank: row.rank,
-          excerpt: extractExcerpt(row.content, query)
-        }
-      }));
-    }
-
-    // Fallback to basic search if no full-text results
-    return await prisma.document.findMany({
+    console.log('Starting search with query:', query);
+    
+    // First try using Prisma for the search
+    const tasks = await prisma.task.findMany({
       where: {
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
-          { content: { contains: query, mode: 'insensitive' } }
+          { description: { contains: query, mode: 'insensitive' } },
+          { filePath: { contains: query, mode: 'insensitive' } }
         ]
       },
-      include: {
-        tags: true,
-        references: {
-          include: {
-            target: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 10
+      distinct: ['filePath'], // Prevent duplicates
+      orderBy: { updated_at: 'desc' },
+      take: 20
     });
+
+    console.log('Found tasks:', tasks.length);
+
+    const documents = await prisma.document.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { content: { contains: query, mode: 'insensitive' } },
+          { path: { contains: query, mode: 'insensitive' } }
+        ]
+      },
+      distinct: ['path'], // Prevent duplicates
+      orderBy: { updated_at: 'desc' },
+      take: 20
+    });
+
+    console.log('Found documents:', documents.length);
+
+    // Convert tasks to Document format
+    const taskDocs = tasks.map(task => ({
+      id: task.id,
+      title: task.title,
+      content: task.description || '',
+      type: 'task',
+      path: normalizeFilePath(task.filePath),
+      created_at: new Date(task.created_at).toISOString(),
+      updated_at: new Date(task.updated_at).toISOString(),
+      metadata: {
+        excerpt: extractExcerpt(task.description || '', query),
+        rank: 1,
+        status: task.status
+      }
+    }));
+
+    // Format documents
+    const formattedDocs = documents.map(doc => ({
+      id: doc.id,
+      title: doc.title,
+      content: doc.content,
+      type: doc.type,
+      path: normalizeFilePath(doc.path),
+      created_at: new Date(doc.created_at).toISOString(),
+      updated_at: new Date(doc.updated_at).toISOString(),
+      metadata: {
+        excerpt: extractExcerpt(doc.content, query),
+        rank: 1
+      }
+    }));
+
+    // Combine and sort results, removing duplicates by path
+    const results = [...taskDocs, ...formattedDocs]
+      .filter((result, index, self) => 
+        index === self.findIndex((r) => r.path === result.path)
+      )
+      .sort((a, b) => {
+        // Sort by relevance (if title contains query, prioritize)
+        const aTitle = a.title.toLowerCase().includes(query.toLowerCase());
+        const bTitle = b.title.toLowerCase().includes(query.toLowerCase());
+        if (aTitle && !bTitle) return -1;
+        if (!aTitle && bTitle) return 1;
+        
+        // Then sort by date
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+
+    console.log('Total results:', results.length);
+    return results;
+
   } catch (error) {
     console.error('Search failed:', error);
-    // Fallback to basic search if full-text search fails
-    return await prisma.document.findMany({
-      where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { content: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      include: {
-        tags: true,
-        references: {
-          include: {
-            target: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 10
-    });
+    throw error;
   }
 }
 
@@ -264,4 +319,4 @@ export async function testConnection() {
   }
 }
 
-export { prisma, sql }; 
+export { prisma, sql };

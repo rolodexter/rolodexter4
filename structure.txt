@@ -1,107 +1,103 @@
 # rolodexter4 Repository Structure
+# Last Updated: 2025-02-21
 
 /agents/                     # Core agents responsible for intelligence & execution
 ├── JoeMaristela/           # Human Executive Operator & Trainer
-│   ├── interventions/      # Logs of direct human interventions
-│   ├── training/           # Training sets for AI improvements
 │   ├── decisions/          # Human-guided strategic decisions
-│   └── memories/           # Logs of training & interactions
+│   ├── interventions/      # Logs of direct human interventions
+│   ├── memories/           # Logs of training & interactions
+│   ├── notes/              # Project notes and documentation
+│   ├── tasks/              # Task management
+│   └── training/           # Training sets for AI improvements
 ├── rolodexterGPT/          # AI-powered intelligence & memory manager
 │   ├── insights/           # AI-generated insights
-│   ├── responses/          # Past AI interactions
+│   ├── memories/           # Logs of AI thought process
 │   ├── reasoning/          # Explanation of AI decision-making
-│   └── memories/           # Logs of AI thought process
+│   ├── responses/          # Past AI interactions
+│   └── tasks/              # Task management and tracking
+│       ├── active-tasks/   # Currently active tasks
+│       ├── archived/       # Completed historical tasks
+│       ├── pending-tasks/  # Tasks awaiting action
+│       ├── resolved-tasks/ # Successfully completed tasks
+│       └── validation/     # Task validation tools
 ├── rolodexterVS/           # IDE Agent for code execution & operations
-│   ├── operations/         # Automated workflows & scheduled tasks
-│   ├── execution/          # Script executions & validations
-│   ├── tasks/              # Active development tasks
 │   └── memories/           # Logs of code execution & debugging
 ├── VisualEngineer/         # Human agent for design/media assets
-│   ├── graphics/           # Icons, illustrations, banners
-│   ├── videos/             # Explainers, walkthroughs
-│   ├── animations/         # Motion design assets
-│   ├── branding/           # Style guides, color schemes
-│   └── memories/           # Logs of creative process & references
 └── memories/               # Shared memory logs across all agents
-    └── session-logs/       # Daily interaction logs
-        └── 2025/
-            └── 02/
-                └── 17.html # Today's session log
 
-/api/                       # Backend API for system management
-├── agents/                 # API endpoints for interacting with agents
-├── operations/             # API endpoints for executing automated workflows
-└── projects/               # API endpoints for research, labs & community
+/api/                       # Backend API endpoints
 
 /assets/                    # Website media assets
-├── branding/               # Logos, color schemes, typography
-├── buttons/                # UI elements
-├── css/                    # Stylesheets
-│   └── global.css          # Global styles and Tailwind imports
-├── favicons/               # Icons for different resolutions
-└── illustrations/          # Custom artwork
+└── static/                 # Static media files
+    └── SQUARE_LOGO.jpg     # Logo asset
+
+/components/                # React components
+└── common/                # Shared components
 
 /config/                    # Configuration files
 
-/lib/                       # Shared libraries
-├── db.ts                   # Database connection (Prisma)
-├── redis.ts                # Redis connection & caching
-└── utils.ts                # Utility functions
+/lib/                      # Shared libraries
+├── db/                    # Database utilities
+└── utils/                 # Utility functions
 
-/operations/                # Repeating algorithmic processes
-├── dependency-checks/      # Regular dependency & performance audits
-├── file-validation/        # Ensuring compliance with base standards
-├── footer-updates/         # Keeping footer links fresh with top insights
-├── memory-updates/         # Scheduled memory consolidation & archiving
-└── task-maintenance/       # Automated task management
+/pages/                    # Next.js frontend pages
+└── api/                   # API route handlers
+    └── tasks/             # Task-related endpoints
 
-/pages/                     # Next.js frontend pages
-├── _app.tsx                # Global app wrapper
-├── _document.tsx           # HTML document customization
-└── layout/                 # Layout components
-    ├── Footer.tsx          # Global footer component
-    ├── Header.tsx          # Global header component
-    └── Layout.tsx          # Layout wrapper component
+/prisma/                   # Prisma ORM configuration
 
-/projects/                  # Project-based contributions
-├── community/              # Community-driven initiatives
-│   └── tasks/              # Community project tasks
-├── research/               # Technical & theoretical explorations
-│   └── tasks/              # Research project tasks
-├── rolodexter-labs/        # Internal R&D, products & services
-│   ├── products/           # Decentralized apps & platforms
-│   │   └── beacon/         # NFT Minting & So-Fi Platform
-│   │       ├── docs/       # Public documentation
-│   │       ├── media/      # Project media assets
-│   │       ├── tasks/      # Project-specific tasks
-│   │       └── updates/    # Progress reports
-│   ├── services/           # Consultations & integrations
-│   │   └── tasks/          # Service-related tasks
-│   └── tasks/              # General labs tasks
-└── rolodexter4/            # Website & infrastructure
-    ├── knowledge-graph/    # Graph visualization system
-    │   ├── data/           # Graph data storage
-    │   ├── render/         # Visualization engine
-    │   └── index.html      # Graph interface
-    ├── tasks/              # Website development tasks
-    └── ui/                 # UI components & styles
-        ├── components/     # React components
-        │   └── Header.tsx  # Enhanced header component
-        ├── styles/         # Component-specific styles
-        └── tasks/          # UI development tasks
-            └── header-footer-task.html # Current UI task
+/public/                   # Static public assets
+└── static/               # Static files
+    └── SQUARE_LOGO.jpg   # Logo asset
 
-/public/                    # Static assets & public files
+/scripts/                  # Automation scripts
+├── indexDocuments.ts      # Document indexing
+├── indexSessionLogs.ts    # Session log indexing
+├── indexTasks.ts         # Task indexing
+├── manageMemories.ts     # Memory management
+├── seedInitialData.ts    # Database seeding
+├── syncHtmlToBlob.ts     # HTML blob sync
+├── syncTasksToBlob.ts    # Task blob sync
+├── testBlob.ts          # Blob storage testing
+├── testDatabase.ts      # Database testing
+├── testDirectConnection.ts # Direct connection testing
+├── testLocalDb.ts       # Local database testing
+├── validateDeployment.ts # Deployment validation
+└── verifyVercelPostgres.ts # Postgres verification
 
-/scripts/                   # Automation scripts
+/src/                     # Source code
+├── components/          # React components
+│   ├── common/         # Common components
+│   ├── documents/      # Document-related components
+│   ├── graphs/         # Graph visualization components
+│   └── tasks/          # Task-related components
+├── lib/               # Library code
+│   ├── db/           # Database utilities
+│   └── utils/        # Utility functions
+├── pages/            # Next.js pages
+│   └── api/         # API routes
+└── styles/          # Component styles
+
+/styles/                  # Global styles
+└── globals.css          # Global CSS
+
+/utils/                   # Utility functions
+├── db.ts               # Database utilities
+├── fileAccess.ts       # File system utilities
+└── search.ts          # Search functionality
 
 # Configuration Files
-.env                        # Environment variables
-.github/                    # GitHub configuration
-    └── workflows/          # GitHub Actions
-        └── layout-check.yml # Layout enforcement workflow
-LICENSE                     # Project license
-package.json                # Project dependencies & scripts
-README.md                   # Project documentation
-tailwind.config.js          # Tailwind CSS configuration
-tsconfig.json               # TypeScript configuration
+.env                    # Environment variables
+.env.example           # Example environment config
+.env.local             # Local environment config
+.gitignore             # Git ignore rules
+.next/                 # Next.js build output
+LICENSE                # Project license
+README.md              # Project documentation
+next-env.d.ts         # Next.js TypeScript definitions
+next.config.js        # Next.js configuration
+package-lock.json     # NPM lock file
+package.json          # Project dependencies & scripts
+tailwind.config.js    # Tailwind CSS configuration
+tsconfig.json        # TypeScript configuration
+vercel.json         # Vercel deployment config

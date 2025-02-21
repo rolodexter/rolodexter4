@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import * as d3 from 'd3';
 
@@ -18,15 +18,20 @@ interface TaskGraphProps {
   nodes: Task[];
 }
 
-export const TaskGraph: React.FC<TaskGraphProps> = ({ nodes }) => {
+export const TaskGraph: React.FC<TaskGraphProps> = ({ nodes = [] }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current || nodes.length === 0) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !svgRef.current || !containerRef.current || nodes.length === 0) return;
 
     const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+    const height = 200; // Fixed height for better consistency
 
     d3.select(svgRef.current).selectAll("*").remove();
 
@@ -35,7 +40,7 @@ export const TaskGraph: React.FC<TaskGraphProps> = ({ nodes }) => {
       .attr("height", height);
 
     const links: Link[] = nodes.flatMap(node =>
-      node.connections.map(targetId => ({
+      (node.connections || []).map(targetId => ({
         source: node.id,
         target: targetId,
         status: node.status
@@ -48,126 +53,99 @@ export const TaskGraph: React.FC<TaskGraphProps> = ({ nodes }) => {
       .force("center", d3.forceCenter<Task>(width / 2, height / 2))
       .force("collision", d3.forceCollide<Task>().radius(30));
 
+    // Create a group for all graph elements
+    const g = svg.append("g");
+
     // Links
-    const link = svg.append("g")
-      .selectAll<SVGLineElement, Link>("line")
+    const link = g.selectAll(".link")
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke", "#FFFFFF")
-      .attr("stroke-width", 1)
-      .attr("class", "task-connection");
+      .attr("class", "link")
+      .style("stroke", "#4a5568")
+      .style("stroke-width", 1)
+      .style("opacity", 0.6);
 
-    // Node groups
-    const node = svg.append("g")
-      .selectAll<SVGGElement, Task>("g")
+    // Nodes
+    const node = g.selectAll(".node")
       .data(nodes)
       .enter()
       .append("g")
-      .attr("class", "task-node")
+      .attr("class", "node")
       .call(d3.drag<SVGGElement, Task>()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));
 
-    // Hexagonal node shapes
-    const hexagonPath = (size: number) => {
-      const points = [];
-      for (let i = 0; i < 6; i++) {
-        const angle = (i * Math.PI) / 3;
-        points.push([
-          size * Math.sin(angle),
-          size * Math.cos(angle)
-        ]);
-      }
-      return d3.line()(points as [number, number][]) || "";
-    };
-
-    node.append("path")
-      .attr("d", hexagonPath(10))
-      .attr("fill", "none")
-      .attr("stroke", "#FFFFFF")
-      .attr("stroke-width", 1);
-
-    // Active node indicators
-    node.filter(d => d.status === 'active')
-      .append("circle")
-      .attr("r", 3)
-      .attr("fill", "#FFFFFF")
-      .attr("class", "node-pulse");
+    // Node circles
+    node.append("circle")
+      .attr("r", 6)
+      .style("fill", d => {
+        switch (d.status) {
+          case 'active': return '#68D391';
+          case 'pending': return '#F6AD55';
+          case 'resolved': return '#9F7AEA';
+          default: return '#CBD5E0';
+        }
+      })
+      .style("stroke", "#2D3748")
+      .style("stroke-width", 1);
 
     // Node labels
     node.append("text")
-      .text(d => d.systemArea)
-      .attr("font-size", "8px")
-      .attr("fill", "#FFFFFF")
-      .attr("text-anchor", "middle")
-      .attr("dy", "20");
+      .attr("dx", 10)
+      .attr("dy", 4)
+      .style("font-size", "8px")
+      .style("fill", "#A0AEC0")
+      .text(d => d.title);
 
     simulation.on("tick", () => {
       link
-        .attr("x1", d => (d.source as Task).x ?? 0)
-        .attr("y1", d => (d.source as Task).y ?? 0)
-        .attr("x2", d => (d.target as Task).x ?? 0)
-        .attr("y2", d => (d.target as Task).y ?? 0);
+        .attr("x1", d => (d.source as Task).x!)
+        .attr("y1", d => (d.source as Task).y!)
+        .attr("x2", d => (d.target as Task).x!)
+        .attr("y2", d => (d.target as Task).y!);
 
       node
-        .attr("transform", d => `translate(${d.x ?? 0},${d.y ?? 0})`);
+        .attr("transform", d => `translate(${d.x},${d.y})`);
     });
 
-    function dragstarted(event: d3.D3DragEvent<SVGGElement, Task, Task>) {
+    function dragstarted(event: d3.D3DragEvent<SVGGElement, Task, Task>, d: Task) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
+      d.fx = d.x;
+      d.fy = d.y;
     }
 
-    function dragged(event: d3.D3DragEvent<SVGGElement, Task, Task>) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
+    function dragged(event: d3.D3DragEvent<SVGGElement, Task, Task>, d: Task) {
+      d.fx = event.x;
+      d.fy = event.y;
     }
 
-    function dragended(event: d3.D3DragEvent<SVGGElement, Task, Task>) {
+    function dragended(event: d3.D3DragEvent<SVGGElement, Task, Task>, d: Task) {
       if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
+      d.fx = null;
+      d.fy = null;
     }
 
     return () => {
       simulation.stop();
     };
-  }, [nodes]);
+  }, [nodes, mounted]);
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-48 bg-gray-800 rounded"></div>
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="w-full h-full relative">
-      <svg ref={svgRef} className="w-full h-full">
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-      </svg>
-      
-      {/* Scanline overlay */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(transparent 50%, #FFFFFF 50%)',
-          backgroundSize: '100% 4px',
-          opacity: 0.05
-        }}
-        animate={{
-          backgroundPosition: ['0px 0px', '0px 4px']
-        }}
-        transition={{
-          duration: 0.2,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      />
+    <div 
+      ref={containerRef} 
+      className="w-full h-48 bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden"
+    >
+      <svg ref={svgRef} className="w-full h-full" />
     </div>
   );
 };

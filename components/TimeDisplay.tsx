@@ -8,7 +8,14 @@ const TimeDisplay = () => {
   useEffect(() => {
     setMounted(true);
     const updateTime = () => {
-      setTime(new Date().toISOString().slice(11, 19));
+      const now = new Date();
+      const formattedTime = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).format(now);
+      setTime(formattedTime);
     };
 
     // Initial update
@@ -20,18 +27,22 @@ const TimeDisplay = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Don't render anything until mounted (client-side only)
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+      </div>
+    );
+  }
 
   return (
-    <motion.span
-      className="text-xs font-mono text-white tracking-wider"
+    <motion.div
+      className="text-xs font-mono text-gray-300 tracking-wider"
       animate={{ opacity: [1, 0.5, 1] }}
       transition={{ duration: 2, repeat: Infinity }}
-      suppressHydrationWarning
     >
-      {time}
-    </motion.span>
+      <span suppressHydrationWarning>{time}</span>
+    </motion.div>
   );
 };
 
