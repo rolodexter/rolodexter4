@@ -1,8 +1,9 @@
-import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { motion } from 'framer-motion';
+import type { SearchResult } from '../types';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SearchResult } from '@/types';
 
 interface Props {
   // Add any props if needed

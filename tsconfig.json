@@ -15,23 +15,23 @@
     "jsx": "preserve",
     "incremental": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@lib/*": ["./src/lib/*"],
-      "@utils/*": ["./src/lib/utils/*"],
-      "@db": ["./src/lib/db"],
-      "@db/*": ["./src/lib/db/*"],
-      "@styles/*": ["./src/styles/*"],
+      "@/*": ["./*"],
+      "@components/*": ["./components/*"],
+      "@lib/*": ["./lib/*"],
+      "@utils/*": ["./lib/utils/*"],
+      "@db": ["./lib/db"],
+      "@db/*": ["./lib/db/*"],
+      "@styles/*": ["./styles/*"],
+      "@types": ["./types"],
+      "@types/*": ["./types/*"],
       "pages/*": ["./pages/*"],
       "api/*": ["./pages/api/*"]
     }
   },
   "include": [
     "next-env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "pages/**/*.ts",
-    "pages/**/*.tsx"
+    "**/*.ts",
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules",

@@ -1,19 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { searchDocuments, testConnection } from '@/lib/db';
+import type { SearchResult, DocumentMetadata } from '../../types';
 import type { Document } from '@prisma/client';
-
-interface SearchResult {
-  title: string;
-  path: string;
-  excerpt: string;
-  rank: number;
-}
-
-interface DocumentMetadata {
-  excerpt?: string;
-  rank?: number;
-  [key: string]: any;
-}
 
 export default async function handler(
   req: NextApiRequest,
