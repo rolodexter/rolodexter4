@@ -35,17 +35,18 @@ export default async function handler(
   res: NextApiResponse
 ) {
   let pool: Pool | null = null;
+  let envVars: any;
+
+  // Log environment variables (without sensitive info)
+  envVars = {
+    POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? '[SET]' : '[NOT SET]',
+    POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? '[SET]' : '[NOT SET]',
+    DATABASE_URL: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
+    NODE_ENV: process.env.NODE_ENV
+  };
+  console.log('Environment variables:', envVars);
 
   try {
-    // Log environment variables (without sensitive info)
-    const envVars = {
-      POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? '[SET]' : '[NOT SET]',
-      POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? '[SET]' : '[NOT SET]',
-      DATABASE_URL: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
-      NODE_ENV: process.env.NODE_ENV
-    };
-    console.log('Environment variables:', envVars);
-
     // Get database URL
     const dbUrl = formatDatabaseUrl(
       process.env.POSTGRES_URL_NON_POOLING || 
