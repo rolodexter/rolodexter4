@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("POSTGRES_PRISMA_URL") ?? env("POSTGRES_URL_NON_POOLING")
+  url = env("POSTGRES_URL_NON_POOLING")
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
@@ -53,9 +53,9 @@ model Task {
   parent       Task?      @relation("TaskHierarchy", fields: [parent_id], references: [id])
   tags         Tag[]
 
-  @@index([status, type])
-  @@index([created_at, updated_at])
+  @@index([status, created_at])
   @@index([filePath])
+  @@index([created_at, updated_at])
 }
 
 model Memory {
@@ -97,6 +97,9 @@ model Tag {
   tasks      Task[]
   memories   Memory[]
   created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  @@index([name])
 }
 
 model Integration {
@@ -133,6 +136,8 @@ model Interaction {
 enum TaskType {
   AGENT
   PROJECT
+  USER
+  SYSTEM
 }
 
 enum TaskStatus {
@@ -140,6 +145,9 @@ enum TaskStatus {
   PENDING
   RESOLVED
   ARCHIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum Priority {
@@ -186,4 +194,5 @@ enum InteractionType {
   EVENT
   NOTIFICATION
   API_CALL
+  VIEW
 }
