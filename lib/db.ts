@@ -28,9 +28,16 @@ export const testConnection = async () => {
 
 export const searchDocuments = async (query: string) => {
   try {
+    console.log('Starting search with query:', query);
+    
     // Split query into words for better matching
     const searchTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    console.log('Search terms:', searchTerms);
     
+    // First, let's check if we have any documents at all
+    const totalDocs = await prisma.document.count();
+    console.log('Total documents in database:', totalDocs);
+
     // Create OR conditions for each search term
     const whereConditions = searchTerms.map(term => ({
       OR: [
@@ -39,6 +46,8 @@ export const searchDocuments = async (query: string) => {
       ],
     }));
 
+    console.log('Search conditions:', JSON.stringify(whereConditions, null, 2));
+
     const results = await prisma.document.findMany({
       where: {
         AND: whereConditions,
@@ -46,6 +55,7 @@ export const searchDocuments = async (query: string) => {
       select: {
         title: true,
         path: true,
+        content: true,
         metadata: true,
       },
       orderBy: {
@@ -53,6 +63,33 @@ export const searchDocuments = async (query: string) => {
       },
       take: 10,
     });
+
+    console.log('Search results count:', results.length);
+    if (results.length === 0) {
+      // Let's try a broader search if no results found
+      const broadResults = await prisma.document.findMany({
+        where: {
+          OR: searchTerms.map(term => ({
+            OR: [
+              { title: { contains: term, mode: 'insensitive' } },
+              { content: { contains: term, mode: 'insensitive' } },
+            ],
+          })),
+        },
+        select: {
+          title: true,
+          path: true,
+          content: true,
+          metadata: true,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        take: 10,
+      });
+      console.log('Broad search results count:', broadResults.length);
+      return broadResults;
+    }
 
     return results;
   } catch (error) {

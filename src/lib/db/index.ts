@@ -91,20 +91,14 @@ interface SearchRow extends Document {
 // Initialize the database with required tables
 export async function initializeDatabase() {
   try {
-    // Create full-text search index
+    // Create extensions for search
     await sql.query(`
       CREATE EXTENSION IF NOT EXISTS pg_trgm;
       CREATE EXTENSION IF NOT EXISTS vector;
       
-      -- Ensure documents table has tsvector column
-      ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS ts_document tsvector
-      GENERATED ALWAYS AS (
-        setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(content, '')), 'B')
-      ) STORED;
-
-      -- Create GiST index for full-text search
-      CREATE INDEX IF NOT EXISTS idx_documents_ts ON "Document" USING GIN (ts_document);
+      -- Create trigram index for better text search
+      CREATE INDEX IF NOT EXISTS idx_documents_title_trgm ON "Document" USING GIN (title gin_trgm_ops);
+      CREATE INDEX IF NOT EXISTS idx_documents_content_trgm ON "Document" USING GIN (content gin_trgm_ops);
       
       -- Create index for vector similarity search
       CREATE INDEX IF NOT EXISTS idx_memories_embedding ON "Memory" USING ivfflat (embedding vector_cosine_ops)
