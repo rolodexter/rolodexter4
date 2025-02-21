@@ -6,8 +6,11 @@ const nextConfig = {
     BLOB_STORE_NAME: 'rolodexter4-documents'
   },
   webpack: (config, { isServer }) => {
-    // Ignore .env files in webpack
-    config.ignoreWarnings = [{ module: /\.env$/ }];
+    // Ignore .env files in webpack and suppress warnings
+    config.ignoreWarnings = [
+      { module: /\.env$/ },
+      { message: /ENOENT: no such file or directory, stat.*\.env/ }
+    ];
     return config;
   }
 };
