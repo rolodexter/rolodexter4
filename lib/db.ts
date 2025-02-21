@@ -9,11 +9,36 @@ console.log('Environment variables:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-// Initialize Prisma client with direct database URL
+// Ensure database URL has the correct format for Neon
+function formatDatabaseUrl(url: string): string {
+  if (!url) return url;
+  
+  // Add ?connect_timeout=10 if not present
+  const hasTimeout = url.includes('connect_timeout=');
+  const hasParams = url.includes('?');
+  
+  if (!hasTimeout) {
+    if (hasParams) {
+      url += '&connect_timeout=10';
+    } else {
+      url += '?connect_timeout=10';
+    }
+  }
+
+  // Add @neondb suffix if using neon.tech and not already present
+  if (url.includes('neon.tech') && !url.includes('@neondb')) {
+    url = url.replace('.tech/', '.tech/neondb/');
+  }
+
+  return url;
+}
+
+// Initialize Prisma client with formatted database URL
+const dbUrl = formatDatabaseUrl(process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || '');
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL
+      url: dbUrl
     }
   },
   errorFormat: 'minimal',
@@ -21,7 +46,6 @@ const prisma = new PrismaClient({
 });
 
 // Log the database URL being used (without sensitive info)
-const dbUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || '';
 console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
 
 // Attempt to connect and catch any errors to prevent crashing
