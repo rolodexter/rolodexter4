@@ -1,5 +1,5 @@
-import { readDirectory, readFileStats, readFile as readBlobFile } from '@vercel/blob';
-import fs from 'fs/promises';
+import { list, head } from '@vercel/blob';
+import { promises as fs } from 'fs';
 import path from 'path';
 
 const isLocal = process.env.NODE_ENV === 'development';
@@ -28,8 +28,12 @@ export async function readTaskDirectory(directory: string): Promise<FileInfo[]> 
   }
   
   try {
-    const { blobs } = await readDirectory({ directory });
-    return blobs;
+    const { blobs } = await list();
+    return blobs
+      .filter(blob => blob.pathname.startsWith(directory))
+      .map(blob => ({
+        pathname: blob.pathname,
+      }));
   } catch (error) {
     console.error(`Error reading blob directory ${directory}:`, error);
     return [];
@@ -51,7 +55,10 @@ export async function getFileStats(filePath: string): Promise<{ uploadedAt: Date
   }
   
   try {
-    return await readFileStats(filePath);
+    const { uploadedAt } = await head(filePath);
+    return {
+      uploadedAt,
+    };
   } catch (error) {
     console.error(`Error getting blob file stats ${filePath}:`, error);
     return { uploadedAt: new Date() };
@@ -70,7 +77,9 @@ export async function readTaskFile(filePath: string): Promise<string> {
   }
   
   try {
-    return await readBlobFile(filePath, 'utf-8');
+    const { url } = await head(filePath);
+    const response = await fetch(url);
+    return await response.text();
   } catch (error) {
     console.error(`Error reading blob file ${filePath}:`, error);
     return '';

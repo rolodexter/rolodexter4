@@ -1,82 +1,71 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/db';
-import type { Task, Tag } from '@prisma/client';
+import { Task, Tag, TaskStatus, Priority } from '@prisma/client';
+
+type TaskWithTags = Task & {
+  tags: Tag[];
+  metadata: {
+    labels?: string[];
+  } | null;
+};
 
 interface TaskResponse {
   id: string;
   title: string;
-  file_path: string;
-  type: 'AGENT' | 'PROJECT';
-  createdAt: Date;
-  updatedAt: Date;
-  status: string;
-  priority: string;
+  status: TaskStatus;
+  priority: Priority;
+  dueDate: string | null;
+  assignee: string | null;
+  labels: string[];
   tags: Array<{
+    id: string;
     name: string;
     color: string | null;
   }>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<TaskResponse[] | { message: string }>
+) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { type = 'all', status = 'active' } = req.query;
-
   try {
-    const whereClause: any = {};
-
-    // Filter by type if specified
-    if (type !== 'all') {
-      whereClause.type = type.toString().toUpperCase();
-    }
-
-    // Filter by status
-    if (status === 'active') {
-      whereClause.OR = [
-        { status: 'ACTIVE' },
-        { status: 'PENDING' }
-      ];
-    } else if (status !== 'all') {
-      whereClause.status = status.toString().toUpperCase();
-    }
-
-    const recentTasks = await prisma.task.findMany({
-      where: whereClause,
+    const tasks = await prisma.task.findMany({
       include: {
-        tags: {
-          select: {
-            name: true,
-            color: true
-          }
-        }
+        tags: true
       },
-      orderBy: [
-        { priority: 'desc' },
-        { updated_at: 'desc' }
-      ],
-      take: 20
+      orderBy: {
+        updated_at: 'desc'
+      },
+      take: 10
     });
 
-    const formattedTasks: TaskResponse[] = recentTasks.map(task => ({
+    // Format tasks for display
+    const formattedTasks: TaskResponse[] = (tasks as TaskWithTags[]).map(task => ({
       id: task.id,
       title: task.title,
-      file_path: task.filePath,
-      type: task.type as 'AGENT' | 'PROJECT',
-      createdAt: task.created_at,
-      updatedAt: task.updated_at,
       status: task.status,
       priority: task.priority,
-      tags: task.tags
+      dueDate: task.due_date?.toISOString() || null,
+      assignee: task.assignee,
+      labels: task.metadata?.labels || [],
+      tags: task.tags.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color
+      })),
+      createdAt: task.created_at,
+      updatedAt: task.updated_at
     }));
 
-    return res.status(200).json({
-      tasks: formattedTasks,
-      count: formattedTasks.length
-    });
+    return res.status(200).json(formattedTasks);
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    console.error('Failed to fetch recent tasks:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

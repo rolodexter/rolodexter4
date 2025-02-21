@@ -1,16 +1,25 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { sql } from '@/lib/db';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 interface Document {
   id: string;
   title: string;
   path: string;
   content: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+interface GraphResult {
+  date: Date;
+  count: number;
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -19,8 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Fetching documents from database...');
     
     // Fetch all documents
-    await sql.connect();
-    const result = await sql.sql`
+    const result = await prisma.$queryRaw<Document[]>`
       SELECT 
         id,
         title,
@@ -33,8 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ORDER BY created_at DESC;
     `;
 
-    console.log(`Found ${result.rows.length} documents`);
-    const documents = result.rows as Document[];
+    console.log(`Found ${result.length} documents`);
+    const documents = result;
 
     // Generate references between documents based on content and paths
     const references: Record<string, Array<{ source: string; target: string; confidence: number }>> = {
@@ -108,7 +116,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Error fetching graph data', 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
-  } finally {
-    await sql.end();
   }
 } 
