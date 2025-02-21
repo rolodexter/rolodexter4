@@ -1,175 +1,184 @@
-import { PrismaClient, Priority, TaskStatus } from '@prisma/client';
-import { parse } from 'node-html-parser';
 import { readFileSync, readdirSync } from 'fs';
 import { join, relative } from 'path';
-import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Load environment variables
-dotenv.config({ path: join(process.cwd(), '.env.local') });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const prisma = new PrismaClient();
+async function main() {
+  const { PrismaClient } = await import('@prisma/client');
+  const { parse } = await import('node-html-parser');
+  const dotenv = await import('dotenv');
 
-// Map priority strings to Prisma Priority enum
-function mapPriority(priority: string | undefined): Priority {
-  if (!priority) return Priority.MEDIUM;
-  
-  switch (priority.toUpperCase()) {
-    case 'HIGH':
-      return Priority.HIGH;
-    case 'LOW':
-      return Priority.LOW;
-    case 'URGENT':
-      return Priority.URGENT;
-    default:
-      return Priority.MEDIUM;
-  }
-}
+  // Load environment variables
+  dotenv.config({ path: join(process.cwd(), '.env.local') });
 
-// Map status strings to Prisma TaskStatus enum
-function mapStatus(status: string | undefined): TaskStatus {
-  if (!status) return TaskStatus.ACTIVE;
-  
-  switch (status.toUpperCase()) {
-    case 'ACTIVE':
-      return TaskStatus.ACTIVE;
-    case 'PENDING':
-      return TaskStatus.PENDING;
-    case 'RESOLVED':
-      return TaskStatus.RESOLVED;
-    case 'ARCHIVED':
-      return TaskStatus.ARCHIVED;
-    case 'IN_PROGRESS':
-      return TaskStatus.ACTIVE;
-    default:
-      return TaskStatus.ACTIVE;
-  }
-}
+  const prisma = new PrismaClient();
 
-async function scanDirectory(dir: string): Promise<string[]> {
-  const files: string[] = [];
-  const items = readdirSync(dir, { withFileTypes: true });
-
-  for (const item of items) {
-    const fullPath = join(dir, item.name);
-    if (item.isDirectory() && !item.name.startsWith('.') && !item.name.includes('node_modules')) {
-      files.push(...await scanDirectory(fullPath));
-    } else if (item.isFile() && item.name.endsWith('.html')) {
-      files.push(fullPath);
+  // Map priority strings to Priority enum
+  type Priority = 'HIGH' | 'MEDIUM' | 'LOW' | 'URGENT';
+  function mapPriority(priority: string | undefined): Priority {
+    if (!priority) return 'MEDIUM';
+    
+    switch (priority.toUpperCase()) {
+      case 'HIGH':
+        return 'HIGH';
+      case 'LOW':
+        return 'LOW';
+      case 'URGENT':
+        return 'URGENT';
+      default:
+        return 'MEDIUM';
     }
   }
 
-  return files;
-}
-
-async function parseHtmlFile(filePath: string) {
-  const content = readFileSync(filePath, 'utf-8');
-  const root = parse(content);
-  const relativePath = relative(process.cwd(), filePath).replace(/\\/g, '/');
-
-  // Extract metadata from head
-  const head = root.querySelector('head');
-  const title = head?.querySelector('title')?.text || relativePath;
-  const description = head?.querySelector('meta[name="description"]')?.getAttribute('content');
-  const status = head?.querySelector('meta[name="task-status"]')?.getAttribute('content');
-  const priority = head?.querySelector('meta[name="priority"]')?.getAttribute('content');
-  const assignedTo = head?.querySelector('meta[name="assigned-to"]')?.getAttribute('content');
-
-  // Determine document type based on path
-  let type = 'documentation';
-  if (relativePath.includes('/tasks/')) {
-    type = 'task';
-  } else if (relativePath.includes('/memories/')) {
-    type = 'memory';
+  // Map status strings to TaskStatus enum
+  type TaskStatus = 'ACTIVE' | 'PENDING' | 'RESOLVED' | 'ARCHIVED';
+  function mapStatus(status: string | undefined): TaskStatus {
+    if (!status) return 'ACTIVE';
+    
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return 'ACTIVE';
+      case 'PENDING':
+        return 'PENDING';
+      case 'RESOLVED':
+        return 'RESOLVED';
+      case 'ARCHIVED':
+        return 'ARCHIVED';
+      case 'IN_PROGRESS':
+        return 'ACTIVE';
+      default:
+        return 'ACTIVE';
+    }
   }
 
-  return {
-    title,
-    content,
-    path: relativePath,
-    type,
-    metadata: {
-      description,
-      status,
-      priority,
-      assignedTo
-    }
-  };
-}
+  async function scanDirectory(dir: string): Promise<string[]> {
+    const files: string[] = [];
+    const items = readdirSync(dir, { withFileTypes: true });
 
-async function seedDatabase() {
-  try {
-    console.log('Starting database seed...');
-
-    // Scan for all HTML files
-    console.log('Scanning for HTML files...');
-    const files = await scanDirectory(process.cwd());
-    console.log(`Found ${files.length} HTML files`);
-
-    // Process each file
-    for (const file of files) {
-      const fileData = await parseHtmlFile(file);
-      console.log(`Processing ${fileData.path}...`);
-
-      try {
-        // Create or update document
-        const document = await prisma.document.upsert({
-          where: { path: fileData.path },
-          update: {
-            title: fileData.title,
-            content: fileData.content,
-            type: fileData.type,
-            metadata: fileData.metadata,
-            updated_at: new Date()
-          },
-          create: {
-            title: fileData.title,
-            content: fileData.content,
-            path: fileData.path,
-            type: fileData.type,
-            metadata: fileData.metadata
-          }
-        });
-
-        // If it's a task, create or update task record
-        if (fileData.type === 'task') {
-          await prisma.task.upsert({
-            where: { filePath: fileData.path },
-            update: {
-              title: fileData.title,
-              status: mapStatus(fileData.metadata.status as string),
-              priority: mapPriority(fileData.metadata.priority as string),
-              assignee: fileData.metadata.assignedTo,
-              document_id: document.id,
-              updated_at: new Date()
-            },
-            create: {
-              title: fileData.title,
-              filePath: fileData.path,
-              status: mapStatus(fileData.metadata.status as string),
-              priority: mapPriority(fileData.metadata.priority as string),
-              assignee: fileData.metadata.assignedTo,
-              document_id: document.id
-            }
-          });
-        }
-
-        console.log(`✓ Processed ${fileData.path}`);
-      } catch (error) {
-        console.error(`Error processing ${fileData.path}:`, error);
+    for (const item of items) {
+      const fullPath = join(dir, item.name);
+      if (item.isDirectory()) {
+        files.push(...await scanDirectory(fullPath));
+      } else if (item.name.endsWith('.html')) {
+        files.push(fullPath);
       }
     }
 
-    console.log('Database seed completed successfully!');
-  } catch (error) {
-    console.error('Error seeding database:', error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
+    return files;
   }
+
+  async function parseHtmlFile(filePath: string) {
+    const content = readFileSync(filePath, 'utf-8');
+    const root = parse(content);
+
+    const title = root.querySelector('title')?.text || 'Untitled';
+    const metaTags = root.querySelectorAll('meta');
+    
+    const metadata: Record<string, string> = {};
+    metaTags.forEach(tag => {
+      const name = tag.getAttribute('name');
+      const content = tag.getAttribute('content');
+      if (name && content) {
+        metadata[name] = content;
+      }
+    });
+
+    return {
+      title,
+      content: root.text,
+      metadata,
+      path: relative(process.cwd(), filePath).replace(/\\/g, '/'),
+      type: 'documentation'
+    };
+  }
+
+  async function seedDatabase() {
+    try {
+      // Create some initial documents
+      const files = await scanDirectory('docs');
+      console.log(`Found ${files.length} HTML files to process`);
+
+      // Create tags first
+      const tags = ['documentation', 'general', 'samples'];
+      for (const tagName of tags) {
+        await prisma.tag.upsert({
+          where: { name: tagName },
+          update: {},
+          create: { name: tagName }
+        });
+      }
+
+      for (const file of files) {
+        const { title, content, metadata, path, type } = await parseHtmlFile(file);
+        
+        // Use upsert to handle existing documents
+        await prisma.document.upsert({
+          where: { path },
+          update: {
+            title,
+            content,
+            type,
+            metadata: metadata as any,
+            tags: {
+              connect: [
+                { name: 'documentation' },
+                { name: metadata.category || 'general' }
+              ]
+            }
+          },
+          create: {
+            title,
+            content,
+            path,
+            type,
+            metadata: metadata as any,
+            tags: {
+              connect: [
+                { name: 'documentation' },
+                { name: metadata.category || 'general' }
+              ]
+            }
+          }
+        });
+        console.log(`Upserted document: ${title}`);
+      }
+
+      // Create or update test task
+      await prisma.task.upsert({
+        where: { filePath: '/tasks/sample.md' },
+        update: {
+          title: 'Sample Task',
+          description: 'This is a sample task to test the system',
+          status: 'ACTIVE',
+          type: 'AGENT',
+          priority: 'MEDIUM'
+        },
+        create: {
+          title: 'Sample Task',
+          description: 'This is a sample task to test the system',
+          status: 'ACTIVE',
+          type: 'AGENT',
+          priority: 'MEDIUM',
+          filePath: '/tasks/sample.md'
+        }
+      });
+
+      console.log('Database seeded successfully');
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      throw error;
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
+  await seedDatabase();
 }
 
-// Run the seed
-seedDatabase().catch(error => {
+main().catch(error => {
   console.error('Failed to seed database:', error);
   process.exit(1);
-}); 
+});
