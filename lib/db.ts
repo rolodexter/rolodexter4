@@ -1,5 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
+// Add global type for Prisma
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
 let prisma: PrismaClient;
 
 if (!global.prisma) {
@@ -11,7 +16,9 @@ if (!global.prisma) {
   prisma.$connect().catch(e => {
     console.error('Postgres connection error suppressed:', e);
   });
-  global.prisma = prisma;
+  if (process.env.NODE_ENV !== 'production') {
+    global.prisma = prisma;
+  }
 } else {
   prisma = global.prisma;
 }
