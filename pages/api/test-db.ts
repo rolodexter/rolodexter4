@@ -65,7 +65,14 @@ export default async function handler(
     try {
       // Create a connection pool
       console.log('Creating connection pool...');
-      pool = new Pool({ connectionString: dbUrl });
+      pool = new Pool({ 
+        connectionString: dbUrl,
+        max: 1,
+        ssl: {
+          rejectUnauthorized: true
+        },
+        connectionTimeoutMillis: 10000
+      });
       console.log('Pool created successfully');
 
       // Test the connection
@@ -104,6 +111,7 @@ export default async function handler(
         });
       } catch (error) {
         console.error('Query error:', error);
+        console.error('Query error stack:', error.stack);
         throw new Error(`Database query failed: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         console.log('Releasing client...');
@@ -112,10 +120,12 @@ export default async function handler(
       }
     } catch (error) {
       console.error('Connection error:', error);
+      console.error('Connection error stack:', error.stack);
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   } catch (error) {
     console.error('Database test failed:', error);
+    console.error('Database test failed stack:', error.stack);
     return res.status(500).json({
       error: 'Database test failed',
       details: error instanceof Error ? error.message : String(error),

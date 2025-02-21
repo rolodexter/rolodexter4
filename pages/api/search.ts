@@ -1,37 +1,58 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { searchDocuments, testConnection, type SearchResult } from '../../lib/db';
+import { pool } from '../../lib/db';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<SearchResult[] | { message: string }>
+  res: NextApiResponse
 ) {
+  const { q } = req.query;
+
+  if (!q || typeof q !== 'string') {
+    return res.status(400).json({ error: 'Query parameter "q" is required' });
+  }
+
   try {
-    // Test database connection first
-    await testConnection();
-    
-    let query: string | undefined;
-    
-    if (req.method === 'POST') {
-      query = req.body.query;
-    } else if (req.method === 'GET') {
-      query = req.query.q as string;
-    } else {
-      return res.status(405).json({ message: 'Method not allowed' });
+    const client = await pool.connect();
+
+    try {
+      // Use plainto_tsquery for basic full-text search
+      const result = await client.query(`
+        SELECT 
+          id,
+          title,
+          content,
+          path,
+          type,
+          created_at,
+          updated_at,
+          ts_rank(to_tsvector('english', title || ' ' || content), plainto_tsquery('english', $1)) as rank
+        FROM "Document"
+        WHERE to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $1)
+        ORDER BY rank DESC
+        LIMIT 10
+      `, [q]);
+
+      // Format results
+      const searchResults = result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        path: row.path,
+        type: row.type,
+        metadata: {
+          excerpt: row.content.substring(0, 200) + '...',
+          rank: parseFloat(row.rank)
+        },
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      }));
+
+      return res.status(200).json({ results: searchResults });
+    } finally {
+      client.release();
     }
-
-    console.log('Search API called with method:', req.method);
-    console.log('Search query:', query);
-
-    if (!query || typeof query !== 'string') {
-      return res.status(400).json({ message: 'Invalid query parameter' });
-    }
-
-    const results = await searchDocuments(query);
-    console.log('Search results count:', results.length);
-
-    return res.status(200).json(results);
   } catch (error) {
     console.error('Search API error:', error);
-    return res.status(500).json({ message: 'Internal server error: ' + (error as Error).message });
+    return res.status(500).json({ error: 'Search failed', details: error instanceof Error ? error.message : String(error) });
   }
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, Document, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Pool } from '@neondatabase/serverless';
 
 // Log environment variables (without sensitive info)
@@ -46,6 +46,12 @@ const dbUrl = formatDatabaseUrl(
   ''
 );
 
+// Log the database URL being used (without sensitive info)
+console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
+
+// Create a connection pool
+const pool = new Pool({ connectionString: dbUrl });
+
 // Initialize Prisma client with direct database URL
 const prisma = new PrismaClient({
   datasources: {
@@ -57,15 +63,13 @@ const prisma = new PrismaClient({
   log: ['error', 'warn', 'info', 'query']
 });
 
-// Log the database URL being used (without sensitive info)
-console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
-
 // Attempt to connect and catch any errors to prevent crashing
-prisma.$connect()
-  .then(() => {
+async function testConnection() {
+  try {
+    const client = await pool.connect();
     console.log('Successfully connected to the database');
-  })
-  .catch(e => {
+    await client.release();
+  } catch (e) {
     console.error('Postgres connection error:', {
       message: e.message,
       code: e.code,
@@ -73,32 +77,24 @@ prisma.$connect()
       meta: e.meta,
       stack: e.stack
     });
-  });
-
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
+  }
 }
 
-export { prisma };
+testConnection();
 
 // Add global type for Prisma
 declare global {
   var prisma: PrismaClient | undefined;
+  var pool: Pool | undefined;
 }
 
-export interface SearchResult {
-  id: string;
-  title: string;
-  content: string;
-  path: string;
-  type: string;
-  metadata: {
-    excerpt: string;
-    rank: number;
-  };
-  created_at: string;
-  updated_at: string;
+// Add to globals in development
+if (process.env.NODE_ENV !== 'production') {
+  global.prisma = prisma;
+  global.pool = pool;
 }
+
+export { prisma, pool };
 
 /**
  * Test database connection
@@ -189,4 +185,18 @@ function createSearchConditions(query: string): Prisma.DocumentWhereInput {
       ]
     }))
   };
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  path: string;
+  type: string;
+  metadata: {
+    excerpt: string;
+    rank: number;
+  };
+  created_at: string;
+  updated_at: string;
 }
