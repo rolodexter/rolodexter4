@@ -34,7 +34,14 @@ function formatDatabaseUrl(url: string): string {
 }
 
 // Initialize Prisma client with formatted database URL
-const dbUrl = formatDatabaseUrl(process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || '');
+const dbUrl = formatDatabaseUrl(
+  process.env.POSTGRES_PRISMA_URL || 
+  process.env.POSTGRES_URL_NON_POOLING || 
+  process.env.DATABASE_URL || 
+  ''
+);
+
+// Initialize Prisma client with direct database URL
 const prisma = new PrismaClient({
   datasources: {
     db: {
@@ -58,7 +65,8 @@ prisma.$connect()
       message: e.message,
       code: e.code,
       clientVersion: e.clientVersion,
-      meta: e.meta
+      meta: e.meta,
+      stack: e.stack
     });
   });
 
