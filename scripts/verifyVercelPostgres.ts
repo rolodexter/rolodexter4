@@ -9,6 +9,16 @@ dotenv.config({ path: join(process.cwd(), '.env.local') });
 // The exact working connection string
 const NEON_CONNECTION_STRING = "postgres://neondb_owner:npg_5CzhuMceAg3H@ep-purple-pine-a6s64w9x-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require";
 
+interface PostgresError extends Error {
+  code?: string;
+  detail?: string;
+  schema?: string;
+  table?: string;
+  column?: string;
+  dataType?: string;
+  constraint?: string;
+}
+
 async function verifyVercelPostgres() {
   console.log('Verifying Neon Postgres configuration...\n');
 
@@ -27,13 +37,15 @@ async function verifyVercelPostgres() {
     console.log('\nTesting simple query...');
     const testResult = await sql`SELECT 1 as test`;
     console.log('✓ Query successful:', testResult[0]);
-  } catch (error) {
+  } catch (err) {
+    const error = err as PostgresError;
     console.error('❌ Direct Neon SQL connection failed');
     console.error('Error details:', {
       name: error.name,
       message: error.message,
       code: error.code,
-      stack: error.stack
+      stack: error.stack,
+      detail: error.detail
     });
     process.exit(1);
   }
@@ -57,12 +69,12 @@ async function verifyVercelPostgres() {
     const result = await prisma.$queryRaw`SELECT 1 as test`;
     console.log('✓ Prisma connection successful');
     await prisma.$disconnect();
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     console.error('❌ Prisma connection failed');
     console.error('Error details:', {
       name: error.name,
       message: error.message,
-      code: error.code,
       stack: error.stack
     });
     process.exit(1);
@@ -84,8 +96,9 @@ const timeout = setTimeout(() => {
 }, 30000);
 
 verifyVercelPostgres()
-  .catch(error => {
-    console.error('Verification failed:', error);
+  .catch((err) => {
+    const error = err as Error;
+    console.error('Verification failed:', error.message);
     process.exit(1);
   })
   .finally(() => {
