@@ -3,7 +3,9 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 
 // Configure Neon to use WebSocket
-neonConfig.webSocketConstructor = ws;
+if (typeof window === 'undefined') {
+  neonConfig.webSocketConstructor = ws;
+}
 
 // Log environment variables (without sensitive info)
 console.log('Environment variables:', {
