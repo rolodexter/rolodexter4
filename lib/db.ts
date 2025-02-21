@@ -5,9 +5,9 @@ import ws from 'ws';
 // Configure Neon to use WebSocket only on the server side
 if (typeof window === 'undefined') {
   neonConfig.webSocketConstructor = ws;
-  neonConfig.useSecureWebSocket = true; // Force secure WebSocket
+  // Configure secure connection settings
+  neonConfig.useSecureWebSocket = "password"; // Use password authentication for WebSocket
   neonConfig.pipelineTLS = true; // Enable TLS pipeline
-  neonConfig.pipelineConnect = true; // Enable connection pipelining
 }
 
 // Log environment variables (without sensitive info)
