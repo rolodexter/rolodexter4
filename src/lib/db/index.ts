@@ -84,7 +84,7 @@ export interface Document {
   references?: Reference[];
 }
 
-interface SearchResult extends Omit<Document, 'created_at' | 'updated_at'> {
+export interface SearchResult extends Omit<Document, 'created_at' | 'updated_at'> {
   created_at: string;
   updated_at: string;
   metadata: {
