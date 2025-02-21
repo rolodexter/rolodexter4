@@ -1,7 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { searchDocuments, testConnection } from '@/lib/db';
 import type { SearchResult, DocumentMetadata } from '../../types';
-import type { Document } from '@prisma/client';
+import type { Document, Prisma } from '@prisma/client';
+
+type DocumentWithMetadata = Document & {
+  metadata: Prisma.JsonValue;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,12 +36,20 @@ export default async function handler(
     console.log('Search results count:', results.length);
     
     // Format results with proper type handling
-    const formattedResults: SearchResult[] = results.map((doc: Document & { metadata: DocumentMetadata }) => ({
-      title: doc.title || "",
-      path: doc.path || "",
-      excerpt: doc.metadata?.excerpt || "",
-      rank: doc.metadata?.rank || 0
-    }));
+    const formattedResults: SearchResult[] = results.map((doc: DocumentWithMetadata) => {
+      // Parse metadata if it exists and is a string/object
+      let metadata: Partial<DocumentMetadata> = {};
+      if (doc.metadata && typeof doc.metadata === 'object') {
+        metadata = doc.metadata as Partial<DocumentMetadata>;
+      }
+
+      return {
+        title: doc.title || "",
+        path: doc.path || "",
+        excerpt: metadata.excerpt || doc.content?.substring(0, 200) || "",
+        rank: metadata.rank || 0
+      };
+    });
 
     return res.status(200).json(formattedResults);
   } catch (error) {
