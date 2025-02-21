@@ -84,8 +84,13 @@ export interface Document {
   references?: Reference[];
 }
 
-interface SearchRow extends Document {
-  rank: number;
+interface SearchResult extends Omit<Document, 'created_at' | 'updated_at'> {
+  created_at: string;
+  updated_at: string;
+  metadata: {
+    excerpt: string;
+    rank: number;
+  };
 }
 
 // Initialize the database with required tables
@@ -145,7 +150,7 @@ function normalizeFilePath(path: string): string {
 }
 
 // Search documents with full-text search
-export async function searchDocuments(query: string): Promise<Document[]> {
+export async function searchDocuments(query: string): Promise<SearchResult[]> {
   try {
     console.log('Starting search with query:', query);
     
