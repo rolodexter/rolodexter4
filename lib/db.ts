@@ -16,4 +16,49 @@ if (!global.prisma) {
   prisma = global.prisma;
 }
 
+export const testConnection = async () => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    throw error;
+  }
+};
+
+export const searchDocuments = async (query: string) => {
+  try {
+    // Split query into words for better matching
+    const searchTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    
+    // Create OR conditions for each search term
+    const whereConditions = searchTerms.map(term => ({
+      OR: [
+        { title: { contains: term, mode: 'insensitive' } },
+        { content: { contains: term, mode: 'insensitive' } },
+      ],
+    }));
+
+    const results = await prisma.document.findMany({
+      where: {
+        AND: whereConditions,
+      },
+      select: {
+        title: true,
+        path: true,
+        metadata: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+      take: 10,
+    });
+
+    return results;
+  } catch (error) {
+    console.error('Search failed:', error);
+    throw error;
+  }
+};
+
 export default prisma;
