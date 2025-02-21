@@ -122,7 +122,7 @@ export default async function handler(
         if (error instanceof Error) {
           console.error('Query error stack:', error.stack);
         }
-        throw new Error(`Database query failed: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Database query failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       } finally {
         console.log('Releasing client...');
         await client.release();
@@ -133,7 +133,7 @@ export default async function handler(
       if (error instanceof Error) {
         console.error('Connection error stack:', error.stack);
       }
-      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   } catch (error) {
     console.error('Database test failed:', error);
@@ -142,7 +142,7 @@ export default async function handler(
     }
     return res.status(500).json({
       error: 'Database test failed',
-      details: error instanceof Error ? error.message : String(error),
+      details: error instanceof Error ? error.message : JSON.stringify(error),
       env: envVars
     });
   } finally {
