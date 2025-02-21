@@ -84,10 +84,13 @@ const nextConfig = {
   },
   // Environment configuration
   env: {
-    DATABASE_URL: process.env.DATABASE_URL || 'placeholder',
-    DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED || 'placeholder',
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
     BLOB_STORE_NAME: 'rolodexter4-documents'
+  },
+  experimental: {
+    // Disable requiring .env file
+    esmExternals: true,
+    appDir: false,
   },
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
@@ -102,6 +105,8 @@ const nextConfig = {
           destination: '/api/static/:path*',
         },
       ],
+      afterFiles: [],
+      fallback: []
     };
   },
 

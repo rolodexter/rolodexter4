@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "echo \"DATABASE_URL=$DATABASE_URL\nDATABASE_URL_UNPOOLED=$DATABASE_URL_UNPOOLED\" > .env && npm run build",
+  "buildCommand": "touch .env && npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
