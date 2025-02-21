@@ -1,10 +1,16 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from '@neondatabase/serverless';
+import ws from 'ws';
 
 // Ensure database URL has the correct format for Neon
 function formatDatabaseUrl(url: string): string {
   if (!url) return url;
   
+  // Convert to WebSocket protocol if not already
+  if (url.startsWith('postgres://')) {
+    url = url.replace('postgres://', 'postgresql://');
+  }
+
   // Add ?connect_timeout=10 if not present
   const hasTimeout = url.includes('connect_timeout=');
   const hasParams = url.includes('?');
@@ -70,7 +76,8 @@ export default async function handler(
         ssl: {
           rejectUnauthorized: true
         },
-        connectionTimeoutMillis: 10000
+        connectionTimeoutMillis: 10000,
+        webSocketConstructor: ws
       });
       console.log('Pool created successfully');
 

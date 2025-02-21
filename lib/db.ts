@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Pool } from '@neondatabase/serverless';
+import ws from 'ws';
 
 // Log environment variables (without sensitive info)
 console.log('Environment variables:', {
@@ -13,6 +14,11 @@ console.log('Environment variables:', {
 function formatDatabaseUrl(url: string): string {
   if (!url) return url;
   
+  // Convert to WebSocket protocol if not already
+  if (url.startsWith('postgres://')) {
+    url = url.replace('postgres://', 'postgresql://');
+  }
+
   // Add ?connect_timeout=10 if not present
   const hasTimeout = url.includes('connect_timeout=');
   const hasParams = url.includes('?');
@@ -56,7 +62,8 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: true
   },
-  connectionTimeoutMillis: 10000
+  connectionTimeoutMillis: 10000,
+  webSocketConstructor: ws
 });
 
 // Initialize Prisma client with direct database URL
