@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
+
+// Configure Neon to use WebSocket
+neonConfig.webSocketConstructor = ws;
 
 // Log environment variables (without sensitive info)
 console.log('Environment variables:', {
@@ -62,8 +65,7 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: true
   },
-  connectionTimeoutMillis: 10000,
-  webSocketConstructor: ws
+  connectionTimeoutMillis: 10000
 });
 
 // Initialize Prisma client with direct database URL

@@ -1,6 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
+
+// Configure Neon to use WebSocket
+neonConfig.webSocketConstructor = ws;
 
 // Ensure database URL has the correct format for Neon
 function formatDatabaseUrl(url: string): string {
@@ -76,8 +79,7 @@ export default async function handler(
         ssl: {
           rejectUnauthorized: true
         },
-        connectionTimeoutMillis: 10000,
-        webSocketConstructor: ws
+        connectionTimeoutMillis: 10000
       });
       console.log('Pool created successfully');
 
