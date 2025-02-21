@@ -50,10 +50,14 @@ function formatDatabaseUrl(url: string): string {
 // Get the appropriate database URL
 const dbUrl = formatDatabaseUrl(
   process.env.POSTGRES_URL_NON_POOLING || 
-  process.env.POSTGRES_PRISMA_URL || 
   process.env.DATABASE_URL || 
   ''
 );
+
+// Set POSTGRES_PRISMA_URL if not set
+if (!process.env.POSTGRES_PRISMA_URL && dbUrl) {
+  process.env.POSTGRES_PRISMA_URL = dbUrl;
+}
 
 // Log the database URL being used (without sensitive info)
 console.log('Database URL pattern:', dbUrl.replace(/\/\/.*@/, '//****:****@'));
@@ -72,7 +76,7 @@ const pool = new Pool({
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: dbUrl
+      url: process.env.POSTGRES_PRISMA_URL || dbUrl
     }
   },
   errorFormat: 'minimal',
