@@ -21,6 +21,17 @@ export default async function handler(
   try {
     console.log('Testing database connection...');
     
+    // Log database connection details (without sensitive info)
+    const dbUrl = process.env.POSTGRES_URL_NON_POOLING || '';
+    console.log('Database URL pattern:', {
+      protocol: dbUrl.split('://')[0] || 'missing',
+      hasUsername: dbUrl.includes('@'),
+      hasPort: dbUrl.includes(':'),
+      hasPath: dbUrl.includes('/'),
+      hasParams: dbUrl.includes('?'),
+      params: dbUrl.split('?')[1]?.split('&').map(p => p.split('=')[0]) || []
+    });
+
     // Test connection by counting documents
     const documentCount = await prisma.document.count();
     console.log('Document count:', documentCount);
