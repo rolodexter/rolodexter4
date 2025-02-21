@@ -35,10 +35,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   let pool: Pool | null = null;
-  let envVars: any;
 
   // Log environment variables (without sensitive info)
-  envVars = {
+  const envVars = {
     POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? '[SET]' : '[NOT SET]',
     POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? '[SET]' : '[NOT SET]',
     DATABASE_URL: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
@@ -111,7 +110,9 @@ export default async function handler(
         });
       } catch (error) {
         console.error('Query error:', error);
-        console.error('Query error stack:', error.stack);
+        if (error instanceof Error) {
+          console.error('Query error stack:', error.stack);
+        }
         throw new Error(`Database query failed: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         console.log('Releasing client...');
@@ -120,12 +121,16 @@ export default async function handler(
       }
     } catch (error) {
       console.error('Connection error:', error);
-      console.error('Connection error stack:', error.stack);
+      if (error instanceof Error) {
+        console.error('Connection error stack:', error.stack);
+      }
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   } catch (error) {
     console.error('Database test failed:', error);
-    console.error('Database test failed stack:', error.stack);
+    if (error instanceof Error) {
+      console.error('Database test failed stack:', error.stack);
+    }
     return res.status(500).json({
       error: 'Database test failed',
       details: error instanceof Error ? error.message : String(error),
